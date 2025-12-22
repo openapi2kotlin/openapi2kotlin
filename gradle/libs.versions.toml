@@ -1,0 +1,18 @@
+[versions]
+kotlin = "2.2.20"
+logback = "1.4.14"
+jakarta-validation = "3.1.1"
+kotlin-logging = "7.0.13"
+kotlinpoet = "2.2.0"
+swaggerParser = "2.1.36"
+
+[libraries]
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+jakarta-validation = { module = "jakarta.validation:jakarta.validation-api", version.ref = "jakarta-validation" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+swagger-parser = { module = "io.swagger.parser.v3:swagger-parser-v3", version.ref = "swaggerParser" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

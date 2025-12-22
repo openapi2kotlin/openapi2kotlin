@@ -1,0 +1,37 @@
+package dev.openapi2kotlin.application.core.openapi2kotlin.model.model
+
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+
+data class ModelDO(
+    val rawSchema: RawSchemaDO,
+
+    /**
+     * Package where this schema resides.
+     */
+    val packageName: String,
+
+    /**
+     * Generated name of the schema component (cleaned).
+     */
+    val generatedName: String,
+
+    /**
+     * Who extends this via allOf (by generatedName).
+     */
+    val allOfChildren: MutableList<String> = mutableListOf(),
+
+    /**
+     * Who includes this in their oneOf (by generatedName).
+     */
+    var parentOneOf: String? = null,
+
+    /**
+     * Generated shape of this schema component.
+     */
+    var modelShape: ModelShapeDO = ModelShapeDO.Undecided,
+
+    /**
+     * Final fields of this schema component (after inheritance, overrides, requiredness).
+     */
+    var fields: MutableList<FieldDO> = mutableListOf(),
+)
