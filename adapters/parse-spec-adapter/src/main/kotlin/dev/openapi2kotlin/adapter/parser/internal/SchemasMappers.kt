@@ -1,16 +1,16 @@
 package dev.openapi2kotlin.adapter.parser.internal
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.PrimitiveTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.RawArrayTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.RawFieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.RawPrimitiveTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.RawRefTypeDO
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.Schema
 
 internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
-    val schemas: Map<String, Schema<*>> = this.components?.schemas.orEmpty()
+    val schemas: Map<String, Schema<*>> = components?.schemas.orEmpty()
 
     // --- detect "usedAsProperty" ---
     val usedAsPropertyNames = mutableSetOf<String>()
@@ -22,19 +22,16 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
 
     // --- detect "usedInPaths" ---
     val usedInPathsNames = mutableSetOf<String>()
-    this.paths?.values?.forEach { pathItem ->
+    paths?.values?.forEach { pathItem ->
         pathItem.readOperations().forEach { operation ->
-            // request body
             operation.requestBody?.content?.values?.forEach { mediaType ->
                 collectRefNamesFromSchema(mediaType.schema, usedInPathsNames)
             }
-            // responses
             operation.responses?.values?.forEach { apiResponse ->
                 apiResponse.content?.values?.forEach { mediaType ->
                     collectRefNamesFromSchema(mediaType.schema, usedInPathsNames)
                 }
             }
-            // parameters
             operation.parameters?.forEach { parameter ->
                 collectRefNamesFromSchema(parameter.schema, usedInPathsNames)
             }
@@ -54,52 +51,59 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
                 ?.distinct()
                 ?: emptyList()
 
-        val enumValues: List<String> =
-            schema.enum?.map { it.toString() } ?: emptyList()
+        val enumValues: List<String> = schema.enum?.map { it.toString() } ?: emptyList()
 
         val isArraySchema = schema.type == "array"
-        val arrayItemType: FieldTypeDO? =
+        val arrayItemType: RawFieldTypeDO? =
             if (isArraySchema && schema is ArraySchema) {
                 // element type for the "typealias X = List<Elem>"
-                schemaToDtoTypeForProperty(
+                schemaToRawTypeForProperty(
                     schema = schema.items,
-                    required = true, // element itself non-null; list nullability handled later
+                    required = true,
                 )
             } else null
 
-        // ---- own properties: top-level + inline allOf objects ----
         val ownProps = mutableMapOf<String, RawSchemaDO.SchemaPropertyDO>()
 
         // top-level properties
         val requiredTop = schema.required?.toSet().orEmpty()
         schema.properties.orEmpty().forEach { (propName, propSchema) ->
             val required = propName in requiredTop
-            val dtoType = schemaToDtoTypeForProperty(propSchema, required)
+            val rawType = schemaToRawTypeForProperty(propSchema, required)
+            val defaultValue = propSchema.default?.toString()
             ownProps.merge(
                 propName,
-                RawSchemaDO.SchemaPropertyDO(propName, dtoType, required),
+                RawSchemaDO.SchemaPropertyDO(
+                    name = propName,
+                    type = rawType,
+                    required = required,
+                    defaultValue = defaultValue,
+                ),
                 ::mergeSchemaProperty,
             )
         }
 
-        // inline allOf parts (type: object, no $ref)
+        // inline allOf parts
         schema.allOf
             ?.filter { it.`$ref` == null }
             ?.forEach { inlineSchema ->
                 val requiredInline = inlineSchema.required?.toSet().orEmpty()
                 inlineSchema.properties.orEmpty().forEach { (propName, propSchema) ->
                     val required = propName in requiredInline
-                    val dtoType = schemaToDtoTypeForProperty(propSchema, required)
+                    val rawType = schemaToRawTypeForProperty(propSchema, required)
+                    val defaultValue = propSchema.default?.toString()
                     ownProps.merge(
                         propName,
-                        RawSchemaDO.SchemaPropertyDO(propName, dtoType, required),
+                        RawSchemaDO.SchemaPropertyDO(
+                            name = propName,
+                            type = rawType,
+                            required = required,
+                            defaultValue = defaultValue,
+                        ),
                         ::mergeSchemaProperty,
                     )
                 }
             }
-
-        val usedInPaths = name in usedInPathsNames
-        val usedAsProperty = name in usedAsPropertyNames
 
         RawSchemaDO(
             originalName = name,
@@ -110,76 +114,64 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
             arrayItemType = arrayItemType,
             ownProperties = ownProps,
             discriminatorPropertyName = schema.discriminator?.propertyName,
-            usedInPaths = usedInPaths,
-            usedAsProperty = usedAsProperty,
+            usedInPaths = name in usedInPathsNames,
+            usedAsProperty = name in usedAsPropertyNames,
         )
     }.sortedBy { it.originalName }
 }
 
-/* ---------- helpers (still OpenAPI-dependent, but local to this file) ---------- */
-
-private fun schemaToDtoTypeForProperty(
+private fun schemaToRawTypeForProperty(
     schema: Schema<*>?,
     required: Boolean,
-): FieldTypeDO {
+): RawFieldTypeDO {
     if (schema == null) {
-        return PrimitiveTypeDO(PrimitiveTypeDO.PrimitiveTypeNameDO.ANY, nullable = true)
+        return RawPrimitiveTypeDO(RawPrimitiveTypeDO.Type.OBJECT, format = null, nullable = true)
     }
 
     val nullableFromRequired = !required
+    val nullable = schema.nullable == true || nullableFromRequired
 
     if (schema is ArraySchema) {
-        val elementType = schemaToDtoTypeForProperty(
-            schema = schema.items,
-            required = true, // element nullability is separate concern
-        )
-        val nullable = schema.nullable == true || nullableFromRequired
-        return ListTypeDO(
-            elementType = elementType,
-            nullable = nullable,
-        )
+        val elementType = schemaToRawTypeForProperty(schema.items, required = true)
+        return RawArrayTypeDO(elementType = elementType, nullable = nullable)
     }
 
     schema.`$ref`?.let { ref ->
         val name = ref.substringAfterLast('/')
-        val nullable = schema.nullable == true || nullableFromRequired
-        return RefTypeDO(
-            schemaName = name,
-            nullable = nullable,
-        )
+        return RawRefTypeDO(schemaName = name, nullable = nullable)
     }
 
-    val kind: PrimitiveTypeDO.PrimitiveTypeNameDO = when (schema.type) {
-        "string" -> PrimitiveTypeDO.PrimitiveTypeNameDO.STRING
-        "integer" -> if (schema.format == "int64") PrimitiveTypeDO.PrimitiveTypeNameDO.LONG else PrimitiveTypeDO.PrimitiveTypeNameDO.INT
-        "number" -> PrimitiveTypeDO.PrimitiveTypeNameDO.DOUBLE
-        "boolean" -> PrimitiveTypeDO.PrimitiveTypeNameDO.BOOLEAN
-        else -> PrimitiveTypeDO.PrimitiveTypeNameDO.ANY
+    val t = when (schema.type) {
+        "string" -> RawPrimitiveTypeDO.Type.STRING
+        "number" -> RawPrimitiveTypeDO.Type.NUMBER
+        "integer" -> RawPrimitiveTypeDO.Type.INTEGER
+        "boolean" -> RawPrimitiveTypeDO.Type.BOOLEAN
+        "object" -> RawPrimitiveTypeDO.Type.OBJECT
+        else -> RawPrimitiveTypeDO.Type.OBJECT
     }
 
-    val nullable = schema.nullable == true || nullableFromRequired
-    return PrimitiveTypeDO(kind, nullable)
+    return RawPrimitiveTypeDO(
+        type = t,
+        format = schema.format,
+        nullable = nullable,
+    )
 }
 
-private fun collectRefNamesFromSchema(
-    schema: Schema<*>?,
-    into: MutableSet<String>,
-) {
+private fun collectRefNamesFromSchema(schema: Schema<*>?, into: MutableSet<String>) {
     if (schema == null) return
-
     when (schema) {
         is ArraySchema -> collectRefNamesFromSchema(schema.items, into)
-        else -> {
-            val ref = schema.`$ref` ?: return
-            val name = ref.substringAfterLast('/')
-            into.add(name)
-        }
+        else -> schema.`$ref`?.substringAfterLast('/')?.let(into::add)
     }
 }
 
-private fun mergeSchemaProperty(a: RawSchemaDO.SchemaPropertyDO, b: RawSchemaDO.SchemaPropertyDO): RawSchemaDO.SchemaPropertyDO =
+private fun mergeSchemaProperty(
+    a: RawSchemaDO.SchemaPropertyDO,
+    b: RawSchemaDO.SchemaPropertyDO,
+): RawSchemaDO.SchemaPropertyDO =
     RawSchemaDO.SchemaPropertyDO(
         name = a.name,
-        type = a.type, // type should be equivalent; if not, first wins
+        type = a.type,
         required = a.required || b.required,
+        defaultValue = a.defaultValue ?: b.defaultValue,
     )

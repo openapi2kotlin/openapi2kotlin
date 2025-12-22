@@ -25,7 +25,7 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
     models.handleModelShape()
 
     log.info { "Handling fields" }
-    models.handleFields()
+    models.handleFields(config.mapping)
 
     log.info { "Handling Jackson annotations" }
     models.handleJacksonAnnotations(

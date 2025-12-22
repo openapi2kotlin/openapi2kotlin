@@ -1,7 +1,5 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.model.raw
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-
 /**
  * Raw schema data object representing an OpenAPI schema component. No business logic here - open api AS-IS ;)
  */
@@ -36,7 +34,7 @@ data class RawSchemaDO(
      * If this is an array schema, the type of its items.
      * (For typealias generation, we later wrap this into List<...>.)
      */
-    val arrayItemType: FieldTypeDO? = null,
+    val arrayItemType: RawFieldTypeDO? = null,
 
     /**
      * Properties defined directly on this schema (top-level + inline allOf).
@@ -66,7 +64,36 @@ data class RawSchemaDO(
 ) {
     data class SchemaPropertyDO(
         val name: String,
-        val type: FieldTypeDO,
+        val type: RawFieldTypeDO,
         val required: Boolean,
+        val defaultValue: String? = null,
     )
+
+    sealed interface RawFieldTypeDO {
+        val nullable: Boolean
+    }
+
+    data class RawRefTypeDO(
+        val schemaName: String,
+        override val nullable: Boolean,
+    ) : RawFieldTypeDO
+
+    data class RawArrayTypeDO(
+        val elementType: RawFieldTypeDO,
+        override val nullable: Boolean,
+    ) : RawFieldTypeDO
+
+    data class RawPrimitiveTypeDO(
+        val type: Type,
+        val format: String? = null,
+        override val nullable: Boolean,
+    ) : RawFieldTypeDO {
+        enum class Type {
+            STRING,
+            NUMBER,
+            INTEGER,
+            BOOLEAN,
+            OBJECT,
+        }
+    }
 }

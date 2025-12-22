@@ -4,16 +4,21 @@ sealed interface FieldTypeDO {
     val nullable: Boolean
 }
 
-data class PrimitiveTypeDO(
-    val name: PrimitiveTypeNameDO,
+data class TrivialTypeDO(
+    val kind: Kind,
     override val nullable: Boolean,
 ) : FieldTypeDO {
-    enum class PrimitiveTypeNameDO {
+    enum class Kind {
         STRING,
         INT,
         LONG,
+        FLOAT,
         DOUBLE,
+        BIG_DECIMAL,
         BOOLEAN,
+        LOCAL_DATE,
+        OFFSET_DATE_TIME,
+        BYTE_ARRAY,
         ANY,
     }
 }

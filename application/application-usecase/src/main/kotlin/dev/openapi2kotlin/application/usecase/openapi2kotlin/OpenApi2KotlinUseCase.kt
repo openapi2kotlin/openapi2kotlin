@@ -38,6 +38,7 @@ fun interface OpenApi2KotlinUseCase {
         data class MappingConfig(
             val double2BigDecimal: Boolean = true,
             val float2BigDecimal: Boolean = true,
+            val integer2Long: Boolean = true,
         )
 
         /**
