@@ -12,4 +12,6 @@ data class FieldDO(
     val overridden: Boolean,
     val type: FieldTypeDO,
     val required: Boolean,
+    val defaultValueCode: String? = null,
+    val annotations: List<AnnotationDO> = emptyList(),
 )

@@ -21,7 +21,7 @@ class OpenApi2KotlinService(
 
         generateModelPort.generateModel(GenerateModelPort.Command(
             outputDirPath = config.outputDirPath,
-            models = prepareModels( openApi.rawSchemas, config.model.packageName),
+            models = prepareModels( openApi.rawSchemas, config.model),
         ))
 
         if (config.server.enabled) {

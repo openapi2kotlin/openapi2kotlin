@@ -48,7 +48,7 @@ fun interface OpenApi2KotlinUseCase {
              * Master switch for emitting any Jackson annotations at all.
              *
              * - When false: no @JsonProperty, no @JsonTypeInfo, no @JsonSubTypes, etc.
-             * - When true: other switches below apply.
+             * - When true: other switches below apply if any.
              */
             val enabled: Boolean = true,
 

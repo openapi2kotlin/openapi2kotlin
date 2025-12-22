@@ -1,44 +1,14 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 
-
-/**
- * Third pass – decide GeneratedShape for each SchemaComponent.
- *
- * Rules:
- *
- * TypeAlias:
- *   - isArraySchema == true
- *
- * EnumClass:
- *   - enumValues is not empty
- *
- * SealedInterface:
- *   - has oneOf (oneOfChildren not empty), OR
- *   - (connectionDetails.allOfChildren not empty
- *      AND usedInPaths == false
- *      AND usedAsProperty == false)
- *
- * DataClass:
- *   - no allOfChildren  (and not matched as SealedInterface / EnumClass / TypeAlias)
- *
- * OpenClass:
- *   - has allOfChildren AND (usedInPaths OR usedAsProperty)
- *
- * For inheritance:
- *   - allOf parents:
- *       * SealedInterface parents → implements
- *       * DataClass/OpenClass parents → extend (first such wins)
- *   - parentOneOf (set when someone includes us in their oneOf) → implements that parent
- */
-internal fun modelShapeHandler(schemas: List<ModelDO>) {
-    val byName = schemas.associateBy { it.rawSchema.originalName }
+internal fun List<ModelDO>.handleModelShape() {
+    val byName = associateBy { it.rawSchema.originalName }
 
     // Step 1: choose kind based on rules.
-   schemas.forEach { component ->
+    forEach { component ->
         // 1) array schemas -> typealias, e.g. JsonPatchOperations = List<JsonPatch>
         if (component.rawSchema.isArraySchema && component.rawSchema.arrayItemType != null) {
             component.modelShape = ModelShapeDO.TypeAlias(
@@ -58,11 +28,12 @@ internal fun modelShapeHandler(schemas: List<ModelDO>) {
             return@forEach
         }
 
-
         val hasOneOf = component.rawSchema.oneOfChildren.isNotEmpty()
         val isOneOfPolymorphic = hasOneOf
         val isAbstractAllOfBase =
-            component.allOfChildren.isNotEmpty() && !component.rawSchema.usedInPaths && !component.rawSchema.usedAsProperty
+            component.allOfChildren.isNotEmpty() &&
+                    !component.rawSchema.usedInPaths &&
+                    !component.rawSchema.usedAsProperty
 
         component.modelShape = when {
             isOneOfPolymorphic || isAbstractAllOfBase ->
@@ -85,7 +56,7 @@ internal fun modelShapeHandler(schemas: List<ModelDO>) {
     }
 
     // Step 2: fill extend / implements based on parents' shapes and parentOneOf.
-   schemas.forEach { component ->
+    forEach { component ->
         // enums & typealiases don't participate in inheritance
         when (component.modelShape) {
             is ModelShapeDO.EnumClass,

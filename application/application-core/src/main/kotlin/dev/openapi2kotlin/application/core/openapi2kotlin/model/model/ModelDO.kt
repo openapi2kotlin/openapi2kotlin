@@ -34,4 +34,14 @@ data class ModelDO(
      * Final fields of this schema component (after inheritance, overrides, requiredness).
      */
     var fields: MutableList<FieldDO> = mutableListOf(),
+
+    /**
+     * Annotations to add to the generated class/interface.
+     */
+    var annotations: List<AnnotationDO> = emptyList(),
+
+    /**
+     * Polymorphism metadata for oneOf roots (null if not polymorphic).
+     */
+    var polymorphism: PolymorphismDO? = null,
 )

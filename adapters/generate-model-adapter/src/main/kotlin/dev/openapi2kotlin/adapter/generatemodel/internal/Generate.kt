@@ -1,13 +1,19 @@
 package dev.openapi2kotlin.adapter.generatemodel.internal
 
-import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.PrimitiveTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeAliasSpec
+import com.squareup.kotlinpoet.TypeSpec
+import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
+import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
+import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.className
+import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.toParamSpec
+import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.typeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
 
@@ -16,16 +22,16 @@ private val log = KotlinLogging.logger {}
 /**
  * Final pass – generate Kotlin files.
  *
- * No decision logic here – everything must be pre-calculated in SchemaComponent.
+ * No decision logic here – everything must be pre-calculated in ModelDO.
  */
 fun generate(
     models: List<ModelDO>,
     outputDirPath: Path,
 ) {
     val outputDir = outputDirPath.toFile()
-    val byName =models.associateBy { it.rawSchema.originalName }
+    val byName = models.associateBy { it.rawSchema.originalName }
 
-   models.forEach { model ->
+    models.forEach { model ->
         val fileSpec: FileSpec = when (val shape = model.modelShape) {
             is ModelShapeDO.EnumClass ->
                 buildEnumFile(model, shape)
@@ -64,18 +70,24 @@ fun generate(
         .filter { it.isFile && it.extension == "kt" }
         .forEach { file ->
             val text = file.readText()
-            file.writeText(text.replace("public ", ""))
+            file.writeText(text
+                // KotlinPoet add redundant public modifiers by default
+                .replace("public ", "")
+                // KotlinPoet escapes this package segment; we prefer the normal form.
+                .replace("com.fasterxml.jackson.`annotation`.", "com.fasterxml.jackson.annotation.")
+            )
         }
 }
 
 /* ---------- ENUM CLASS ---------- */
+
 private fun buildEnumFile(
     schema: ModelDO,
     shape: ModelShapeDO.EnumClass,
 ): FileSpec {
-    val typeBuilder = TypeSpec.Companion.enumBuilder(schema.generatedName)
+    val typeBuilder = TypeSpec.enumBuilder(schema.generatedName)
+        .applyModelAnnotations(schema)
 
-    // primary constructor(val value: String)
     val ctor = FunSpec.constructorBuilder()
         .addParameter("value", String::class)
         .build()
@@ -87,7 +99,6 @@ private fun buildEnumFile(
             .build()
     )
 
-    // enum constants
     shape.values.forEach { rawValue ->
         val constName = rawValue
             .uppercase()
@@ -101,7 +112,6 @@ private fun buildEnumFile(
         typeBuilder.addEnumConstant(constName, enumConst)
     }
 
-    // companion object with fromValue
     val fromValueFun = FunSpec.builder("fromValue")
         .returns(schema.className())
         .addParameter("v", String::class)
@@ -126,30 +136,34 @@ private fun buildEnumFile(
 }
 
 /* ---------- SEALED INTERFACE ---------- */
+
 private fun buildSealedInterfaceFile(
     schema: ModelDO,
     shape: ModelShapeDO.SealedInterface,
     byName: Map<String, ModelDO>,
 ): FileSpec {
-    val typeBuilder = TypeSpec.Companion.interfaceBuilder(schema.generatedName)
+    val typeBuilder = TypeSpec.interfaceBuilder(schema.generatedName)
         .addModifiers(KModifier.SEALED)
+        .applyModelAnnotations(schema)
 
-    // superinterfaces
     shape.extends.forEach { parentName ->
         val parent = byName[parentName]
         val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
         typeBuilder.addSuperinterface(typeName)
     }
 
-    // properties
     schema.fields.forEach { field ->
         val propBuilder = PropertySpec.builder(
             field.generatedName,
             field.type.typeName(schema, byName),
         )
+
+        field.applyPropertyAnnotations(propBuilder)
+
         if (field.overridden) {
             propBuilder.addModifiers(KModifier.OVERRIDE)
         }
+
         typeBuilder.addProperty(propBuilder.build())
     }
 
@@ -160,6 +174,7 @@ private fun buildSealedInterfaceFile(
 }
 
 /* ---------- DATA CLASS ---------- */
+
 private fun buildDataClassFile(
     schema: ModelDO,
     shape: ModelShapeDO.DataClass,
@@ -167,18 +182,14 @@ private fun buildDataClassFile(
 ): FileSpec {
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            addParameter(
-                ParameterSpec.builder(
-                    field.generatedName,
-                    field.type.typeName(schema, byName),
-                ).build()
-            )
+            addParameter(field.toParamSpec(schema, byName))
         }
     }.build()
 
-    val typeBuilder = TypeSpec.Companion.classBuilder(schema.generatedName)
+    val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
         .addModifiers(KModifier.DATA)
         .primaryConstructor(ctor)
+        .applyModelAnnotations(schema)
 
     val hasChildren = schema.allOfChildren.isNotEmpty()
 
@@ -188,18 +199,17 @@ private fun buildDataClassFile(
             field.type.typeName(schema, byName),
         ).initializer(field.generatedName)
 
+        field.applyPropertyAnnotations(propBuilder)
+
         if (field.overridden) {
-            // override only; override is implicitly open
             propBuilder.addModifiers(KModifier.OVERRIDE)
         } else if (hasChildren) {
-            // declared here, and subclasses exist → open
             propBuilder.addModifiers(KModifier.OPEN)
         }
 
         typeBuilder.addProperty(propBuilder.build())
     }
 
-    // superclass + super ctor params
     shape.extend?.let { parentName ->
         val parent = byName[parentName]
         val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
@@ -210,7 +220,6 @@ private fun buildDataClassFile(
         }
     }
 
-    // interfaces
     shape.implements.forEach { ifaceName ->
         val iface = byName[ifaceName]
         val typeName = iface?.className() ?: ClassName(schema.packageName, ifaceName)
@@ -224,6 +233,7 @@ private fun buildDataClassFile(
 }
 
 /* ---------- OPEN CLASS ---------- */
+
 private fun buildOpenClassFile(
     schema: ModelDO,
     shape: ModelShapeDO.OpenClass,
@@ -231,20 +241,14 @@ private fun buildOpenClassFile(
 ): FileSpec {
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            val paramBuilder = ParameterSpec.builder(
-                field.generatedName,
-                field.type.typeName(schema, byName),
-            )
-            if (field.type.nullable) {
-                paramBuilder.defaultValue("null")
-            }
-            addParameter(paramBuilder.build())
+            addParameter(field.toParamSpec(schema, byName))
         }
     }.build()
 
-    val typeBuilder = TypeSpec.Companion.classBuilder(schema.generatedName)
+    val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
         .addModifiers(KModifier.OPEN)
         .primaryConstructor(ctor)
+        .applyModelAnnotations(schema)
 
     val hasChildren = schema.allOfChildren.isNotEmpty()
 
@@ -254,18 +258,17 @@ private fun buildOpenClassFile(
             field.type.typeName(schema, byName),
         ).initializer(field.generatedName)
 
+        field.applyPropertyAnnotations(propBuilder)
+
         if (field.overridden) {
-            // override only; implicitly open further
             propBuilder.addModifiers(KModifier.OVERRIDE)
         } else if (hasChildren) {
-            // base property that subclasses can override
             propBuilder.addModifiers(KModifier.OPEN)
         }
 
         typeBuilder.addProperty(propBuilder.build())
     }
 
-    // superclass + super ctor params
     shape.extend?.let { parentName ->
         val parent = byName[parentName]
         val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
@@ -276,7 +279,6 @@ private fun buildOpenClassFile(
         }
     }
 
-    // interfaces
     shape.implements.forEach { ifaceName ->
         val iface = byName[ifaceName]
         val typeName = iface?.className() ?: ClassName(schema.packageName, ifaceName)
@@ -290,6 +292,7 @@ private fun buildOpenClassFile(
 }
 
 /* ---------- TYPEALIAS ---------- */
+
 private fun buildTypeAliasFile(
     schema: ModelDO,
     shape: ModelShapeDO.TypeAlias,
@@ -298,48 +301,6 @@ private fun buildTypeAliasFile(
     val targetTypeName = shape.target.typeName(schema, byName)
 
     return FileSpec.builder(schema.packageName, schema.generatedName)
-        .addTypeAlias(
-            TypeAliasSpec.builder(schema.generatedName, targetTypeName).build()
-        )
+        .addTypeAlias(TypeAliasSpec.builder(schema.generatedName, targetTypeName).build())
         .build()
-}
-
-/* ---------- KotlinPoet helpers ---------- */
-
-private val STRING = ClassName("kotlin", "String")
-private val INT = ClassName("kotlin", "Int")
-private val LONG = ClassName("kotlin", "Long")
-private val DOUBLE = ClassName("kotlin", "Double")
-private val BOOLEAN = ClassName("kotlin", "Boolean")
-private val ANY = ClassName("kotlin", "Any")
-private val LIST = ClassName("kotlin.collections", "List")
-
-private fun ModelDO.className(): ClassName =
-    ClassName(packageName, generatedName)
-
-private fun PrimitiveTypeDO.PrimitiveTypeNameDO.typeName(): ClassName = when (this) {
-    PrimitiveTypeDO.PrimitiveTypeNameDO.STRING -> STRING
-    PrimitiveTypeDO.PrimitiveTypeNameDO.INT -> INT
-    PrimitiveTypeDO.PrimitiveTypeNameDO.LONG -> LONG
-    PrimitiveTypeDO.PrimitiveTypeNameDO.DOUBLE -> DOUBLE
-    PrimitiveTypeDO.PrimitiveTypeNameDO.BOOLEAN -> BOOLEAN
-    PrimitiveTypeDO.PrimitiveTypeNameDO.ANY -> ANY
-}
-
-private fun FieldTypeDO.typeName(
-    schema: ModelDO,
-    byName: Map<String, ModelDO>,
-): TypeName = when (this) {
-    is PrimitiveTypeDO -> name.typeName().copy(nullable = nullable)
-
-    is RefTypeDO -> {
-        val target = byName[schemaName]
-        val cls = target?.className() ?: ClassName(schema.packageName, schemaName)
-        cls.copy(nullable = nullable)
-    }
-
-    is ListTypeDO -> {
-        val elementTypeName = elementType.typeName(schema, byName)
-        LIST.parameterizedBy(elementTypeName).copy(nullable = nullable)
-    }
 }

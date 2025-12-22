@@ -50,6 +50,11 @@ data class RawSchemaDO(
     val discriminatorPropertyName: String? = null,
 
     /**
+     * Map: subtype Raw schema originalName -> wire discriminator id.
+     */
+    val discriminatorValueToSchemaName: Map<String, String> = emptyMap(),
+
+    /**
      * Whether this schema is used in paths as a request or response.
      */
     val usedInPaths: Boolean = false,
