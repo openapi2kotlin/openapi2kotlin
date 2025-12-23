@@ -1,6 +1,6 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.AnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
@@ -28,7 +28,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
                 .map { field ->
                     if (field.originalName == field.generatedName) field
                     else field.addAnnotation(
-                        AnnotationDO(
+                        ModelAnnotationDO(
                             useSite = useSite,
                             fqName = JSON_PROPERTY,
                             argsCode = listOf("\"${field.originalName}\""),
@@ -93,7 +93,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         val typeAnnotations = buildList {
             if (cfg.strictDiscriminatorSerialization) {
                 add(
-                    AnnotationDO(
+                    ModelAnnotationDO(
                         fqName = JSON_IGNORE_PROPERTIES,
                         argsCode = listOf(
                             "value = [\"$discOriginal\"]",
@@ -104,7 +104,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
             }
 
             add(
-                AnnotationDO(
+                ModelAnnotationDO(
                     fqName = JSON_TYPE_INFO,
                     argsCode = listOf(
                         "use = JsonTypeInfo.Id.NAME",
@@ -123,7 +123,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
             }
 
             add(
-                AnnotationDO(
+                ModelAnnotationDO(
                     fqName = JSON_SUB_TYPES,
                     argsCode = subtypeEntries,
                 )
@@ -192,9 +192,9 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         model.fields = model.fields.map { f ->
             if (f.originalName != discOriginal) f
             else f.addAnnotation(
-                AnnotationDO(
+                ModelAnnotationDO(
                     // must hit property/getter to influence deserialization
-                    useSite = AnnotationDO.UseSiteDO.GET,
+                    useSite = ModelAnnotationDO.UseSiteDO.GET,
                     fqName = JSON_PROPERTY,
                     argsCode = listOf("access = JsonProperty.Access.READ_ONLY"),
                 )
@@ -206,9 +206,9 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
 /**
  * Decide whether JsonProperty should be @param: or @get: depending on model shape.
  */
-private fun ModelDO.jsonPropertyUseSite(): AnnotationDO.UseSiteDO = when (modelShape) {
-    is ModelShapeDO.SealedInterface -> AnnotationDO.UseSiteDO.GET
-    else -> AnnotationDO.UseSiteDO.PARAM
+private fun ModelDO.jsonPropertyUseSite(): ModelAnnotationDO.UseSiteDO = when (modelShape) {
+    is ModelShapeDO.SealedInterface -> ModelAnnotationDO.UseSiteDO.GET
+    else -> ModelAnnotationDO.UseSiteDO.PARAM
 }
 
 /**
@@ -275,7 +275,7 @@ private fun ModelDO.findNearestDiscriminatorParent(bySchemaName: Map<String, Mod
     return null
 }
 
-private fun FieldDO.addAnnotation(a: AnnotationDO): FieldDO {
+private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
     val exists = annotations.any { it.useSite == a.useSite && it.fqName == a.fqName && it.argsCode == a.argsCode }
     return if (exists) this else copy(annotations = annotations + a)
 }

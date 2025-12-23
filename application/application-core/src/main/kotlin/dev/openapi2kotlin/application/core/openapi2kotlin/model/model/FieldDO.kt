@@ -13,5 +13,5 @@ data class FieldDO(
     val type: FieldTypeDO,
     val required: Boolean,
     val defaultValueCode: String? = null,
-    val annotations: List<AnnotationDO> = emptyList(),
+    val annotations: List<ModelAnnotationDO> = emptyList(),
 )

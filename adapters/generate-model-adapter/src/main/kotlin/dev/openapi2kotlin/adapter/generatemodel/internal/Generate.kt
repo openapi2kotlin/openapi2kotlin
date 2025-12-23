@@ -74,7 +74,7 @@ fun generate(
                 // KotlinPoet add redundant public modifiers by default
                 .replace("public ", "")
                 // KotlinPoet escapes this package segment; we prefer the normal form.
-                .replace("com.fasterxml.jackson.`annotation`.", "com.fasterxml.jackson.annotation.")
+                .replace(".`annotation`.", ".annotation.")
             )
         }
 }

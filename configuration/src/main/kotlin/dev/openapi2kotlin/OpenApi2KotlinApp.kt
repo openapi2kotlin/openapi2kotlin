@@ -1,6 +1,6 @@
 package dev.openapi2kotlin
 
-import dev.openapi2kotlin.adapter.generateapi.GenerateServerAdapter
+import dev.openapi2kotlin.adapter.generateserver.GenerateServerAdapter
 import dev.openapi2kotlin.adapter.generateclient.GenerateClientAdapter
 import dev.openapi2kotlin.adapter.generatemodel.GenerateModelAdapter
 import dev.openapi2kotlin.adapter.parser.ParseSpecAdapter

@@ -38,7 +38,7 @@ data class ModelDO(
     /**
      * Annotations to add to the generated class/interface.
      */
-    var annotations: List<AnnotationDO> = emptyList(),
+    var annotations: List<ModelAnnotationDO> = emptyList(),
 
     /**
      * Polymorphism metadata for oneOf roots (null if not polymorphic).

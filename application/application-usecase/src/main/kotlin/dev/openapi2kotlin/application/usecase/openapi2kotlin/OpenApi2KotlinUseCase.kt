@@ -85,5 +85,21 @@ fun interface OpenApi2KotlinUseCase {
     data class ServerConfig(
         val enabled: Boolean = false,
         val packageName: String = "$DEFAULT_PACKAGE_NAME.server",
-    )
+        val framework: Framework = Framework.KTOR,
+    ) {
+        enum class Framework(
+            val value: String,
+        ) {
+            KTOR("ktor"),
+            SPRING("spring");
+
+            override fun toString(): String = value
+
+            companion object {
+                fun fromValue(value: String): Framework =
+                    Framework.entries.firstOrNull { it.value.equals(value, ignoreCase = true) }
+                        ?: throw kotlin.IllegalArgumentException("Unexpected Framework value: '$value'")
+            }
+        }
+    }
 }

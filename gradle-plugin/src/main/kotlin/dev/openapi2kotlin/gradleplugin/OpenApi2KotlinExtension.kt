@@ -26,5 +26,6 @@ open class OpenApi2KotlinExtension {
     open class ServerConfigExtension {
         var enabled: Boolean? = null
         var packageName: String? = null
+        var framework: String? = null
     }
 }

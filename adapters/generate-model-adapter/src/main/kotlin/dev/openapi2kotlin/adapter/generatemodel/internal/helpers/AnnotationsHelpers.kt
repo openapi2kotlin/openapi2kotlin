@@ -6,22 +6,22 @@ import com.squareup.kotlinpoet.AnnotationSpec.UseSiteTarget
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.AnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 
-internal fun AnnotationDO.toAnnotationSpec(): AnnotationSpec {
+internal fun ModelAnnotationDO.toAnnotationSpec(): AnnotationSpec {
     val (pkg, simple) = fqName.splitPackageAndSimple()
     val cls = ClassName(pkg, simple)
 
     val b = AnnotationSpec.builder(cls)
 
     val target = when (useSite) {
-        AnnotationDO.UseSiteDO.NONE -> null
-        AnnotationDO.UseSiteDO.PARAM -> UseSiteTarget.PARAM
-        AnnotationDO.UseSiteDO.GET -> UseSiteTarget.GET
-        AnnotationDO.UseSiteDO.SET -> UseSiteTarget.SET
-        AnnotationDO.UseSiteDO.FIELD -> UseSiteTarget.FIELD
+        ModelAnnotationDO.UseSiteDO.NONE -> null
+        ModelAnnotationDO.UseSiteDO.PARAM -> UseSiteTarget.PARAM
+        ModelAnnotationDO.UseSiteDO.GET -> UseSiteTarget.GET
+        ModelAnnotationDO.UseSiteDO.SET -> UseSiteTarget.SET
+        ModelAnnotationDO.UseSiteDO.FIELD -> UseSiteTarget.FIELD
     }
     if (target != null) b.useSiteTarget(target)
 
@@ -39,15 +39,15 @@ private fun String.splitPackageAndSimple(): Pair<String, String> {
 }
 
 internal fun TypeSpec.Builder.applyModelAnnotations(model: ModelDO): TypeSpec.Builder {
-    for (a: AnnotationDO in model.annotations) {
+    for (a: ModelAnnotationDO in model.annotations) {
         addAnnotation(a.toAnnotationSpec())
     }
     return this
 }
 
 internal fun FieldDO.applyParamAnnotations(param: ParameterSpec.Builder): ParameterSpec.Builder {
-    for (a: AnnotationDO in annotations) {
-        if (a.useSite == AnnotationDO.UseSiteDO.PARAM) {
+    for (a: ModelAnnotationDO in annotations) {
+        if (a.useSite == ModelAnnotationDO.UseSiteDO.PARAM) {
             param.addAnnotation(a.toAnnotationSpec())
         }
     }
@@ -55,8 +55,8 @@ internal fun FieldDO.applyParamAnnotations(param: ParameterSpec.Builder): Parame
 }
 
 internal fun FieldDO.applyPropertyAnnotations(prop: PropertySpec.Builder): PropertySpec.Builder {
-    for (a: AnnotationDO in annotations) {
-        if (a.useSite != AnnotationDO.UseSiteDO.PARAM) {
+    for (a: ModelAnnotationDO in annotations) {
+        if (a.useSite != ModelAnnotationDO.UseSiteDO.PARAM) {
             prop.addAnnotation(a.toAnnotationSpec())
         }
     }

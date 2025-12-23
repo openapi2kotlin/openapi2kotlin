@@ -1,10 +1,7 @@
 package dev.openapi2kotlin.adapter.parser.internal
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.ArraySchema
@@ -14,39 +11,49 @@ import io.swagger.v3.oas.models.parameters.RequestBody as OasRequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse as OasApiResponse
 
 internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
-    val tagToOps = linkedMapOf<String, MutableList<RawPathDO.ApiOperationDO>>()
+    val tagKeyToOps = linkedMapOf<String, MutableList<RawPathDO.OperationDO>>()
+    val tagKeyToTags = linkedMapOf<String, LinkedHashSet<String>>()
 
-    this.paths.orEmpty().forEach { (path, pathItem) ->
+    paths.orEmpty().forEach { (path, pathItem) ->
         fun addOp(method: RawPathDO.HttpMethodDO, o: Operation?) {
             if (o == null) return
 
-            val tag = (o.tags?.firstOrNull().orEmpty().ifBlank { "default" })
+            val opTags: List<String> = o.tags.orEmpty().filter { it.isNotBlank() }.ifEmpty { listOf("default") }
+            val tagKey = opTags.first()
 
-            val allParams = mergeParameters(
-                pathItem.parameters.orEmpty(),
-                o.parameters.orEmpty(),
+            tagKeyToTags.getOrPut(tagKey) { linkedSetOf() }.addAll(opTags)
+
+            val mergedParams = mergeParameters(
+                pathParams = pathItem.parameters.orEmpty(),
+                opParams = o.parameters.orEmpty(),
             )
 
-            val parameters = allParams.mapNotNull { p -> p.toApiParamDO() }
+            val params: List<RawPathDO.ParamDO> =
+                mergedParams.mapNotNull { it.toParamDO() }
 
-            val requestBody = o.requestBody
-                ?.let { derefRequestBody(it) }
-                ?.toApiRequestDO(this)
+            val requestBody: RawPathDO.RequestBodyDO? =
+                o.requestBody
+                    ?.let { derefRequestBody(it) }
+                    ?.toRequestBodyDO(this)
 
-            val successResponse = findSuccessResponse(o)
+            val responses: List<RawPathDO.ResponseDO>? =
+                o.responses
+                    ?.entries
+                    ?.mapNotNull { (code, resp) -> toResponseDO(code, resp) }
+                    ?.sortedWith(compareBy<RawPathDO.ResponseDO> { it.statusCode })
 
-            val op = RawPathDO.ApiOperationDO(
-                operationId = o.operationId ?: inferOperationId(method, path),
+            val op = RawPathDO.OperationDO(
+                operationId = o.operationId,
                 httpMethod = method,
                 path = path,
                 summary = o.summary,
                 description = o.description,
-                parameters = parameters,
+                parameters = params,
                 requestBody = requestBody,
-                successResponse = successResponse,
+                responses = responses,
             )
 
-            tagToOps.getOrPut(tag) { mutableListOf() }.add(op)
+            tagKeyToOps.getOrPut(tagKey) { mutableListOf() }.add(op)
         }
 
         addOp(RawPathDO.HttpMethodDO.GET, pathItem.get)
@@ -56,150 +63,129 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
         addOp(RawPathDO.HttpMethodDO.DELETE, pathItem.delete)
     }
 
-    return tagToOps.map { (tag, ops) ->
-        RawPathDO(
-            tag = tag,
-            operations = ops.sortedBy { it.operationId },
-        )
-    }.sortedBy { it.tag }
+    return tagKeyToOps.entries
+        .map { (tagKey, ops) ->
+            RawPathDO(
+                tags = tagKeyToTags[tagKey]?.toList().orEmpty(),
+                operations = ops.sortedWith(
+                    compareBy<RawPathDO.OperationDO> { it.operationId ?: "" }
+                        .thenBy { it.httpMethod.name }
+                        .thenBy { it.path }
+                ),
+            )
+        }
+        .sortedWith(compareBy { it.tags.firstOrNull().orEmpty() })
 }
 
-private fun Parameter.toApiParamDO(): RawPathDO.ApiParamDO? {
-    val loc = when (this.`in`) {
-        "path" -> RawPathDO.ApiParamLocationDO.PATH
-        "query" -> RawPathDO.ApiParamLocationDO.QUERY
-        "header" -> RawPathDO.ApiParamLocationDO.HEADER
+private fun Parameter.toParamDO(): RawPathDO.ParamDO? {
+    val location = when (`in`) {
+        "path" -> RawPathDO.ParamLocationDO.PATH
+        "query" -> RawPathDO.ParamLocationDO.QUERY
+        "header" -> RawPathDO.ParamLocationDO.HEADER
         else -> return null
     }
 
-    val required = this.required == true
-    val type = schemaToFieldType(this.schema, required)
+    val required = (this.required == true) || (`in` == "path")
+    val type = schema.toRawFieldType(required = required)
 
-    return RawPathDO.ApiParamDO(
-        name = this.name,
-        location = loc,
+    return RawPathDO.ParamDO(
+        name = name,
+        location = location,
         required = required,
         type = type,
     )
 }
 
-private fun OasRequestBody.toApiRequestDO(openApi: OpenAPI): RawPathDO.ApiRequestDO? {
-    val mt = this.content?.get("application/json") ?: this.content?.values?.firstOrNull()
-    val schema = mt?.schema ?: return null
+private fun OasRequestBody.toRequestBodyDO(openApi: OpenAPI): RawPathDO.RequestBodyDO? {
+    val mediaType = content?.get("application/json") ?: content?.values?.firstOrNull()
+    val schema = mediaType?.schema ?: return null
 
     val required = this.required == true
 
-    return RawPathDO.ApiRequestDO(
+    return RawPathDO.RequestBodyDO(
         required = required,
-        type = schemaToFieldType(schema, required),
+        type = schema.toRawFieldType(required = required),
     )
 }
 
-private fun schemaToFieldType(
-    schema: Schema<*>?,
-    required: Boolean,
-): FieldTypeDO {
-    if (schema == null) {
-        return TrivialTypeDO(TrivialTypeDO.Kind.ANY, nullable = true)
-    }
-
-    val nullableFromRequired = !required
-
-    if (schema is ArraySchema) {
-        val elementType = schemaToFieldType(schema.items, required = true)
-        val nullable = schema.nullable == true || nullableFromRequired
-        return ListTypeDO(elementType = elementType, nullable = nullable)
-    }
-
-    schema.`$ref`?.let { ref ->
-        val name = ref.substringAfterLast('/')
-        val nullable = schema.nullable == true || nullableFromRequired
-        return RefTypeDO(schemaName = name, nullable = nullable)
-    }
-
-    val nullable = schema.nullable == true || nullableFromRequired
-
-    return when (schema.type) {
-        "string" -> {
-            val kind = when (schema.format) {
-                "date" -> TrivialTypeDO.Kind.LOCAL_DATE
-                "date-time" -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
-                "byte" -> TrivialTypeDO.Kind.BYTE_ARRAY
-                "binary" -> TrivialTypeDO.Kind.BYTE_ARRAY
-                else -> TrivialTypeDO.Kind.STRING
-            }
-            TrivialTypeDO(kind = kind, nullable = nullable)
-        }
-
-        "integer" -> TrivialTypeDO(
-            kind = when (schema.format) {
-                "int64" -> TrivialTypeDO.Kind.LONG
-                else -> TrivialTypeDO.Kind.INT
-            },
-            nullable = nullable,
-        )
-
-        "number" -> TrivialTypeDO(
-            kind = when (schema.format) {
-                "float" -> TrivialTypeDO.Kind.FLOAT
-                "double" -> TrivialTypeDO.Kind.DOUBLE
-                else -> TrivialTypeDO.Kind.DOUBLE
-            },
-            nullable = nullable,
-        )
-
-        "boolean" -> TrivialTypeDO(TrivialTypeDO.Kind.BOOLEAN, nullable = nullable)
-
-        "object" -> TrivialTypeDO(TrivialTypeDO.Kind.ANY, nullable = nullable)
-
-        else -> TrivialTypeDO(TrivialTypeDO.Kind.ANY, nullable = nullable)
-    }
-}
-
-private fun OpenAPI.findSuccessResponse(operation: Operation): RawPathDO.ApiResponseDO? {
-    val responses = operation.responses ?: return null
-
-    val preferredCodes = listOf("200", "201", "202", "204")
-    val code = preferredCodes.firstOrNull { responses.containsKey(it) } ?: return null
-
-    val oasResponse = derefResponse(responses[code] ?: return null)
+private fun OpenAPI.toResponseDO(code: String, raw: OasApiResponse): RawPathDO.ResponseDO? {
+    val statusCode = code.toIntOrNull() ?: if (code == "default") DEFAULT_STATUS_CODE else return null
+    val oasResponse = derefResponse(raw)
 
     val schema = oasResponse.content?.get("application/json")?.schema
         ?: oasResponse.content?.values?.firstOrNull()?.schema
 
-    val type = schema?.let { schemaToFieldType(it, required = true) }
+    val type = schema?.toRawFieldType(required = true)
 
-    return RawPathDO.ApiResponseDO(
-        statusCode = code.toInt(),
+    return RawPathDO.ResponseDO(
+        statusCode = statusCode,
         type = type,
+    )
+}
+
+private fun Schema<*>?.toRawFieldType(required: Boolean): RawSchemaDO.RawFieldTypeDO {
+    if (this == null) {
+        return RawSchemaDO.RawPrimitiveTypeDO(
+            type = RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT,
+            format = null,
+            nullable = true,
+        )
+    }
+
+    val nullable = (nullable == true) || !required
+
+    if (this is ArraySchema) {
+        return RawSchemaDO.RawArrayTypeDO(
+            elementType = items.toRawFieldType(required = true),
+            nullable = nullable,
+        )
+    }
+
+    `$ref`?.let { ref ->
+        return RawSchemaDO.RawRefTypeDO(
+            schemaName = ref.substringAfterLast('/'),
+            nullable = nullable,
+        )
+    }
+
+    val primitiveType = when (type) {
+        "string" -> RawSchemaDO.RawPrimitiveTypeDO.Type.STRING
+        "number" -> RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER
+        "integer" -> RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER
+        "boolean" -> RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN
+        "object" -> RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT
+        else -> RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT
+    }
+
+    return RawSchemaDO.RawPrimitiveTypeDO(
+        type = primitiveType,
+        format = format,
+        nullable = nullable,
     )
 }
 
 private fun OpenAPI.derefResponse(response: OasApiResponse): OasApiResponse {
     val ref = response.`$ref` ?: return response
     val name = ref.substringAfterLast('/')
-    return this.components?.responses?.get(name) ?: response
+    return components?.responses?.get(name) ?: response
 }
 
 private fun OpenAPI.derefRequestBody(body: OasRequestBody): OasRequestBody {
     val ref = body.`$ref` ?: return body
     val name = ref.substringAfterLast('/')
-    return this.components?.requestBodies?.get(name) ?: body
+    return components?.requestBodies?.get(name) ?: body
 }
 
-private fun mergeParameters(pathParams: List<Parameter>, opParams: List<Parameter>): List<Parameter> {
-    val result = mutableListOf<Parameter>()
-    result.addAll(pathParams)
-
+private fun mergeParameters(
+    pathParams: List<Parameter>,
+    opParams: List<Parameter>,
+): List<Parameter> {
+    val result = pathParams.toMutableList()
     opParams.forEach { opParam ->
         val idx = result.indexOfFirst { it.name == opParam.name && it.`in` == opParam.`in` }
         if (idx >= 0) result[idx] = opParam else result.add(opParam)
     }
-
     return result
 }
 
-private fun inferOperationId(method: RawPathDO.HttpMethodDO, path: String): String {
-    val cleanPath = path.trim('/').replace("/", "_").replace("{", "").replace("}", "")
-    return method.name.lowercase() + cleanPath.replaceFirstChar { it.uppercase() }
-}
+private const val DEFAULT_STATUS_CODE: Int = -1

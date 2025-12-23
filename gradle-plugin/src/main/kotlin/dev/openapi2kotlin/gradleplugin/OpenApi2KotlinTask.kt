@@ -32,6 +32,7 @@ abstract class OpenApi2KotlinTask(
         val serverConfig = defaultConfig.server.copy(
             enabled     = ext.server.enabled     ?: defaultConfig.server.enabled,
             packageName = ext.server.packageName ?: defaultConfig.server.packageName,
+            framework   = ext.server.framework?.let { OpenApi2KotlinUseCase.ServerConfig.Framework.fromValue(it) } ?: defaultConfig.server.framework,
         )
 
         val config = defaultConfig.copy(
