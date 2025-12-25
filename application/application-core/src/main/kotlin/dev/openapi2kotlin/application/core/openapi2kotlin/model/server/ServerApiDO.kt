@@ -7,4 +7,5 @@ data class ServerApiDO (
     val generatedName: String,
     val endpoints: List<ServerEndpointDO>,
     val annotations: List<ServerAnnotationDO>,
+    var route: ServerRouteDO? = null,
 )

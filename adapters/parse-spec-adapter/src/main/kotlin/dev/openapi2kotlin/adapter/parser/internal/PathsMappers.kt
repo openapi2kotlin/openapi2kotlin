@@ -11,17 +11,24 @@ import io.swagger.v3.oas.models.parameters.RequestBody as OasRequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse as OasApiResponse
 
 internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
-    val tagKeyToOps = linkedMapOf<String, MutableList<RawPathDO.OperationDO>>()
-    val tagKeyToTags = linkedMapOf<String, LinkedHashSet<String>>()
+    // groupKey (first path segment) -> ops
+    val groupKeyToOps = linkedMapOf<String, MutableList<RawPathDO.OperationDO>>()
+
+    // groupKey -> tags (first entry will be groupKey, rest are collected op tags)
+    val groupKeyToTags = linkedMapOf<String, LinkedHashSet<String>>()
 
     paths.orEmpty().forEach { (path, pathItem) ->
+        val groupKey = path.toGroupKey()
+
         fun addOp(method: RawPathDO.HttpMethodDO, o: Operation?) {
             if (o == null) return
 
-            val opTags: List<String> = o.tags.orEmpty().filter { it.isNotBlank() }.ifEmpty { listOf("default") }
-            val tagKey = opTags.first()
+            val opTags: List<String> =
+                o.tags.orEmpty().filter { it.isNotBlank() }
 
-            tagKeyToTags.getOrPut(tagKey) { linkedSetOf() }.addAll(opTags)
+            // Ensure the first "tag" is always groupKey so downstream generatedApiName() is stable.
+            val tagsSet = groupKeyToTags.getOrPut(groupKey) { linkedSetOf(groupKey) }
+            tagsSet.addAll(opTags)
 
             val mergedParams = mergeParameters(
                 pathParams = pathItem.parameters.orEmpty(),
@@ -53,7 +60,7 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
                 responses = responses,
             )
 
-            tagKeyToOps.getOrPut(tagKey) { mutableListOf() }.add(op)
+            groupKeyToOps.getOrPut(groupKey) { mutableListOf() }.add(op)
         }
 
         addOp(RawPathDO.HttpMethodDO.GET, pathItem.get)
@@ -63,10 +70,10 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
         addOp(RawPathDO.HttpMethodDO.DELETE, pathItem.delete)
     }
 
-    return tagKeyToOps.entries
-        .map { (tagKey, ops) ->
+    return groupKeyToOps.entries
+        .map { (groupKey, ops) ->
             RawPathDO(
-                tags = tagKeyToTags[tagKey]?.toList().orEmpty(),
+                tags = groupKeyToTags[groupKey]?.toList().orEmpty(),
                 operations = ops.sortedWith(
                     compareBy<RawPathDO.OperationDO> { it.operationId ?: "" }
                         .thenBy { it.httpMethod.name }
@@ -74,7 +81,16 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
                 ),
             )
         }
-        .sortedWith(compareBy { it.tags.firstOrNull().orEmpty() })
+        .sortedWith(compareBy { it.tags.firstOrNull().orEmpty() }) // first tag is groupKey now
+}
+
+private fun String.toGroupKey(): String {
+    val first = trim().trim('/').split('/').firstOrNull().orEmpty()
+    val clean = first
+        .replace("{", "")
+        .replace("}", "")
+        .trim()
+    return clean.ifBlank { "default" }
 }
 
 private fun Parameter.toParamDO(): RawPathDO.ParamDO? {
