@@ -1,0 +1,49 @@
+@import '@fontsource-variable/inter/index.css';
+
+:root {
+  --font-body: 'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont,
+  'Segoe UI', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings—tight tracking like TMF */
+h1, h2, h3 {
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+html {
+  overflow: hidden;
+}
+
+body {
+  overflow-x: auto;
+  overflow-y: auto;
+  touch-action: pan-x pan-y;
+}
+
+* {
+  overscroll-behavior-x: none !important;
+}
