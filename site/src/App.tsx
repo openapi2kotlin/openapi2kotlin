@@ -20,6 +20,7 @@ function App() {
               justify="space-between"
               width={100}
           >
+            <div/>
             <ThemeSwitch/>
           </XStack>
         </XStack>
