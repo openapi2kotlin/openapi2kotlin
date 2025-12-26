@@ -133,12 +133,39 @@ tasks.matching { it.name == "emptySourcesJar" }.configureEach {
 }
 
 /**
- * Ensure there is exactly one sources jar attached to the implementation publication.
- *
- * The vanniktech plugin may create an `emptySourcesJar` (fallback) and also a real `sourcesJar`,
- * which results in two artifacts with classifier "sources" and publishing fails.
+ * Maven Central validates ALL publications, including the Gradle plugin marker publication.
+ * Therefore, POM metadata must be present on every MavenPublication.
  */
-val sourcesJarProvider = tasks.named<Jar>("sourcesJar")
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set("openapi2kotlin")
+            description.set("OpenAPI → Kotlin generator.")
+            url.set("https://openapi2kotlin.dev")
+
+            licenses {
+                license {
+                    name.set("Apache License 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                }
+            }
+
+            developers {
+                developer {
+                    id.set("martinbarnas")
+                    name.set("Martin Barnas")
+                    url.set("https://github.com/m-barnas")
+                }
+            }
+
+            scm {
+                url.set("https://github.com/openapi2kotlin/openapi2kotlin")
+                connection.set("scm:git:https://github.com/openapi2kotlin/openapi2kotlin.git")
+                developerConnection.set("scm:git:https://github.com/openapi2kotlin/openapi2kotlin.git")
+            }
+        }
+    }
+}
 
 /**
  * Ensure the implementation publication:
@@ -149,7 +176,7 @@ val sourcesJarProvider = tasks.named<Jar>("sourcesJar")
 afterEvaluate {
     publishing {
         publications.withType<MavenPublication>().configureEach {
-            // Marker publications contain "PluginMarker" in name; leave them intact.
+            // Marker publications contain "PluginMarker" in name; leave their artifacts intact.
             if (name.contains("PluginMarker", ignoreCase = true)) return@configureEach
 
             // Implementation publication: enforce artifactId.
@@ -185,33 +212,6 @@ afterEvaluate {
                     .filterIsInstance<groovy.util.Node>()
                     .filter { it.name().toString() == "dependencies" }
                     .forEach { root.remove(it) }
-            }
-
-            pom {
-                name.set("openapi2kotlin")
-                description.set("OpenAPI → Kotlin generator.")
-                url.set("https://openapi2kotlin.dev")
-
-                licenses {
-                    license {
-                        name.set("Apache License 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("martinbarnas")
-                        name.set("Martin Barnas")
-                        url.set("https://github.com/m-barnas")
-                    }
-                }
-
-                scm {
-                    url.set("https://github.com/openapi2kotlin/openapi2kotlin")
-                    connection.set("scm:git:https://github.com/openapi2kotlin/openapi2kotlin.git")
-                    developerConnection.set("scm:git:https://github.com/openapi2kotlin/openapi2kotlin.git")
-                }
             }
         }
     }
