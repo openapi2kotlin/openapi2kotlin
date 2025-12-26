@@ -53,6 +53,21 @@ subprojects {
     }
 }
 
-providers.gradleProperty("releaseVersion").orNull?.let { v ->
-    if (v.isNotBlank()) version = v
+/**
+ * CI release versioning:
+ * If the build runs on a Git tag "vX.Y.Z", publish as "X.Y.Z".
+ *
+ * Local default remains whatever is in gradle.properties (e.g. 999.999.999-SNAPSHOT).
+ */
+val gitTag = System.getenv("GITHUB_REF_NAME")?.trim().orEmpty()
+val tagVersion = gitTag
+    .takeIf { it.startsWith("v") && it.length > 1 }
+    ?.removePrefix("v")
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+
+if (tagVersion != null) {
+    allprojects {
+        version = tagVersion
+    }
 }
