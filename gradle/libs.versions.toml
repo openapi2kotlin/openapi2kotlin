@@ -5,6 +5,8 @@ jakarta-validation = "3.1.1"
 kotlin-logging = "7.0.13"
 kotlinpoet = "2.2.0"
 swaggerParser = "2.1.36"
+gradleup-shadow = "9.3.0"
+vanniktech-publish = "0.35.0"
 
 [libraries]
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
@@ -16,3 +18,5 @@ swagger-parser = { module = "io.swagger.parser.v3:swagger-parser-v3", version.re
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+gradleup-shadow = { id = "com.gradleup.shadow", version.ref = "gradleup-shadow" }
+vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }

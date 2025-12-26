@@ -14,7 +14,10 @@ subprojects {
         mavenCentral()
     }
 
-    // ----- Java toolchain + release for any project that has the Java plugin -----
+    /**
+     * Toolchain standardization for all Java-bearing projects.
+     * Kotlin compilation is configured separately below.
+     */
     plugins.withType<JavaPlugin> {
         extensions.configure(JavaPluginExtension::class.java) {
             toolchain {
@@ -22,38 +25,22 @@ subprojects {
             }
         }
         tasks.withType(JavaCompile::class.java).configureEach {
-            options.release.set(24) // FIXME: Kotlin doesn't support 25 just yet
+            options.release.set(24)  // FIXME: Kotlin doesn't support 25 just yet
         }
 
+        /**
+         * Consistent module JAR naming for local dev artifacts.
+         * Publication coordinates for the plugin are configured in :gradle-plugin only.
+         */
         val artifactBase = "openapi2kotlin-${project.name}"
-
-        // Nice jar module names
         tasks.withType<Jar>().configureEach {
             archiveBaseName.set(artifactBase)
         }
-
-        // ---- enable publishing for all Java/Kotlin projects, which my gradle plugin internally uses, so I don't need to define tis one by one ----
-        plugins.apply("maven-publish")
-        extensions.configure(PublishingExtension::class.java) {
-            publications {
-                if (names.isEmpty() || !names.contains("mavenJava")) {
-                    create<MavenPublication>("mavenJava") {
-                        from(components["java"])
-                    }
-                }
-
-                // Nice jar module names
-                withType<MavenPublication>().configureEach {
-                    artifactId = artifactBase
-                }
-            }
-            repositories {
-                mavenLocal()
-            }
-        }
     }
 
-    // ----- Kotlin JVM toolchain + jvmTarget for projects using kotlin-jvm -----
+    /**
+     * Kotlin toolchain + target for all Kotlin JVM subprojects.
+     */
     plugins.withId("org.jetbrains.kotlin.jvm") {
         extensions.configure(KotlinJvmProjectExtension::class.java) {
             jvmToolchain {
@@ -61,7 +48,11 @@ subprojects {
             }
         }
         tasks.withType(KotlinCompile::class.java).configureEach {
-            compilerOptions.jvmTarget.set(JvmTarget.JVM_24) // FIXME: Kotlin doesn't support 25 just yet
+            compilerOptions.jvmTarget.set(JvmTarget.JVM_24)
         }
     }
+}
+
+providers.gradleProperty("releaseVersion").orNull?.let { v ->
+    if (v.isNotBlank()) version = v
 }
