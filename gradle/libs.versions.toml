@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.20"
+kotlin = "2.3.0"
 logback = "1.4.14"
 jakarta-validation = "3.1.1"
 kotlin-logging = "7.0.13"

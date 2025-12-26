@@ -2,6 +2,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val javaVersion = 25
+val kotlinJvmTarget = JvmTarget.fromTarget(javaVersion.toString())
+
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     idea
@@ -14,21 +17,14 @@ subprojects {
         mavenCentral()
     }
 
-    /**
-     * IMPORTANT:
-     * Gradle plugins run inside the Gradle JVM.
-     * CI/CD platforms (e.g., Railway) often run Gradle on Java 21.
-     *
-     * Therefore, the Gradle plugin module MUST be compiled to Java 21 bytecode.
-     */
     plugins.withType<JavaPlugin> {
         extensions.configure(JavaPluginExtension::class.java) {
             toolchain {
-                languageVersion.set(JavaLanguageVersion.of(21))
+                languageVersion.set(JavaLanguageVersion.of(javaVersion))
             }
         }
         tasks.withType(JavaCompile::class.java).configureEach {
-            options.release.set(21)
+            options.release.set(javaVersion)
         }
 
         /**
@@ -43,11 +39,11 @@ subprojects {
     plugins.withId("org.jetbrains.kotlin.jvm") {
         extensions.configure(KotlinJvmProjectExtension::class.java) {
             jvmToolchain {
-                languageVersion.set(JavaLanguageVersion.of(21))
+                languageVersion.set(JavaLanguageVersion.of(javaVersion))
             }
         }
         tasks.withType(KotlinCompile::class.java).configureEach {
-            compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+            compilerOptions.jvmTarget.set(kotlinJvmTarget)
         }
     }
 }
