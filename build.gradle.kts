@@ -15,17 +15,20 @@ subprojects {
     }
 
     /**
-     * Toolchain standardization for all Java-bearing projects.
-     * Kotlin compilation is configured separately below.
+     * IMPORTANT:
+     * Gradle plugins run inside the Gradle JVM.
+     * CI/CD platforms (e.g., Railway) often run Gradle on Java 21.
+     *
+     * Therefore, the Gradle plugin module MUST be compiled to Java 21 bytecode.
      */
     plugins.withType<JavaPlugin> {
         extensions.configure(JavaPluginExtension::class.java) {
             toolchain {
-                languageVersion.set(JavaLanguageVersion.of(25))
+                languageVersion.set(JavaLanguageVersion.of(21))
             }
         }
         tasks.withType(JavaCompile::class.java).configureEach {
-            options.release.set(24)  // FIXME: Kotlin doesn't support 25 just yet
+            options.release.set(21)
         }
 
         /**
@@ -37,18 +40,14 @@ subprojects {
             archiveBaseName.set(artifactBase)
         }
     }
-
-    /**
-     * Kotlin toolchain + target for all Kotlin JVM subprojects.
-     */
     plugins.withId("org.jetbrains.kotlin.jvm") {
         extensions.configure(KotlinJvmProjectExtension::class.java) {
             jvmToolchain {
-                languageVersion.set(JavaLanguageVersion.of(25))
+                languageVersion.set(JavaLanguageVersion.of(21))
             }
         }
         tasks.withType(KotlinCompile::class.java).configureEach {
-            compilerOptions.jvmTarget.set(JvmTarget.JVM_24)
+            compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
         }
     }
 }
