@@ -7,6 +7,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.RawRefTypeDO
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.media.ComposedSchema
 import io.swagger.v3.oas.models.media.Schema
 
 internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
@@ -51,7 +52,8 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
                 ?.distinct()
                 ?: emptyList()
 
-        val enumValues: List<String> = schema.enum?.map { it.toString() } ?: emptyList()
+        val enumValues: List<String> =
+            schema.enum?.map { it.toString() } ?: emptyList()
 
         val isArraySchema = schema.type == "array"
         val arrayItemType: RawFieldTypeDO? =
@@ -64,6 +66,13 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
             } else null
 
         val ownProps = mutableMapOf<String, RawSchemaDO.SchemaPropertyDO>()
+
+        // schema doc
+        val schemaDescription: String? =
+            schema.description
+                ?: (schema as? ComposedSchema)?.allOf
+                    ?.firstOrNull { it.`$ref` == null && !it.description.isNullOrBlank() }
+                    ?.description
 
         // top-level properties
         val requiredTop = schema.required?.toSet().orEmpty()
@@ -78,6 +87,7 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
                     type = rawType,
                     required = required,
                     defaultValue = defaultValue,
+                    description = propSchema.description,
                 ),
                 ::mergeSchemaProperty,
             )
@@ -99,6 +109,7 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
                             type = rawType,
                             required = required,
                             defaultValue = defaultValue,
+                            description = propSchema.description,
                         ),
                         ::mergeSchemaProperty,
                     )
@@ -128,6 +139,7 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
             isDiscriminatorSelfMapped = isDiscriminatorSelfMapped,
             usedInPaths = name in usedInPathsNames,
             usedAsProperty = name in usedAsPropertyNames,
+            description = schemaDescription,
         )
     }.sortedBy { it.originalName }
 }
@@ -186,4 +198,5 @@ private fun mergeSchemaProperty(
         type = a.type,
         required = a.required || b.required,
         defaultValue = a.defaultValue ?: b.defaultValue,
+        description = a.description ?: b.description,
     )

@@ -44,4 +44,10 @@ data class ModelDO(
      * Polymorphism metadata for oneOf roots (null if not polymorphic).
      */
     var polymorphism: PolymorphismDO? = null,
+
+    /**
+     * KDoc/description to render on the generated type (class/interface).
+     * Prepared in core; generator must only print it.
+     */
+    var kdoc: String? = null,
 )

@@ -70,11 +70,12 @@ fun generate(
         .filter { it.isFile && it.extension == "kt" }
         .forEach { file ->
             val text = file.readText()
-            file.writeText(text
-                // KotlinPoet add redundant public modifiers by default
-                .replace("public ", "")
-                // KotlinPoet escapes this package segment; we prefer the normal form.
-                .replace(".`annotation`.", ".annotation.")
+            file.writeText(
+                text
+                    // KotlinPoet add redundant public modifiers by default
+                    .replace("public ", "")
+                    // KotlinPoet escapes this package segment; we prefer the normal form.
+                    .replace(".`annotation`.", ".annotation.")
             )
         }
 }
@@ -87,6 +88,10 @@ private fun buildEnumFile(
 ): FileSpec {
     val typeBuilder = TypeSpec.enumBuilder(schema.generatedName)
         .applyModelAnnotations(schema)
+
+    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+        typeBuilder.addKdoc("%L\n", doc.trim())
+    }
 
     val ctor = FunSpec.constructorBuilder()
         .addParameter("value", String::class)
@@ -146,6 +151,10 @@ private fun buildSealedInterfaceFile(
         .addModifiers(KModifier.SEALED)
         .applyModelAnnotations(schema)
 
+    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+        typeBuilder.addKdoc("%L\n", doc.trim())
+    }
+
     shape.extends.forEach { parentName ->
         val parent = byName[parentName]
         val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
@@ -157,6 +166,10 @@ private fun buildSealedInterfaceFile(
             field.generatedName,
             field.type.typeName(schema, byName),
         )
+
+        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+            propBuilder.addKdoc("%L\n", doc.trim())
+        }
 
         field.applyPropertyAnnotations(propBuilder)
 
@@ -191,6 +204,10 @@ private fun buildDataClassFile(
         .primaryConstructor(ctor)
         .applyModelAnnotations(schema)
 
+    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+        typeBuilder.addKdoc("%L\n", doc.trim())
+    }
+
     val shouldOpenProps = schema.allOfChildren.isNotEmpty()
 
     schema.fields.forEach { field ->
@@ -198,6 +215,10 @@ private fun buildDataClassFile(
             field.generatedName,
             field.type.typeName(schema, byName),
         ).initializer(field.generatedName)
+
+        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+            propBuilder.addKdoc("%L\n", doc.trim())
+        }
 
         field.applyPropertyAnnotations(propBuilder)
 
@@ -250,6 +271,10 @@ private fun buildOpenClassFile(
         .primaryConstructor(ctor)
         .applyModelAnnotations(schema)
 
+    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+        typeBuilder.addKdoc("%L\n", doc.trim())
+    }
+
     // Open classes exist because they are used as bases.
     // Their properties must be open so children can override cleanly.
     val shouldOpenProps = true
@@ -259,6 +284,10 @@ private fun buildOpenClassFile(
             field.generatedName,
             field.type.typeName(schema, byName),
         ).initializer(field.generatedName)
+
+        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+            propBuilder.addKdoc("%L\n", doc.trim())
+        }
 
         field.applyPropertyAnnotations(propBuilder)
 
@@ -302,7 +331,13 @@ private fun buildTypeAliasFile(
 ): FileSpec {
     val targetTypeName = shape.target.typeName(schema, byName)
 
-    return FileSpec.builder(schema.packageName, schema.generatedName)
+    val fileBuilder = FileSpec.builder(schema.packageName, schema.generatedName)
+
+    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+        fileBuilder.addFileComment(doc.trim())
+    }
+
+    return fileBuilder
         .addTypeAlias(TypeAliasSpec.builder(schema.generatedName, targetTypeName).build())
         .build()
 }

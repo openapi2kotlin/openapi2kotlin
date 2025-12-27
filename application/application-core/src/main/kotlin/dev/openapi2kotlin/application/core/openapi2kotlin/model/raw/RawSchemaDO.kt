@@ -10,6 +10,11 @@ data class RawSchemaDO(
     val originalName: String,
 
     /**
+     * Schema description from OpenAPI (schema.description).
+     */
+    val description: String? = null,
+
+    /**
      * Names of parents via allOf. This schema extends these via allOf.
      */
     val allOfParents: List<String>,
@@ -77,6 +82,7 @@ data class RawSchemaDO(
         val type: RawFieldTypeDO,
         val required: Boolean,
         val defaultValue: String? = null,
+        val description: String? = null,
     )
 
     sealed interface RawFieldTypeDO {
