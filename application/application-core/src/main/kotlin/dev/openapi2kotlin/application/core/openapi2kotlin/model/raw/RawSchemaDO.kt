@@ -61,6 +61,16 @@ data class RawSchemaDO(
      * Whether this schema is used as a property directly in another schema component.
      */
     val usedAsProperty: Boolean = false,
+
+    /**
+     * Discriminator mapping of given schema.
+     */
+    val discriminatorMapping: Map<String, String>,
+
+    /**
+     * Whether the discriminator maps to the same schema name as the discriminator value.
+     */
+    val isDiscriminatorSelfMapped: Boolean,
 ) {
     data class SchemaPropertyDO(
         val name: String,

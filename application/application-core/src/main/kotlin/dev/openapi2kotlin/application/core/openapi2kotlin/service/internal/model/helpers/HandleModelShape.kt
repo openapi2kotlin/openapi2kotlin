@@ -30,22 +30,39 @@ internal fun List<ModelDO>.handleModelShape() {
         }
 
         val hasOneOf = component.rawSchema.oneOfChildren.isNotEmpty()
-        val isOneOfPolymorphic = hasOneOf
+
+        val isAllOfBase = component.allOfChildren.isNotEmpty()
+
+        // Leaf schemas often have discriminator mapping only to themselves. That must NOT force OpenClass.
+        val hasDiscriminator = component.rawSchema.discriminatorPropertyName != null
+        val isInstantiableSelf = hasDiscriminator && component.rawSchema.isDiscriminatorSelfMapped
+
+        // This is the special case: the schema is used as an allOf base AND is instantiable as itself.
+        val isConcreteAllOfBase = isAllOfBase && isInstantiableSelf
+
         val isAbstractAllOfBase =
-            component.allOfChildren.isNotEmpty() &&
+            isAllOfBase &&
                     !component.rawSchema.usedInPaths &&
-                    !component.rawSchema.usedAsProperty
+                    !component.rawSchema.usedAsProperty &&
+                    !isConcreteAllOfBase
 
         component.modelShape = when {
-            isOneOfPolymorphic || isAbstractAllOfBase ->
+            // concrete base => must be instantiable
+            isConcreteAllOfBase ->
+                ModelShapeDO.OpenClass(extend = null, implements = emptyList())
+
+            // union base or abstract base => sealed interface
+            hasOneOf || isAbstractAllOfBase ->
                 ModelShapeDO.SealedInterface(extends = emptyList())
 
-            component.allOfChildren.isEmpty() ->
+            // leaf => data class
+            !isAllOfBase ->
                 ModelShapeDO.DataClass(
                     extend = null,
                     implements = emptyList(),
                 )
 
+            // base but not abstract and not concrete => open class
             else ->
                 ModelShapeDO.OpenClass(
                     extend = null,

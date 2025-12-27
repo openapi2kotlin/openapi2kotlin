@@ -191,7 +191,7 @@ private fun buildDataClassFile(
         .primaryConstructor(ctor)
         .applyModelAnnotations(schema)
 
-    val hasChildren = schema.allOfChildren.isNotEmpty()
+    val shouldOpenProps = schema.allOfChildren.isNotEmpty()
 
     schema.fields.forEach { field ->
         val propBuilder = PropertySpec.builder(
@@ -203,7 +203,7 @@ private fun buildDataClassFile(
 
         if (field.overridden) {
             propBuilder.addModifiers(KModifier.OVERRIDE)
-        } else if (hasChildren) {
+        } else if (shouldOpenProps) {
             propBuilder.addModifiers(KModifier.OPEN)
         }
 
@@ -250,7 +250,9 @@ private fun buildOpenClassFile(
         .primaryConstructor(ctor)
         .applyModelAnnotations(schema)
 
-    val hasChildren = schema.allOfChildren.isNotEmpty()
+    // Open classes exist because they are used as bases.
+    // Their properties must be open so children can override cleanly.
+    val shouldOpenProps = true
 
     schema.fields.forEach { field ->
         val propBuilder = PropertySpec.builder(
@@ -262,7 +264,7 @@ private fun buildOpenClassFile(
 
         if (field.overridden) {
             propBuilder.addModifiers(KModifier.OVERRIDE)
-        } else if (hasChildren) {
+        } else if (shouldOpenProps) {
             propBuilder.addModifiers(KModifier.OPEN)
         }
 

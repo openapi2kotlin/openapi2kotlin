@@ -105,6 +105,16 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
                 }
             }
 
+        val discriminatorPropertyName = schema.discriminator?.propertyName
+
+        val discriminatorMapping: Map<String, String> =
+            schema.discriminator?.mapping.orEmpty()
+
+        val isDiscriminatorSelfMapped: Boolean =
+            discriminatorMapping.values.any { target ->
+                target.substringAfterLast('/') == name
+            }
+
         RawSchemaDO(
             originalName = name,
             allOfParents = allOfParents,
@@ -113,7 +123,9 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
             isArraySchema = isArraySchema,
             arrayItemType = arrayItemType,
             ownProperties = ownProps,
-            discriminatorPropertyName = schema.discriminator?.propertyName,
+            discriminatorPropertyName = discriminatorPropertyName,
+            discriminatorMapping = discriminatorMapping,
+            isDiscriminatorSelfMapped = isDiscriminatorSelfMapped,
             usedInPaths = name in usedInPathsNames,
             usedAsProperty = name in usedAsPropertyNames,
         )
