@@ -261,7 +261,10 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
                 ModelAnnotationDO(
                     useSite = ModelAnnotationDO.UseSiteDO.GET,
                     fqName = JSON_PROPERTY,
-                    argsCode = listOf("access = JsonProperty.Access.READ_ONLY"),
+                    argsCode = listOf(
+                        "value = \"$discOriginal\"",
+                        "access = JsonProperty.Access.READ_ONLY",
+                    ),
                 )
             )
         }.toMutableList()
