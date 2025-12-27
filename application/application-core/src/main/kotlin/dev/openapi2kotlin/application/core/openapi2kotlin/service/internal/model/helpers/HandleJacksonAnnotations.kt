@@ -1,10 +1,12 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.PolymorphismDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 private const val JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty"
@@ -72,15 +74,20 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
     }
 
     /* ---------------------------------------------------------------------
-     * 3) Polymorphism annotations (@JsonTypeInfo, @JsonSubTypes)
+     * 3) Polymorphism metadata + annotations
      *
-     * Applied only to true polymorphic roots:
-     *  - oneOf roots
-     *  - allOf inheritance bases
-     *  - schemas with discriminator mappings pointing to other schemas
+     * Principles:
+     *  - For oneOf-wrapper sealed interfaces ("RefOrValue" unions):
+     *      * compute polymorphism metadata
+     *      * DO NOT add @JsonTypeInfo/@JsonSubTypes on the interface
+     *      * later annotate the FIELDS that reference the wrapper
      *
-     * Self-mapped TMF leaf schemas are intentionally excluded.
+     *  - For "real" polymorphic bases (open class / inheritance base):
+     *      * keep class-level @JsonTypeInfo/@JsonSubTypes
      * ------------------------------------------------------------------- */
+
+    // wrapper schema name -> polymorphism metadata (for field-site annotation)
+    val oneOfWrapperPolymorphismBySchemaName = mutableMapOf<String, PolymorphismDO>()
 
     forEach { parent ->
         val discOriginal = parent.rawSchema.discriminatorPropertyName ?: return@forEach
@@ -129,6 +136,17 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
             schemaNameToDiscriminatorValue = schemaNameToDiscriminatorValue,
         )
 
+        // --- treat sealed interface + oneOf as "wrapper" union ---
+        val isOneOfWrapperSealedInterface =
+            isOneOfRoot && parent.modelShape is ModelShapeDO.SealedInterface
+
+        if (isOneOfWrapperSealedInterface) {
+            // Store for field-site annotation and skip type-level @JsonTypeInfo/@JsonSubTypes
+            oneOfWrapperPolymorphismBySchemaName[parent.rawSchema.originalName] = parent.polymorphism!!
+            return@forEach
+        }
+
+        // Otherwise: annotate the type itself (open-class base / allOf base / etc.)
         val isConcreteParent =
             parent.modelShape is ModelShapeDO.OpenClass ||
                     parent.modelShape is ModelShapeDO.DataClass
@@ -195,6 +213,58 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         }
 
         parent.annotations = parent.annotations + annotations
+    }
+
+    /* ---------------------------------------------------------------------
+     * 3.5) Field-site polymorphism for oneOf wrapper unions
+     *
+     * Add @field:JsonTypeInfo + @field:JsonSubTypes on any field whose type
+     * is the wrapper schema (or list of wrapper schema).
+     * ------------------------------------------------------------------- */
+
+    if (oneOfWrapperPolymorphismBySchemaName.isNotEmpty()) {
+        forEach { owner ->
+            owner.fields = owner.fields
+                .map { f ->
+                    val wrapperSchemaName = f.findWrapperSchemaNameReferenced(oneOfWrapperPolymorphismBySchemaName.keys)
+                        ?: return@map f
+
+                    val wrapperPolymorphism = oneOfWrapperPolymorphismBySchemaName[wrapperSchemaName]
+                        ?: return@map f
+
+                    val subtypeEntries = buildList {
+                        wrapperPolymorphism.schemaNameToDiscriminatorValue
+                            .filterKeys { it != wrapperSchemaName } // wrapper itself isn't a concrete subtype
+                            .forEach { (childSchemaName, discValue) ->
+                                val child = bySchemaName[childSchemaName] ?: return@forEach
+                                add("JsonSubTypes.Type(value = ${child.generatedName}::class, name = \"$discValue\")")
+                            }
+                    }
+
+                    // If we could not resolve children (edge cases), do not annotate.
+                    if (subtypeEntries.isEmpty()) return@map f
+
+                    f.addAnnotation(
+                        ModelAnnotationDO(
+                            useSite = ModelAnnotationDO.UseSiteDO.FIELD,
+                            fqName = JSON_TYPE_INFO,
+                            argsCode = listOf(
+                                "use = JsonTypeInfo.Id.NAME",
+                                "include = JsonTypeInfo.As.PROPERTY",
+                                "property = \"${wrapperPolymorphism.discriminatorPropertyOriginalName}\"",
+                                "visible = true",
+                            ),
+                        )
+                    ).addAnnotation(
+                        ModelAnnotationDO(
+                            useSite = ModelAnnotationDO.UseSiteDO.FIELD,
+                            fqName = JSON_SUB_TYPES,
+                            argsCode = subtypeEntries,
+                        )
+                    )
+                }
+                .toMutableList()
+        }
     }
 
     /* ---------------------------------------------------------------------
@@ -274,6 +344,25 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         }.toMutableList()
     }
 }
+
+/**
+ * If this field references any of the oneOf wrapper schema names (directly or as list element),
+ * return the wrapper schema name, else null.
+ */
+private fun FieldDO.findWrapperSchemaNameReferenced(wrapperSchemaNames: Set<String>): String? {
+    return when (val t = type) {
+        is RefTypeDO ->
+            t.schemaName.takeIf { it in wrapperSchemaNames }
+
+        is ListTypeDO -> when (val e = t.elementType) {
+            is RefTypeDO -> e.schemaName.takeIf { it in wrapperSchemaNames }
+            else -> null
+        }
+
+        else -> null
+    }
+}
+
 
 /* =====================================================================
  * Helper functions
