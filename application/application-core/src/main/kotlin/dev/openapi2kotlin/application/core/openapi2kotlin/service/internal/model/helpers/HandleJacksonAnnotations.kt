@@ -221,9 +221,13 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
                     ?: return@forEach
 
             val discValue =
-                parentWithDisc?.polymorphism
-                    ?.schemaNameToDiscriminatorValue
-                    ?.get(model.rawSchema.originalName)
+                // 1) Prefer this schema's own discriminator mapping key (TMF-style)
+                model.selfDiscriminatorValueFromOwnMapping()
+                // 2) Otherwise, inherit from nearest discriminator parent mapping
+                    ?: parentWithDisc?.polymorphism
+                        ?.schemaNameToDiscriminatorValue
+                        ?.get(model.rawSchema.originalName)
+                    // 3) Last resort fallback
                     ?: model.rawSchema.originalName
 
             model.fields = model.fields.map { f ->
@@ -338,4 +342,24 @@ private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
         }
 
     return if (exists) this else copy(annotations = annotations + a)
+}
+
+/**
+ * If this model declares a discriminator mapping that points to itself,
+ * return the discriminator VALUE (mapping key) that should be used in JSON "@type".
+ *
+ * Example:
+ *   mapping:
+ *     ProductOfferingPrice: '#/components/schemas/ProductOfferingPrice_FVO'
+ * -> returns "ProductOfferingPrice"
+ */
+private fun ModelDO.selfDiscriminatorValueFromOwnMapping(): String? {
+    val ownName = rawSchema.originalName
+    // discriminatorMapping: Map<discValue, ref>
+    return rawSchema.discriminatorMapping
+        .entries
+        .firstOrNull { (_, ref) ->
+            ref.substringAfterLast('/') == ownName
+        }
+        ?.key
 }
