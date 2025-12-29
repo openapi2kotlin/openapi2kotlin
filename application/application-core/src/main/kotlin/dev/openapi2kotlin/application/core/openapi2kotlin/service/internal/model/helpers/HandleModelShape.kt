@@ -11,6 +11,23 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
 internal fun List<ModelDO>.handleModelShape() {
     val byName = associateBy { it.rawSchema.originalName }
 
+    // Discriminator mappings reference concrete subtypes even when they are not used in paths or properties.
+    val discriminatorChildNames: Set<String> = buildSet {
+        for (m in this@handleModelShape) {
+            val mapping = m.rawSchema.discriminatorMapping
+            if (mapping.isEmpty()) continue
+            mapping.forEach { (k, v) ->
+                add(k)
+                add(v.substringAfterLast('/'))
+            }
+        }
+    }
+
+    // Materialize discriminator-child usage on ModelDO (core model, not raw).
+    forEach { component ->
+        component.usedAsDiscriminatorChild = component.rawSchema.originalName in discriminatorChildNames
+    }
+
     forEach { component ->
         if (component.rawSchema.isArraySchema && component.rawSchema.arrayItemType != null) {
             component.modelShape = ModelShapeDO.TypeAlias(
@@ -40,10 +57,14 @@ internal fun List<ModelDO>.handleModelShape() {
         // This is the special case: the schema is used as an allOf base AND is instantiable as itself.
         val isConcreteAllOfBase = isAllOfBase && isInstantiableSelf
 
+        val isUsedSomewhere =
+            component.rawSchema.usedInPaths ||
+                    component.rawSchema.usedAsProperty ||
+                    component.usedAsDiscriminatorChild
+
         val isAbstractAllOfBase =
             isAllOfBase &&
-                    !component.rawSchema.usedInPaths &&
-                    !component.rawSchema.usedAsProperty &&
+                    !isUsedSomewhere &&
                     !isConcreteAllOfBase
 
         component.modelShape = when {

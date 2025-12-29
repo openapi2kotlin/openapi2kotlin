@@ -183,9 +183,26 @@ private fun schemaToRawTypeForProperty(
 
 private fun collectRefNamesFromSchema(schema: Schema<*>?, into: MutableSet<String>) {
     if (schema == null) return
+
+    schema.`$ref`?.substringAfterLast('/')?.let(into::add)
+
     when (schema) {
-        is ArraySchema -> collectRefNamesFromSchema(schema.items, into)
-        else -> schema.`$ref`?.substringAfterLast('/')?.let(into::add)
+        is ArraySchema -> {
+            collectRefNamesFromSchema(schema.items, into)
+        }
+
+        is ComposedSchema -> {
+            schema.allOf?.forEach { collectRefNamesFromSchema(it, into) }
+            schema.oneOf?.forEach { collectRefNamesFromSchema(it, into) }
+            schema.anyOf?.forEach { collectRefNamesFromSchema(it, into) }
+        }
+    }
+
+    schema.properties?.values?.forEach { collectRefNamesFromSchema(it, into) }
+
+    val additional = schema.additionalProperties
+    if (additional is Schema<*>) {
+        collectRefNamesFromSchema(additional, into)
     }
 }
 

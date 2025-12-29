@@ -268,10 +268,10 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
     }
 
     /* ---------------------------------------------------------------------
-     * 4) Default discriminator value on concrete leaf classes
+     * 4) Default discriminator value on concrete instantiable types
      *
      * Ensures stable serialization without requiring callers to explicitly
-     * provide @type for leaf instances.
+     * provide @type for instantiable instances (including intermediate allOf bases).
      * ------------------------------------------------------------------- */
 
     if (cfg.defaultDiscriminatorValue) {
@@ -281,8 +281,6 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
                         model.modelShape is ModelShapeDO.OpenClass
 
             if (!isConcrete) return@forEach
-            if (model.rawSchema.oneOfChildren.isNotEmpty()) return@forEach
-            if (model.allOfChildren.isNotEmpty()) return@forEach
 
             val parentWithDisc = model.findNearestDiscriminatorParent(bySchemaName)
             val discOriginal =

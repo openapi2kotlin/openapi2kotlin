@@ -26,6 +26,12 @@ data class ModelDO(
     var parentOneOf: String? = null,
 
     /**
+     * True if this schema is referenced by any discriminator mapping (i.e., it is a polymorphic subtype),
+     * even if it is not referenced in paths or as a property.
+     */
+    var usedAsDiscriminatorChild: Boolean = false,
+
+    /**
      * Generated shape of this schema component.
      */
     var modelShape: ModelShapeDO = ModelShapeDO.Undecided,
