@@ -102,20 +102,18 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
             mappingValueToSchemaName.values.any { it != parent.rawSchema.originalName }
 
         val isOneOfRoot = parent.rawSchema.oneOfChildren.isNotEmpty()
-        val isAllOfRoot = parent.allOfChildren.isNotEmpty()
 
         // Determine polymorphic subtypes (raw schema names)
         val childrenSchemaNames: List<String> = when {
+            // oneOf wrapper unions (RefOrValue etc.)
             isOneOfRoot ->
                 parent.rawSchema.oneOfChildren
 
+            // “real” polymorphic bases are defined by discriminator.mapping
             hasMappingToOthers ->
                 mappingValueToSchemaName.values
                     .distinct()
                     .filter { it != parent.rawSchema.originalName }
-
-            isAllOfRoot ->
-                parent.allOfChildren
 
             else ->
                 emptyList()
@@ -154,8 +152,11 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         // Include the parent itself as a subtype only if:
         //  - discriminator mapping explicitly points to itself
         //  - the parent is instantiable in Kotlin
+        //  - there is at least one other subtype
         val includeSelfSubtype =
-            parent.rawSchema.isDiscriminatorSelfMapped && isConcreteParent
+            parent.rawSchema.isDiscriminatorSelfMapped &&
+                    isConcreteParent &&
+                    childrenSchemaNames.isNotEmpty()
 
         val subtypeEntries = buildList {
             if (includeSelfSubtype) {
