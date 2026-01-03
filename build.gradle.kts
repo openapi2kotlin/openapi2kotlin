@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val javaVersion = 25
+val javaVersion = 21
 val kotlinJvmTarget = JvmTarget.fromTarget(javaVersion.toString())
 
 plugins {
