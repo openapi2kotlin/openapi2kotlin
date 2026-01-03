@@ -2,7 +2,7 @@
   <img src="site/public/logo.svg" alt="openapi2kotlin logo" width="160">
 </p>
 
-<p align="center" style="font-size: 36px">openapi2kotlin</p>
+<h3 align="center" style="font-size: 36px">openapi2kotlin</h3>
 
 <h4 align="center">
   OpenAPI 👉 Kotlin |
@@ -27,7 +27,7 @@
 
 Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `anyOf` and `allOf`.
 
----
+<br/>
 
 ## Installation & Usage
 
