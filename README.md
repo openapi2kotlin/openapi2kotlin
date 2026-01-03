@@ -1,17 +1,4 @@
 <p align="center">
-  <img src="site/public/logo.svg" alt="openapi2kotlin logo" width="160">
-</p>
-
-<h3 align="center" style="font-size: 36px">openapi2kotlin</h3>
-
-<h4 align="center">
-  OpenAPI 👉 Kotlin |
-  <a href="https://openapi2kotlin.dev/">openapi2kotlin.dev</a>
-</h4>
-
-<br/>
-
-<p align="center">
   <a href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin">
     <img src="https://img.shields.io/maven-central/v/dev.openapi2kotlin/openapi2kotlin" alt="Maven Central">
   </a>
@@ -22,6 +9,19 @@
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
   </a>
 </p>
+
+<br/>
+
+<p align="center">
+  <img src="site/public/logo.svg" alt="openapi2kotlin logo" width="160">
+</p>
+
+<h3 align="center" style="font-size: 36px">openapi2kotlin</h3>
+
+<h4 align="center">
+  OpenAPI 👉 Kotlin |
+  <a href="https://openapi2kotlin.dev/">openapi2kotlin.dev</a>
+</h4>
 
 <br/>
 
