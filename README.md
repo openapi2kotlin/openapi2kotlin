@@ -1,10 +1,28 @@
-# openapi2kotlin
+<p align="center">
+  <img src="site/public/logo.svg" alt="openapi2kotlin logo" width="160">
+</p>
+<h1 align="center">openapi2kotlin</h1>
 
-[![Maven Central](https://img.shields.io/maven-central/v/dev.openapi2kotlin/openapi2kotlin)](https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin)
-[![Website](https://img.shields.io/badge/website-openapi2kotlin.dev-0b0b0b)](https://openapi2kotlin.dev/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+<h4 align="center">
+  OpenAPI 👉 Kotlin |
+  <a href="https://openapi2kotlin.dev/">openapi2kotlin.dev</a>
+</h4>
 
-#### OpenAPI 👉 Kotlin | [openapi2kotlin.dev](https://openapi2kotlin.dev/)
+<br/>
+
+<p align="center">
+  <a href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin">
+    <img src="https://img.shields.io/maven-central/v/dev.openapi2kotlin/openapi2kotlin" alt="Maven Central">
+  </a>
+  <a href="https://openapi2kotlin.dev/">
+    <img src="https://img.shields.io/badge/website-openapi2kotlin.dev-0b0b0b" alt="Website">
+  </a>
+  <a href="https://www.apache.org/licenses/LICENSE-2.0">
+    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
+  </a>
+</p>
+
+<br/>
 
 Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `anyOf` and `allOf`.
 
