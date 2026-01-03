@@ -1,4 +1,3 @@
-import styles from "./Logo.module.css";
 import {Anchor} from "tamagui";
 
 export default function Logo() {
@@ -9,21 +8,32 @@ export default function Logo() {
 
   return (
       <Anchor href="/" display="inline-flex" aria-label="OpenAPI 2 Kotlin Home">
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} width={SIZE} height={SIZE ? SIZE * ASPECT : undefined}
-             className={styles.logo}>
+        <svg
+            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+            width={SIZE}
+            height={SIZE ? SIZE * ASPECT : undefined}
+        >
+          <defs>
+            <linearGradient
+                id="kotlinGradient"
+                gradientUnits="userSpaceOnUse"
+                x1="0"
+                y1="0"
+                x2={WIDTH}
+                y2={HEIGHT}
+            >
+              <stop offset="0%" stopColor="#7F52FF" />
+              <stop offset="100%" stopColor="#E24462" />
+            </linearGradient>
+          </defs>
+
           <g className="drawing-elements">
-            <rect x="100" y="100" width="100" height="100" fill="#000000" stroke="" stroke-width="0" opacity="1"
-                  id="rect-1" className=""/>
-            <rect x="300" y="100" width="100" height="100" fill="#000000" stroke="" stroke-width="0" opacity="1"
-                  id="rect-2" className=""/>
-            <rect x="200" y="200" width="100" height="100" fill="#000000" stroke="" stroke-width="0" opacity="1"
-                  id="rect-3" className=""/>
-            <rect x="300" y="300" width="100" height="100" fill="#000000" stroke="" stroke-width="0" opacity="1"
-                  id="rect-4" className="" />
-            <rect x="100" y="300" width="100" height="100" fill="#000000" stroke="" stroke-width="0" opacity="1"
-                  id="rect-5" className=""/>
-            <rect x="100" y="200" width="100" height="100" fill="#000000" stroke="" stroke-width="0" opacity="1"
-                  id="rect-6" className=""/>
+            <rect x="100" y="100" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-1" />
+            <rect x="300" y="100" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-2" />
+            <rect x="200" y="200" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-3" />
+            <rect x="300" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-4" />
+            <rect x="100" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-5" />
+            <rect x="100" y="200" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-6" />
           </g>
         </svg>
       </Anchor>
