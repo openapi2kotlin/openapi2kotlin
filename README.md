@@ -1,11 +1,11 @@
 <p align="center">
-  <a href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin">
+  <a href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin" target="_blank">
     <img src="https://img.shields.io/maven-central/v/dev.openapi2kotlin/openapi2kotlin" alt="Maven Central">
   </a>
-  <a href="https://openapi2kotlin.dev/">
+  <a href="https://openapi2kotlin.dev/" target="_blank">
     <img src="https://img.shields.io/badge/website-openapi2kotlin.dev-0b0b0b" alt="Website">
   </a>
-  <a href="https://www.apache.org/licenses/LICENSE-2.0">
+  <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
   </a>
 </p>
