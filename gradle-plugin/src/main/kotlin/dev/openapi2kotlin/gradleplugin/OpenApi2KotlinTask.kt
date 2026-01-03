@@ -41,6 +41,8 @@ abstract class OpenApi2KotlinTask(
             server = serverConfig,
         )
 
+        clearOutput(config)
+
         OpenApi2KotlinApp.openApi2kotlin(config)
     }
 
@@ -73,15 +75,34 @@ abstract class OpenApi2KotlinTask(
         val outputDirFile = project.file(outputDirString)
         val outputDirPath: Path = outputDirFile.toPath()
 
-        // If output directory exists → delete it first
-        if (Files.exists(outputDirPath)) {
-            project.logger.lifecycle("openapi2kotlin: clearing output directory: $outputDirPath")
-            outputDirPath.toFile().deleteRecursively()
+        if (!Files.exists(outputDirPath)) {
+            Files.createDirectories(outputDirPath)
         }
 
-        // Recreate output directory (recursive)
-        Files.createDirectories(outputDirPath)
-
         return outputDirPath
+    }
+
+    private fun clearOutput(config: OpenApi2KotlinUseCase.Config) {
+        val outputDirPath = config.outputDirPath
+
+        if (!Files.exists(outputDirPath)) {
+            return
+        }
+
+        clearPackageDir(outputDirPath, config.model.packageName)
+
+        if (config.client.enabled) {
+            clearPackageDir(outputDirPath, config.client.packageName)
+        }
+        if (config.server.enabled) {
+            clearPackageDir(outputDirPath, config.server.packageName)
+        }
+    }
+
+    private fun clearPackageDir(outputDirPath: Path, packageName: String) {
+        val packageDir = outputDirPath.resolve(packageName.replace('.', '/'))
+        if (Files.exists(packageDir)) {
+            packageDir.toFile().deleteRecursively()
+        }
     }
 }
