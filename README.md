@@ -25,7 +25,7 @@
 
 <br/>
 
-Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `anyOf` and `allOf`.
+Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `oneOf` and `allOf`.
 
 <br/>
 
@@ -52,11 +52,7 @@ plugins {
 
 openapi2kotlin {
     inputSpec = "$projectDir/src/main/resources/openapi.yaml"
-    outputDir = layout.buildDirectory
-        .dir("generated/src/main/kotlin")
-        .get()
-        .asFile
-        .path
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
 
     model {
         packageName = "dev.openapi2kotlin.model"
@@ -89,19 +85,6 @@ This means:
 - Generated code is picked up by Gradle without extra configuration
 - IntelliJ IDEA / Android Studio indexes the generated sources automatically
 - No manual `sourceSets` configuration is required
-
----
-
-## Maven Central
-
-Artifact coordinates:
-
-```
-groupId: dev.openapi2kotlin
-artifactId: openapi2kotlin
-```
-
-https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin
 
 ---
 

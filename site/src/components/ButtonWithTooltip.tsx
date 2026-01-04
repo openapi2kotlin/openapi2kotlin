@@ -1,18 +1,18 @@
 import {Button, type ButtonProps, Text, Tooltip, useTheme} from "tamagui";
 import type {LucideIcon} from "lucide-react";
 
-export interface ChromelessCircularButtonProps extends ButtonProps {
+export interface ButtonWithTooltipProps extends ButtonProps {
   tooltip?: string;
   icon: LucideIcon;
 }
 
-export default function ChromelessCircularButton(
+export default function ButtonWithTooltip(
     {
       size = "$2",
       tooltip,
       icon: Icon,
       ...props
-    }: ChromelessCircularButtonProps
+    }: ButtonWithTooltipProps
 ) {
   const theme = useTheme();
   const iconColor = theme.color11?.val;
@@ -21,14 +21,9 @@ export default function ChromelessCircularButton(
       <Button
           {...props}
           size={size}
-          chromeless
-          circular
           borderColor="transparent"
           aria-label={tooltip}
           icon={(props) => <Icon {...props} color={iconColor}/>}
-          pressStyle={{
-            scale: 0.96,
-          }}
       />
   );
 
@@ -37,7 +32,7 @@ export default function ChromelessCircularButton(
   }
 
   return (
-      <Tooltip delay={200} placement="top">
+      <Tooltip delay={200} placement="bottom">
         <Tooltip.Trigger asChild>
           {button}
         </Tooltip.Trigger>

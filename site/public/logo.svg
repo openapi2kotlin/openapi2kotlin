@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg
-  width="500"
-  height="500"
-  viewBox="0 0 500 500"
+  width="700"
+  height="700"
+  viewBox="0 0 700 700"
   xmlns="http://www.w3.org/2000/svg"
   xmlns:xlink="http://www.w3.org/1999/xlink"
 >
@@ -22,12 +22,13 @@
   </defs>
 
   <g class="drawing-elements">
-    <rect x="100" y="100" width="100" height="100" fill="url(#kotlinGradient)" id="rect-1"/>
-    <rect x="300" y="100" width="100" height="100" fill="url(#kotlinGradient)" id="rect-2"/>
-    <rect x="200" y="200" width="100" height="100" fill="url(#kotlinGradient)" id="rect-3"/>
-    <rect x="300" y="300" width="100" height="100" fill="url(#kotlinGradient)" id="rect-4"/>
-    <rect x="100" y="300" width="100" height="100" fill="url(#kotlinGradient)" id="rect-5"/>
-    <rect x="100" y="200" width="100" height="100" fill="url(#kotlinGradient)" id="rect-6"/>
+    <rect x="100" y="300" width="100" height="100" fill="url(#kotlinGradient)" id="rect-1"/>
+    <rect x="300" y="200" width="100" height="100" fill="url(#kotlinGradient)" id="rect-1"/>
+    <rect x="500" y="200" width="100" height="100" fill="url(#kotlinGradient)" id="rect-2"/>
+    <rect x="400" y="300" width="100" height="100" fill="url(#kotlinGradient)" id="rect-3"/>
+    <rect x="500" y="400" width="100" height="100" fill="url(#kotlinGradient)" id="rect-4"/>
+    <rect x="300" y="400" width="100" height="100" fill="url(#kotlinGradient)" id="rect-5"/>
+    <rect x="300" y="300" width="100" height="100" fill="url(#kotlinGradient)" id="rect-6"/>
   </g>
 
 </svg>

@@ -1,8 +1,8 @@
 import {Anchor} from "tamagui";
 
 export default function Logo() {
-  const WIDTH = 500;
-  const HEIGHT = 500;
+  const WIDTH = 700;
+  const HEIGHT = 700;
   const ASPECT = HEIGHT / WIDTH;
   const SIZE = 32;
 
@@ -28,12 +28,13 @@ export default function Logo() {
           </defs>
 
           <g className="drawing-elements">
-            <rect x="100" y="100" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-1" />
-            <rect x="300" y="100" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-2" />
-            <rect x="200" y="200" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-3" />
-            <rect x="300" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-4" />
-            <rect x="100" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-5" />
-            <rect x="100" y="200" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-6" />
+            <rect x="100" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-1"/>
+            <rect x="300" y="200" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-1"/>
+            <rect x="500" y="200" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-2"/>
+            <rect x="400" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-3"/>
+            <rect x="500" y="400" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-4"/>
+            <rect x="300" y="400" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-5"/>
+            <rect x="300" y="300" width="100" height="100" fill="url(#kotlinGradient)" opacity="1" id="rect-6"/>
           </g>
         </svg>
       </Anchor>
