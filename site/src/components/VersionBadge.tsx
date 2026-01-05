@@ -23,7 +23,7 @@ export default function VersionBadge({ version }: Props) {
             pressStyle={{
               scale: 0.96,
             }}
-            tooltip="Latest stable version on Maven Central"
+            tooltip="Latest stable release"
             icon={Tag}
         >
           {version}

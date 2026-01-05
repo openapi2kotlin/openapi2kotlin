@@ -31,7 +31,7 @@ export default function DockNav() {
             maxW={980}
             width="100%"
             rounded="$10"
-            bg={isDark ? "rgba(39,39,39,0.3)" : "rgba(223,223,223,0.3)"}
+            bg={isDark ? "rgba(145,145,145,0.3)" : "rgba(223,223,223,0.3)"}
             style={{
               backdropFilter: "blur(14px)",
               WebkitBackdropFilter: "blur(14px)",

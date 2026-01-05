@@ -13,10 +13,14 @@
 <br/>
 
 <p align="center">
-  <img src="site/public/logo.svg" alt="openapi2kotlin logo" width="160">
+  <img src="site/public/logo.svg" alt="openapi2kotlin logo" width="80">
 </p>
 
-<h3 align="center" style="font-size: 36px">openapi2kotlin</h3>
+<p align="center">
+  <img src="site/public/hero.svg" alt="hero logo" width="1200">
+</p>
+
+<br/>
 
 <h4 align="center">
   OpenAPI 👉 Kotlin |
@@ -24,7 +28,7 @@
 </h4>
 
 <br/>
-
+<h1 >openapi2kotlin</h1>
 Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `oneOf` and `allOf`.
 
 <br/>

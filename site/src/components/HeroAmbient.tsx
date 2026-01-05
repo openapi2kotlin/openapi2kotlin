@@ -12,7 +12,7 @@ function ensureKeyframes() {
   style.textContent = `
 @keyframes heroFloat1 {
   0%   { transform: translate(-50%, -50%) scale(1); opacity: .95; }
-  50%  { transform: translate(-48%, -46%) scale(1.08); opacity: .85; }
+  50%  { transform: translate(-53%, -55%) scale(1.1); opacity: .85; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: .95; }
 }
 
@@ -22,19 +22,10 @@ function ensureKeyframes() {
   100% { transform: translate(0, 0) scale(1); opacity: .90; }
 }
 
-/* optional: gentle rotation/scale drift for a 3rd layer if you add it later */
-@keyframes heroFloat3 {
-  0%   { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-  50%  { transform: translate(-52%, -48%) rotate(6deg) scale(1.06); }
-  100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-}
-
-/* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  .hero-ambient-blob {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
   }
 }
 `;
@@ -49,6 +40,19 @@ export function HeroAmbient() {
     ensureKeyframes();
   }, []);
 
+  // Only visibility changes on light (same motion/keyframes)
+  const pink = isDark
+      ? "radial-gradient(circle, rgba(226,68,98,0.22), transparent 70%)"
+      : "radial-gradient(circle, rgba(226,68,98,0.26), transparent 68%)";
+
+  const violet = isDark
+      ? "radial-gradient(circle, rgba(127,82,255,0.20), transparent 70%)"
+      : "radial-gradient(circle, rgba(127,82,255,0.24), transparent 68%)";
+
+  // Optional: slightly faster on light (same keyframes, just cycles quicker)
+  const dur1 = isDark ? "48s" : "40s";
+  const dur2 = isDark ? "60s" : "50s";
+
   return (
       <Stack
           pointerEvents="none"
@@ -59,36 +63,44 @@ export function HeroAmbient() {
       >
         {/* blob 1 */}
         <Stack
+            className="hero-ambient-blob"
             style={{
               position: "absolute",
               width: 520,
               height: 520,
-              left: "50%",
-              top: "30%",
+              left: "50vw",
+              top: "30vh",
               transform: "translate(-50%, -50%)",
-              background: isDark
-                  ? "radial-gradient(circle, rgba(226,68,98,0.22), transparent 70%)"
-                  : "radial-gradient(circle, rgba(226,68,98,0.18), transparent 70%)",
+              background: pink,
               filter: "blur(40px)",
+              WebkitFilter: "blur(40px)",
               willChange: "transform, opacity",
-              animation: "heroFloat1 48s ease-in-out infinite",
+
+              animationName: "heroFloat1",
+              animationDuration: dur1,
+              animationTimingFunction: "ease-in-out",
+              animationIterationCount: "infinite",
             }}
         />
 
         {/* blob 2 */}
         <Stack
+            className="hero-ambient-blob"
             style={{
               position: "absolute",
               width: 420,
               height: 420,
-              left: "46%",
-              top: "38%",
-              background: isDark
-                  ? "radial-gradient(circle, rgba(127,82,255,0.20), transparent 70%)"
-                  : "radial-gradient(circle, rgba(127,82,255,0.16), transparent 70%)",
+              left: "46vw",
+              top: "38vh",
+              background: violet,
               filter: "blur(50px)",
+              WebkitFilter: "blur(50px)",
               willChange: "transform, opacity",
-              animation: "heroFloat2 60s ease-in-out infinite",
+
+              animationName: "heroFloat2",
+              animationDuration: dur2,
+              animationTimingFunction: "ease-in-out",
+              animationIterationCount: "infinite",
             }}
         />
       </Stack>

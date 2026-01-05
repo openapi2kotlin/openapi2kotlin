@@ -7,6 +7,7 @@ import {HeroAmbient} from "./components/HeroAmbient.tsx";
 import ConfigOptionsTable from "./components/ConfigOptionsTable.tsx";
 import {HeroHeading} from "./components/HeroHeading.tsx";
 import {Link} from "lucide-react";
+import {useMedia} from "@tamagui/core";
 
 const TOML = `[versions]
 openapi2kotlin = "0.10.0"
@@ -46,43 +47,39 @@ const CONFIG_ROWS = [
 ];
 
 export default function App() {
+  const media = useMedia()
+
   return (
       <AmbientBackground>
+        <HeroAmbient />
         <DockNav/>
-
-        <Stack minH="80vh" flex={1} justify="center" items="center">
-          <HeroAmbient/>
-          <HeroHeading/>
-        </Stack>
         <Stack
             maxW={980}
             width="100%"
             mx="auto"
             px="$4"
-            pt={96}
             pb="$7"
             gap="$6"
         >
-          {/*<Stack gap="$2">*/}
-          {/*  <Text fontFamily="$heading" fontSize="$10" fontWeight="800">*/}
-          {/*    openapi2kotlin*/}
-          {/*  </Text>*/}
-
-          {/*  <Text fontSize="$4" opacity={0.85}>*/}
-          {/*    Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle*/}
-          {/*    complex polymorphism including <Text fontFamily="$mono">oneOf</Text> and{" "}*/}
-          {/*    <Text fontFamily="$mono">allOf</Text>.*/}
-          {/*  </Text>*/}
-          {/*</Stack>*/}
-
-          {/*<Separator/>*/}
+          <Stack minH="80vh" maxW={980} flex={1} justify="center" items="center" position="relative" px={media.maxXs ? 0 : 100}>
+            <HeroHeading />
+          </Stack>
 
           <Stack gap="$3">
             <Text fontFamily="$heading" fontSize="$7" fontWeight="800">
               Installation &amp; Usage
             </Text>
 
-            <Text fontSize="$4" opacity={0.85}>
+            <Text fontSize="$4" color="$color11" opacity={0.85}>
+              Copy and paste the snippet below to apply the plugin. The OpenAPI specification will then be processed as part of the build, producing the generated Kotlin sources.
+            </Text>
+
+            <Stack gap="$4">
+              <CodeBlock title="libs.versions.toml" code={TOML}/>
+              <CodeBlock title="build.gradle.kts" code={GRADLE}/>
+            </Stack>
+
+            <Text fontSize="$4" opacity={0.85} color="$color11">
               The plugin is published to{" "}
               <Text asChild>
                 <a
@@ -114,11 +111,6 @@ export default function App() {
               </Text>
               .
             </Text>
-
-            <Stack gap="$4">
-              <CodeBlock title="libs.versions.toml" code={TOML}/>
-              <CodeBlock title="build.gradle.kts" code={GRADLE}/>
-            </Stack>
 
             <ConfigOptionsTable rows={CONFIG_ROWS}/>
           </Stack>

@@ -1,6 +1,6 @@
-import {useMemo, useState} from "react";
-import {Button, Stack, Text, Theme, XStack} from "tamagui";
-import {CheckCheck} from "lucide-react";
+import { useMemo, useState } from "react";
+import { Button, Stack, Text, Theme, XStack } from "tamagui";
+import { CheckCheck } from "lucide-react";
 
 type Props = {
   title: string;
@@ -11,8 +11,8 @@ type Props = {
 
 type Seg = {
   text: string;
-  color?: string; // CSS color for spans
-  tamaguiColor?: string; // Tamagui token for Text color
+  color?: string;
+  tamaguiColor?: string;
 };
 
 const PINK = "#d6409f";
@@ -25,8 +25,6 @@ function splitLine(line: string): Seg[] {
     if (!text) return;
     out.push({ text, color, tamaguiColor });
   };
-
-  // Default text color comes from Tamagui token
   const pushDefault = (text: string) => push(text, undefined, "$color");
 
   let i = 0;
@@ -34,7 +32,6 @@ function splitLine(line: string): Seg[] {
   while (i < line.length) {
     const ch = line[i];
 
-    // 1) strings: "..." including quotes
     if (ch === '"') {
       let j = i + 1;
       let escaped = false;
@@ -58,7 +55,6 @@ function splitLine(line: string): Seg[] {
       continue;
     }
 
-    // 2) bracket sections: [ ... ] including brackets
     if (ch === "[") {
       const end = line.indexOf("]", i + 1);
       if (end >= 0) {
@@ -66,22 +62,17 @@ function splitLine(line: string): Seg[] {
         i = end + 1;
         continue;
       }
-      // no closing bracket -> treat as default
       pushDefault(ch);
       i++;
       continue;
     }
 
-    // 3) purple symbols: { } , =
     if (ch === "{" || ch === "}" || ch === "," || ch === "=") {
       push(ch, PURPLE);
       i++;
       continue;
     }
 
-    // 4) "anything before {, but has to be single space before"
-    // detect pattern: IDENT + " " + "{"
-    // color IDENT as pink, but leave the space + "{" to be handled normally (space default, "{" purple)
     if (isIdentStart(ch)) {
       let j = i + 1;
       while (j < line.length && isIdentPart(line[j])) j++;
@@ -101,7 +92,6 @@ function splitLine(line: string): Seg[] {
       continue;
     }
 
-    // default single char
     pushDefault(ch);
     i++;
   }
@@ -123,8 +113,6 @@ export default function CodeBlock({
                                     code,
                                     lineNumbers = true,
                                   }: Props) {
-  // const { theme } = useAppTheme()
-  // const isDark = theme === "dark"
   const [copied, setCopied] = useState(false);
 
   const cleaned = useMemo(() => code.replace(/\s+$/, ""), [code]);
@@ -147,14 +135,15 @@ export default function CodeBlock({
 
   return (
       <Theme name="pink">
-        <Stack rounded="$6" overflow="hidden" borderWidth={1} borderColor="$borderColor" bg="$color2">
-          <XStack
-              items="center"
-              justify="space-between"
-              px="$3"
-              py="$2"
-              gap="$2"
-          >
+        <Stack
+            rounded="$6"
+            overflow="hidden"
+            borderWidth={1}
+            borderColor="$borderColor"
+            bg="$color2"
+        >
+          {/* Header stays OUTSIDE the scroll container => copy is always visible */}
+          <XStack items="center" justify="space-between" px="$3" py="$2" gap="$2">
             <XStack items="baseline" gap="$2" flex={1} overflow="hidden">
               <Text fontSize="$3" fontWeight="800" numberOfLines={1}>
                 {title}
@@ -173,14 +162,24 @@ export default function CodeBlock({
                     icon={copied ? CheckCheck : undefined}
                     bg="$color4"
                     hoverStyle={{ bg: "$color5" }}
+                    shrink={0}
                 >
                   {copied ? "Copied" : "Copy"}
                 </Button>
             ) : null}
           </XStack>
 
-          <Stack px="$3" py="$3">
-            <Stack>
+          {/* Code scroll area */}
+          <Stack
+              px="$3"
+              py="$3"
+              style={{
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+              }}
+          >
+            {/* This wrapper forces the content width to be as wide as the longest line */}
+            <Stack style={{ minWidth: "max-content" }}>
               {lines.map((line, idx) => {
                 const segs = splitLine(line);
                 const lineNumber = idx + 1;
@@ -197,6 +196,7 @@ export default function CodeBlock({
                                 width: lineNoWidth,
                                 textAlign: "right",
                                 userSelect: "none",
+                                flexShrink: 0,
                               }}
                           >
                             {lineNumber}
@@ -208,19 +208,20 @@ export default function CodeBlock({
                           fontSize="$3"
                           lineHeight="$4"
                           whiteSpace="pre"
-                          style={{ flex: 1 }}
                           color="$color"
+                          // do NOT let the code column shrink; let the scroll handle overflow
+                          style={{ flexShrink: 0 }}
                       >
                         {segs.length ? (
                             segs.map((s, i2) =>
                                     s.color ? (
                                         <span key={i2} style={{ color: s.color }}>
-                          {s.text}
-                        </span>
+                            {s.text}
+                          </span>
                                     ) : (
                                         <span key={i2} style={{ color: "inherit" }}>
-                          {s.text}
-                        </span>
+                            {s.text}
+                          </span>
                                     )
                             )
                         ) : (
