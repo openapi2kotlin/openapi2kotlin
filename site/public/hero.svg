@@ -3,7 +3,6 @@
   width="1200"
   height="320"
   viewBox="0 0 1200 320"
-  style="color: var(--fgColor-default);"
 >
   <defs>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
@@ -22,7 +21,7 @@
     font-size="140"
     font-weight="800"
     letter-spacing="-3"
-    fill="currentColor"
+    fill="#B6B6B6FF"
   >
     <tspan>OpenAPI</tspan>
     <tspan
@@ -43,7 +42,7 @@
     font-size="120"
     font-weight="900"
     letter-spacing="-2"
-    fill="currentColor"
+    fill="#B6B6B6FF"
   >
     Kotlin
   </text>
