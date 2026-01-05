@@ -3,6 +3,7 @@
   width="1200"
   height="320"
   viewBox="0 0 1200 320"
+  style="color: var(--fgColor-default);"
 >
   <defs>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
