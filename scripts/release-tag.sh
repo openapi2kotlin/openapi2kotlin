@@ -8,7 +8,7 @@ set -euo pipefail
 #   - Updates site/.env:
 #       VITE_LATEST_STABLE_RELEASE_VERSION="x.y.z"
 #   - Updates README.md:
-#       openapi2kotlin = "x.y.z" (inside the TOML snippet)
+#       openapi2kotlin = "x.y.z" (inside the TOML snippet under libs.versions.toml)
 #   - Commits documentation changes
 #   - Creates annotated git tag vX.Y.Z
 #   - Pushes commit and tag to origin
@@ -64,32 +64,29 @@ echo "Updating ${SITE_ENV} and ${README}"
 # with:
 #   VITE_LATEST_STABLE_RELEASE_VERSION="0.11.0"
 
-RELEASE_VERSION="${VERSION}" perl -i -pe '
-  s/^VITE_LATEST_STABLE_RELEASE_VERSION="[^"]*"\s*$/
-    "VITE_LATEST_STABLE_RELEASE_VERSION=\"$ENV{RELEASE_VERSION}\""
-  /mxe
-' "${SITE_ENV}"
+RELEASE_VERSION="${VERSION}" perl -i -pe 'BEGIN{$v=$ENV{RELEASE_VERSION}} s/^VITE_LATEST_STABLE_RELEASE_VERSION="[^"]*"\s*$/VITE_LATEST_STABLE_RELEASE_VERSION="$v"/' "${SITE_ENV}"
 
 # Verify replacement
 if ! grep -q "^VITE_LATEST_STABLE_RELEASE_VERSION=\"${VERSION}\"$" "${SITE_ENV}"; then
   echo "ERROR: Failed to update ${SITE_ENV}."
+  echo "Expected: VITE_LATEST_STABLE_RELEASE_VERSION=\"${VERSION}\""
   exit 1
 fi
 
 # -----------------------------------------------------------------------------
 # Update README.md
 # -----------------------------------------------------------------------------
-# Only update the TOML snippet under "libs.versions.toml"
-# to avoid touching other documentation sections.
+# Only update the TOML snippet inside a ```toml fenced block that contains [versions].
+# This avoids touching other sections and avoids fragile multiline regex parsing.
 
-RELEASE_VERSION="${VERSION}" perl -0777 -i -pe '
-  my $v = $ENV{RELEASE_VERSION};
-
-  s/```toml\n(.*?\[versions\].*?)\n```/
-    my $block = $1;
-    $block =~ s/^(openapi2kotlin\s*=\s*)"[^"\n]*"/$1"$v"/m;
-    "```toml\n$block\n```";
-  /gse;
+RELEASE_VERSION="${VERSION}" perl -i -pe '
+  BEGIN { $v=$ENV{RELEASE_VERSION}; $in_toml=0; $seen_versions=0; }
+  if (/^```toml\s*$/) { $in_toml=1; $seen_versions=0; }
+  elsif ($in_toml && /^```\s*$/) { $in_toml=0; $seen_versions=0; }
+  if ($in_toml && /\[versions\]/) { $seen_versions=1; }
+  if ($in_toml && $seen_versions && /^openapi2kotlin\s*=\s*"/) {
+    s/^openapi2kotlin\s*=\s*"[^"]*"/openapi2kotlin = "$v"/;
+  }
 ' "${README}"
 
 # Verify README update
