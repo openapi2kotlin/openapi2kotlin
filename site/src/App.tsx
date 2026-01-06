@@ -21,7 +21,7 @@ const GRADLE = `plugins {
     alias(libs.plugins.openapi2kotlin)
 }
 
-openapi2kotlin {s
+openapi2kotlin {
     inputSpec = "$projectDir/src/main/resources/openapi.yaml"
     outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
 
