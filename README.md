@@ -41,7 +41,7 @@ The plugin is published to [Maven Central](https://central.sonatype.com/artifact
 
 ```toml
 [versions]
-openapi2kotlin = "0.10.0"
+openapi2kotlin = "0.11.0"
 
 [plugins]
 openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }
