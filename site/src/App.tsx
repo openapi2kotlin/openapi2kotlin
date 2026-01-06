@@ -9,8 +9,10 @@ import {HeroHeading} from "./components/HeroHeading.tsx";
 import {Link} from "lucide-react";
 import {useMedia} from "@tamagui/core";
 
+const LATEST_STABLE_RELEASE_VERSION = import.meta.env.VITE_LATEST_STABLE_RELEASE_VERSION as string
+
 const TOML = `[versions]
-openapi2kotlin = "0.10.0"
+openapi2kotlin = "${LATEST_STABLE_RELEASE_VERSION}"
 
 [plugins]
 openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }`;
@@ -19,7 +21,7 @@ const GRADLE = `plugins {
     alias(libs.plugins.openapi2kotlin)
 }
 
-openapi2kotlin {
+openapi2kotlin {s
     inputSpec = "$projectDir/src/main/resources/openapi.yaml"
     outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
 

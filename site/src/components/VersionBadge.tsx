@@ -5,11 +5,9 @@ import {Tag} from "lucide-react";
 const MAVEN_URL =
     "https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin";
 
-type Props = {
-  version: string;
-};
+const LATEST_STABLE_RELEASE_VERSION = import.meta.env.VITE_LATEST_STABLE_RELEASE_VERSION as string
 
-export default function VersionBadge({ version }: Props) {
+export default function VersionBadge() {
   return (
       <Anchor href={MAVEN_URL} target="_blank" rel="noreferrer">
         <ButtonWithTooltip
@@ -26,7 +24,7 @@ export default function VersionBadge({ version }: Props) {
             tooltip="Latest stable release"
             icon={Tag}
         >
-          {version}
+          {LATEST_STABLE_RELEASE_VERSION}
         </ButtonWithTooltip>
       </Anchor>
   );

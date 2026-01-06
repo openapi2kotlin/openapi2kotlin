@@ -39,7 +39,7 @@ export default function DockNav() {
             }}
         >
           <XStack width={120}>
-            <VersionBadge version="0.10.0" />
+            <VersionBadge />
           </XStack>
 
           <Logo />
