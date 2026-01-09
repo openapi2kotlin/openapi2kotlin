@@ -43,7 +43,7 @@ sealed interface ModelShapeDO {
         /**
          * Enum values.
          */
-        val values: List<String>,
+        val values: List<EnumValue>,
     ) : ModelShapeDO
 
     /**

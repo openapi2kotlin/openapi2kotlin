@@ -32,5 +32,15 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
         cfg = config.annotations.jackson
     )
 
+    log.info { "Handling validation annotations" }
+    models.handleValidationAnnotations(
+        cfg = config.annotations.validations
+    )
+
+    log.info { "Handling swagger annotations" }
+    models.handleSwaggerAnnotations(
+        cfg = config.annotations.swagger
+    )
+
     return models
 }

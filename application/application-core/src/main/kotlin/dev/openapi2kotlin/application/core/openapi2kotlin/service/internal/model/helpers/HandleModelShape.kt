@@ -1,5 +1,6 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.EnumValue
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
@@ -40,9 +41,14 @@ internal fun List<ModelDO>.handleModelShape() {
         }
 
         if (component.rawSchema.enumValues.isNotEmpty()) {
-            component.modelShape = ModelShapeDO.EnumClass(
-                values = component.rawSchema.enumValues,
-            )
+            val enumValues = component.rawSchema.enumValues.map { original ->
+                EnumValue(
+                    originalValue = original,
+                    generatedValue = original.toEnumConstName(),
+                )
+            }
+
+            component.modelShape = ModelShapeDO.EnumClass(values = enumValues)
             return@forEach
         }
 
@@ -157,3 +163,80 @@ private fun RawSchemaDO.RawFieldTypeDO.toFieldTypeDO(): FieldTypeDO = when (this
         TrivialTypeDO(kind = trivial, nullable = nullable)
     }
 }
+
+private fun String.toEnumConstName(): String {
+    val s = trim()
+    if (s.isEmpty()) return "UNDEFINED"
+
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+
+    fun flush() {
+        if (current.isNotEmpty()) {
+            tokens += current.toString()
+            current.setLength(0)
+        }
+    }
+
+    for (i in s.indices) {
+        val c = s[i]
+
+        // Any non-letter/digit is a separator => boundary
+        if (!c.isLetterOrDigit()) {
+            flush()
+            continue
+        }
+
+        val prev = s.getOrNull(i - 1)
+        val next = s.getOrNull(i + 1)
+
+        val prevIsLower = prev?.isLowerCase() == true
+        val prevIsUpper = prev?.isUpperCase() == true
+        val prevIsDigit = prev?.isDigit() == true
+        val prevIsLetter = prev?.isLetter() == true
+
+        val cIsUpper = c.isUpperCase()
+        val cIsLower = c.isLowerCase()
+        val cIsDigit = c.isDigit()
+
+        val nextIsLower = next?.isLowerCase() == true
+
+        val boundary =
+            (prev != null) && (
+                    // camelCase boundary: inProgress => in + Progress
+                    (prevIsLower && cIsUpper) ||
+                            // acronym boundary: HTTPServer => HTTP + Server (split before S)
+                            (prevIsUpper && cIsUpper && nextIsLower) ||
+                            // digit boundaries
+                            (prevIsLetter && cIsDigit) ||
+                            (prevIsDigit && (cIsUpper || cIsLower))
+                    )
+
+        if (boundary) flush()
+        current.append(c)
+    }
+    flush()
+
+    var name = tokens
+        .asSequence()
+        .filter { it.isNotBlank() }
+        .joinToString("_") { it.uppercase() }
+        .replace(Regex("_+"), "_")
+        .trim('_')
+
+    if (name.isEmpty()) name = "UNDEFINED"
+
+    // Kotlin identifier cannot start with digit
+    if (name.first().isDigit()) name = "_$name"
+
+    // Avoid Kotlin keywords as enum entries (conservative)
+    if (name in KOTLIN_KEYWORDS) name = "${name}_"
+
+    return name
+}
+
+private val KOTLIN_KEYWORDS = setOf(
+    "AS", "BREAK", "CLASS", "CONTINUE", "DO", "ELSE", "FALSE", "FOR", "FUN", "IF",
+    "IN", "INTERFACE", "IS", "NULL", "OBJECT", "PACKAGE", "RETURN", "SUPER",
+    "THIS", "THROW", "TRUE", "TRY", "TYPEALIAS", "VAL", "VAR", "WHEN", "WHILE"
+)

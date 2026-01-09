@@ -1,5 +1,7 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.model.raw
 
+import java.math.BigDecimal
+
 /**
  * Raw schema data object representing an OpenAPI schema component. No business logic here - open api AS-IS ;)
  */
@@ -42,6 +44,11 @@ data class RawSchemaDO(
     val arrayItemType: RawFieldTypeDO? = null,
 
     /**
+     * Schema-level validation constraints, if any (e.g., typealias schemas such as "X: array" with minItems/maxItems).
+     */
+    val constraints: ConstraintsDO = ConstraintsDO(),
+
+    /**
      * Properties defined directly on this schema (top-level + inline allOf).
      * Parent properties are not included here; they are resolved later.
      */
@@ -77,12 +84,61 @@ data class RawSchemaDO(
      */
     val isDiscriminatorSelfMapped: Boolean,
 ) {
+    /**
+     * Raw constraint snapshot derived from OpenAPI Schema keywords.
+     */
+    data class ConstraintsDO(
+        val string: StringConstraintsDO? = null,
+        val number: NumberConstraintsDO? = null,
+        val array: ArrayConstraintsDO? = null,
+        val obj: ObjectConstraintsDO? = null,
+    ) {
+        data class StringConstraintsDO(
+            val minLength: Int? = null,
+            val maxLength: Int? = null,
+            val pattern: String? = null,
+        )
+
+        data class BoundDO(
+            val value: BigDecimal,
+            val inclusive: Boolean,
+        )
+
+        data class NumberConstraintsDO(
+            val min: BoundDO? = null,
+            val max: BoundDO? = null,
+            val multipleOf: BigDecimal? = null,
+        )
+
+        data class ArrayConstraintsDO(
+            val minItems: Int? = null,
+            val maxItems: Int? = null,
+            val uniqueItems: Boolean? = null,
+        )
+
+        data class ObjectConstraintsDO(
+            val minProperties: Int? = null,
+            val maxProperties: Int? = null,
+
+            /**
+             * OpenAPI "additionalProperties" flag when it is a boolean. If the value is a Schema, this is considered allowed.
+             * Null means unspecified by the source schema.
+             */
+            val additionalPropertiesAllowed: Boolean? = null,
+        )
+    }
+
     data class SchemaPropertyDO(
         val name: String,
         val type: RawFieldTypeDO,
         val required: Boolean,
         val defaultValue: String? = null,
         val description: String? = null,
+
+        /**
+         * Property-level validation constraints derived from the property schema.
+         */
+        val constraints: ConstraintsDO = ConstraintsDO(),
     )
 
     sealed interface RawFieldTypeDO {
@@ -97,6 +153,12 @@ data class RawSchemaDO(
     data class RawArrayTypeDO(
         val elementType: RawFieldTypeDO,
         override val nullable: Boolean,
+
+        /**
+         * Constraints that apply to the array items schema itself (not the list size).
+         * Used for container element constraints / nested validators.
+         */
+        val elementConstraints: ConstraintsDO = ConstraintsDO(),
     ) : RawFieldTypeDO
 
     data class RawPrimitiveTypeDO(

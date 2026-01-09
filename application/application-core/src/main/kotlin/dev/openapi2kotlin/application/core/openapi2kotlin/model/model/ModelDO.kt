@@ -56,4 +56,14 @@ data class ModelDO(
      * Prepared in core; generator must only print it.
      */
     var kdoc: String? = null,
+
+    /**
+     * Annotations to add to enum's `value` property.
+     */
+    var enumValueAnnotations: List<ModelAnnotationDO> = emptyList(),
+
+    /**
+     * Annotations to add to enum's `fromValue()` factory method.
+     */
+    var enumFromValueAnnotations: List<ModelAnnotationDO> = emptyList(),
 )

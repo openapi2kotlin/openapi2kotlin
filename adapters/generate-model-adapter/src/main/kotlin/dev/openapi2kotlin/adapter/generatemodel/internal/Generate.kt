@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeAliasSpec
 import com.squareup.kotlinpoet.TypeSpec
+import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.className
@@ -101,25 +102,22 @@ private fun buildEnumFile(
     typeBuilder.addProperty(
         PropertySpec.builder("value", String::class)
             .initializer("value")
+            .applyAnnotations(schema.enumValueAnnotations)
             .build()
     )
 
-    shape.values.forEach { rawValue ->
-        val constName = rawValue
-            .uppercase()
-            .replace(' ', '_')
-            .replace('-', '_')
-
+    shape.values.forEach { ev ->
         val enumConst = TypeSpec.anonymousClassBuilder()
-            .addSuperclassConstructorParameter("%S", rawValue)
+            .addSuperclassConstructorParameter("%S", ev.originalValue)
             .build()
 
-        typeBuilder.addEnumConstant(constName, enumConst)
+        typeBuilder.addEnumConstant(ev.generatedValue, enumConst)
     }
 
     val fromValueFun = FunSpec.builder("fromValue")
         .returns(schema.className())
         .addParameter("v", String::class)
+        .applyAnnotations(schema.enumFromValueAnnotations)
         .addCode(
             """
             return entries.firstOrNull { it.value == v }

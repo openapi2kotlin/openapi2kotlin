@@ -13,6 +13,8 @@ private const val JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty
 private const val JSON_TYPE_INFO = "com.fasterxml.jackson.annotation.JsonTypeInfo"
 private const val JSON_SUB_TYPES = "com.fasterxml.jackson.annotation.JsonSubTypes"
 private const val JSON_IGNORE_PROPERTIES = "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
+private const val JSON_VALUE = "com.fasterxml.jackson.annotation.JsonValue"
+private const val JSON_CREATOR = "com.fasterxml.jackson.annotation.JsonCreator"
 
 /**
  * Applies Jackson-related annotations to generated models.
@@ -28,11 +30,37 @@ private const val JSON_IGNORE_PROPERTIES = "com.fasterxml.jackson.annotation.Jso
  * in ModelDO.modelShape prior to this step.
  */
 internal fun List<ModelDO>.handleJacksonAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.JacksonConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig.AnnotationsConfig.JacksonConfig,
 ) {
     if (!cfg.enabled) return
 
     val bySchemaName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
+
+    /* ---------------------------------------------------------------------
+     * 0) Enum Jackson annotations (@JsonValue / @JsonCreator)
+     * ------------------------------------------------------------------- */
+
+    if (cfg.jsonValue || cfg.jsonCreator) {
+        forEach { model ->
+            if (model.modelShape !is ModelShapeDO.EnumClass) return@forEach
+
+            if (cfg.jsonValue) {
+                model.enumValueAnnotations =
+                    model.enumValueAnnotations + ModelAnnotationDO(
+                        useSite = ModelAnnotationDO.UseSiteDO.GET,
+                        fqName = JSON_VALUE,
+                    )
+            }
+
+            if (cfg.jsonCreator) {
+                model.enumFromValueAnnotations =
+                    model.enumFromValueAnnotations + ModelAnnotationDO(
+                        fqName = JSON_CREATOR,
+                    )
+            }
+        }
+    }
+
 
     /* ---------------------------------------------------------------------
      * 1) @JsonProperty for renamed fields

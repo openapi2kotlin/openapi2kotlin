@@ -8,6 +8,7 @@ data class ModelAnnotationDO(
     val useSite: UseSiteDO = UseSiteDO.NONE,
     val fqName: String,
     val argsCode: List<String> = emptyList(),
+    val metadata: Map<String, String> = emptyMap(),
 ) {
     enum class UseSiteDO {
         NONE,

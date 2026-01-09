@@ -16,7 +16,7 @@ export default function GitHubLink() {
             fontSize="$3"
             fontWeight="700"
             icon={Github}
-            tooltip="GitHub"
+            tooltip="Open Source Code"
         >
         </ChromelessCircularButton>
       </Anchor>
