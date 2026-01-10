@@ -32,17 +32,17 @@ openapi2kotlin {
 
 const CONFIG_ROWS = [
   {
-    property: "inputSpec =",
+    property: "inputSpec",
     description: "Path to OpenAPI YAML or JSON specification",
     example: `"$projectDir/src/main/resources/openapi.yaml"`,
   },
   {
-    property: "outputDir =",
+    property: "outputDir",
     description: "Root directory for generated Kotlin sources",
     example: `layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path`,
   },
   {
-    property: "model { packageName = }",
+    property: "model.packageName",
     description: "Package name for generated model classes",
     example: `"dev.openapi2kotlin.model"`,
   },

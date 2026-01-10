@@ -66,11 +66,11 @@ openapi2kotlin {
 
 ### Configuration options
 
-| Property                      | Description | Example |
-|-------------------------------|-------------|---------|
-| `inputSpec = `                | Path to OpenAPI YAML or JSON specification |  "$projectDir/src/main/resources/openapi.yaml"       |
-| `outputDir = `                | Root directory for generated Kotlin sources |  layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path       |
-| `model { packageName = }`     | Package name for generated model classes |     "dev.openapi2kotlin.model"    |
+| Property            | Description                                 | Example                                                                  |
+|---------------------|---------------------------------------------|--------------------------------------------------------------------------|
+| `inputSpec`         | Path to OpenAPI YAML or JSON specification  | "$projectDir/src/main/resources/openapi.yaml"                            |
+| `outputDir`         | Root directory for generated Kotlin sources | layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path |
+| `model.packageName` | Package name for generated model classes    | "dev.openapi2kotlin.model"                                               |
 
 ### Requirements
 
