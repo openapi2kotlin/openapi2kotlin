@@ -1,10 +1,10 @@
 package dev.openapi2kotlin.adapter.generateclient
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateClientPort
+import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 
 
-class GenerateClientAdapter: GenerateClientPort {
-    override fun generateClient(command: GenerateClientPort.Command) {
+class GenerateClientAdapter: GenerateApiPort {
+    override fun generateApi(command: GenerateApiPort.Command) {
         // todo
     }
 }

@@ -1,20 +1,16 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateClientPort
+import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateModelPort
-import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateServerPort
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.ParseSpecPort
-import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.client.prepareClientApis
+import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.prepareApis
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.prepareModels
-import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.server.prepareServerApis
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
-
 
 class OpenApi2KotlinService(
     private val parseSpecPort: ParseSpecPort,
-    private val generateServerPort: GenerateServerPort,
+    private val generateApiPort: GenerateApiPort,
     private val generateModelPort: GenerateModelPort,
-    private val generateClientPort: GenerateClientPort,
 ) : OpenApi2KotlinUseCase {
 
     override fun openApi2kotlin(config: OpenApi2KotlinUseCase.Config) {
@@ -32,32 +28,22 @@ class OpenApi2KotlinService(
             )
         )
 
-        if (config.server.enabled) {
-            val serverApis = prepareServerApis(
-                rawPaths = openApi.rawPaths,
-                models = models,
-                mappingCfg = config.model.mapping,
-                cfg = config.server,
-            )
+        val apiPackageName = config.api?.packageName ?: return
 
-            generateServerPort.generateServer(
-                GenerateServerPort.Command(
-                    serverApis = serverApis,
-                    serverPackageName = config.server.packageName,
-                    modelPackageName = config.model.packageName,
-                    outputDirPath = config.outputDirPath,
-                    models = models,
-                )
-            )
-        }
+        val apis = prepareApis(
+            rawPaths = openApi.rawPaths,
+            models = models,
+            mappingCfg = config.model.mapping,
+        )
 
-        if (config.client.enabled) {
-            generateClientPort.generateClient(GenerateClientPort.Command(
-                clientApis = prepareClientApis(openApi.rawPaths),
-                clientPackageName = config.client.packageName,
+        generateApiPort.generateApi(
+            GenerateApiPort.Command(
+                apis = apis,
+                packageName = apiPackageName,
                 modelPackageName = config.model.packageName,
                 outputDirPath = config.outputDirPath,
-            ))
-        }
+                models = models,
+            )
+        )
     }
 }

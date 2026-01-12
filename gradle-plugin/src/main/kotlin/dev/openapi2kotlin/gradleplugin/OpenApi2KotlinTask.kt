@@ -19,28 +19,20 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
             outputDirPath = resolveOutputSpecPath(ext),
         )
 
-        // Resolve server config first so we can apply conditional defaults to model annotations.
-        val serverEnabled = ext.server.enabled ?: defaultConfig.server.enabled
-
-        val serverConfig = defaultConfig.server.copy(
-            enabled = serverEnabled,
-            packageName = ext.server.packageName ?: defaultConfig.server.packageName,
-            framework = ext.server.framework
-                ?.let { OpenApi2KotlinUseCase.ServerConfig.Framework.fromValue(it) }
-                ?: defaultConfig.server.framework,
-        )
+        val apiConfig = resolveApiConfig(ext)
+        val serverMode = apiConfig is OpenApi2KotlinUseCase.ApiConfig.Server
 
         // Conditional default for validation annotations:
         //  - explicit user setting wins
         //  - otherwise: enabled when generating server, disabled otherwise
         val effectiveValidationAnnotationsEnabled: Boolean =
-            ext.model.annotations.validations.enabled ?: serverConfig.enabled
+            ext.model.annotations.validations.enabled ?: serverMode
 
         // Conditional default for swagger annotations:
         //  - explicit user setting wins
         //  - otherwise: enabled when generating server, disabled otherwise
         val effectiveSwaggerAnnotationsEnabled: Boolean =
-            ext.model.annotations.swagger.enabled ?: serverConfig.enabled
+            ext.model.annotations.swagger.enabled ?: serverMode
 
         val modelConfig = defaultConfig.model.copy(
             packageName = ext.model.packageName ?: defaultConfig.model.packageName,
@@ -82,20 +74,54 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
             ),
         )
 
-        val clientConfig = defaultConfig.client.copy(
-            enabled = ext.client.enabled ?: defaultConfig.client.enabled,
-            packageName = ext.client.packageName ?: defaultConfig.client.packageName,
-        )
-
         val config = defaultConfig.copy(
             model = modelConfig,
-            client = clientConfig,
-            server = serverConfig,
+            api = apiConfig,
         )
 
         clearOutput(config)
 
         OpenApi2KotlinApp.openApi2kotlin(config)
+    }
+
+    private fun resolveApiConfig(ext: OpenApi2KotlinExtension): OpenApi2KotlinUseCase.ApiConfig? {
+        val server = ext.server
+        val client = ext.client
+
+        // The extension enforces exclusivity already, but keep a defensive check here.
+        if (server != null && client != null) {
+            throw GradleException(
+                "openapi2kotlin: client{} and server{} cannot coexist.\n" +
+                        "This generator is intentionally single-target.\n" +
+                        "\n" +
+                        "Choose exactly one:\n" +
+                        "openapi2kotlin {\n" +
+                        "    client { ... }\n" +
+                        "}\n" +
+                        "\n" +
+                        "or:\n" +
+                        "openapi2kotlin {\n" +
+                        "    server { ... }\n" +
+                        "}"
+            )
+        }
+
+        return when {
+            server != null -> OpenApi2KotlinUseCase.ApiConfig.Server(
+                packageName = server.packageName
+                    ?: OpenApi2KotlinUseCase.ApiConfig.Server().packageName,
+                framework = server.framework
+                    ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
+                    ?: OpenApi2KotlinUseCase.ApiConfig.Server().framework,
+            )
+
+            client != null -> OpenApi2KotlinUseCase.ApiConfig.Client(
+                packageName = client.packageName
+                    ?: OpenApi2KotlinUseCase.ApiConfig.Client().packageName,
+            )
+
+            else -> null
+        }
     }
 
     private fun resolveInputSpecPath(ext: OpenApi2KotlinExtension): Path {
@@ -137,16 +163,13 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
     private fun clearOutput(config: OpenApi2KotlinUseCase.Config) {
         val outputDirPath = config.outputDirPath
-
         if (!Files.exists(outputDirPath)) return
 
         clearPackageDir(outputDirPath, config.model.packageName)
 
-        if (config.client.enabled) {
-            clearPackageDir(outputDirPath, config.client.packageName)
-        }
-        if (config.server.enabled) {
-            clearPackageDir(outputDirPath, config.server.packageName)
+        val apiPackageName = config.api?.packageName
+        if (apiPackageName != null) {
+            clearPackageDir(outputDirPath, apiPackageName)
         }
     }
 

@@ -12,8 +12,17 @@ fun interface OpenApi2KotlinUseCase {
         val outputDirPath: Path,
 
         val model: ModelConfig = ModelConfig(),
-        val client: ClientConfig = ClientConfig(),
-        val server: ServerConfig = ServerConfig(),
+
+        /**
+         * API generation target.
+         *
+         * - null        -> generate models only
+         * - ApiConfig.Client -> generate client APIs
+         * - ApiConfig.Server -> generate server APIs
+         *
+         * Exactly one API target may be specified per invocation.
+         */
+        val api: ApiConfig? = null,
     )
 
     data class ModelConfig(
@@ -32,36 +41,38 @@ fun interface OpenApi2KotlinUseCase {
             val jackson: JacksonConfig = JacksonConfig(),
 
             /**
-             * Validation annotations are useful primarily for server-side request validation. Many client-only
-             * use cases do not want to depend on jakarta.validation and do not run validation automatically
-             * on responses. Therefore, the Gradle plugin applies a conditional default:
+             * Validation annotations are useful primarily for server-side request validation.
+             *
+             * Many client-only use cases do not want to depend on jakarta.validation and
+             * do not run validation automatically on responses.
              *
              * Precedence rules (Gradle plugin behavior):
              *  1) If the user explicitly sets model.annotations.validations.enabled -> that value wins.
-             *  2) Else if server.enabled == true -> validations.enabled defaults to true.
-             *  3) Else (no server) -> validations.enabled defaults to false.
+             *  2) Else if API target is Server -> validations.enabled defaults to true.
+             *  3) Else (client API or no API) -> validations.enabled defaults to false.
              */
             val validations: ValidationAnnotationsConfig = ValidationAnnotationsConfig(),
 
             /**
-             * Swagger annotation are useful primarily for server-side. Therefore, the plugin applies a conditional default:
+             * Swagger annotations are useful primarily for server-side APIs.
              *
              * Precedence rules (Gradle plugin behavior):
-             *  1) If the user explicitly sets model.annotations.swagger.schema -> that value wins.
-             *  2) Else if server.enabled == true -> validations.enabled defaults to true.
-             *  3) Else (no server) -> validations.enabled defaults to false.
+             *  1) If the user explicitly sets model.annotations.swagger.enabled -> that value wins.
+             *  2) Else if API target is Server -> swagger.enabled defaults to true.
+             *  3) Else (client API or no API) -> swagger.enabled defaults to false.
              */
             val swagger: SwaggerConfig = SwaggerConfig(),
         ) {
             /**
-             * Jackson-specific configuration: property-name mapping + polymorphism/discriminators.
+             * Jackson-specific configuration: property-name mapping
+             * and polymorphism / discriminator handling.
              */
             data class JacksonConfig(
                 /**
                  * Master switch for emitting any Jackson annotations at all.
                  *
                  * - When false: no @JsonProperty, no @JsonTypeInfo, no @JsonSubTypes, etc.
-                 * - When true: other switches below apply if any.
+                 * - When true: other switches below apply if enabled.
                  */
                 val enabled: Boolean = true,
 
@@ -69,44 +80,39 @@ fun interface OpenApi2KotlinUseCase {
                  * Generate @JsonProperty for fields where originalName != generatedName
                  * (e.g. "@type" -> "atType", "foo-bar" -> "fooBar").
                  *
-                 * This is independent of polymorphism: it is plain JSON name mapping.
+                 * This is independent of polymorphism; it is plain JSON name mapping.
                  */
                 val jsonPropertyMapping: Boolean = true,
 
                 /**
-                 * Whether discriminator properties should be defaulted in constructors for ergonomics.
-                 * Example: override val atType: String = "Category_FVO"
+                 * Whether discriminator properties should be defaulted in constructors
+                 * for ergonomics (e.g. override val atType: String = "Category_FVO").
                  */
                 val defaultDiscriminatorValue: Boolean = true,
 
                 /**
-                 * Strict serialization prevents user-provided discriminator property values from
-                 * affecting JSON output. Jackson emits discriminator from runtime subtype, not the field.
-                 *
-                 * Typical implementation: @JsonIgnoreProperties(value=[disc], allowSetters=true) on union root.
+                 * Strict serialization prevents user-provided discriminator values
+                 * from affecting JSON output. Jackson emits the discriminator based
+                 * on the runtime subtype, not the field value.
                  */
                 val strictDiscriminatorSerialization: Boolean = true,
 
                 /**
-                 * Generate @JsonValue on `value` property for enums.
+                 * Generate @JsonValue on enum `value` properties.
                  */
                 val jsonValue: Boolean = true,
 
                 /**
-                 * Generate @JsonCreator on fromValue() factory method for enums.
+                 * Generate @JsonCreator on enum fromValue() factory methods.
                  */
                 val jsonCreator: Boolean = true,
             )
 
             data class ValidationAnnotationsConfig(
                 /**
-                 * Master switch for emitting any validation annotations at all.
+                 * Master switch for emitting validation annotations.
                  *
-                 * Note: the Gradle plugin may enable this by default when server.enabled=true unless the user
-                 * explicitly overrides this flag.
-                 *
-                 * - When false: no @Valid, no @Size(min = 1), no @Pattern, etc.
-                 * - When true: other switches below apply if any.
+                 * When disabled, no @Valid, @Size, @Pattern, etc. are generated.
                  */
                 val enabled: Boolean = true,
 
@@ -125,28 +131,25 @@ fun interface OpenApi2KotlinUseCase {
 
                     companion object {
                         fun fromValue(value: String): ValidationAnnotationsNamespace =
-                            ValidationAnnotationsNamespace.entries.firstOrNull { it.value.equals(value, ignoreCase = true) }
-                                ?: throw kotlin.IllegalArgumentException("Unexpected ValidationNamespace value: '$value'")
+                            ValidationAnnotationsNamespace.entries.firstOrNull {
+                                it.value.equals(value, ignoreCase = true)
+                            } ?: throw IllegalArgumentException(
+                                "Unexpected ValidationNamespace value: '$value'"
+                            )
                     }
                 }
             }
 
             data class SwaggerConfig(
                 /**
-                 * Master switch for emitting any swagger annotations at all.
-                 *
-                 * Note: the Gradle plugin may enable this by default when server.enabled=true unless the user
-                 * explicitly overrides this flag.
-                 *
-                 * - When false: no @Valid, no @Size(min = 1), no @Pattern, etc.
-                 * - When true: other switches below apply if any.
+                 * Master switch for emitting Swagger / OpenAPI annotations.
                  */
                 val enabled: Boolean = false,
             )
         }
 
         /**
-         * Type mapping knobs for the generated model.
+         * Type-mapping knobs for the generated model.
          */
         data class MappingConfig(
             val double2BigDecimal: Boolean = true,
@@ -155,28 +158,54 @@ fun interface OpenApi2KotlinUseCase {
         )
     }
 
-    data class ClientConfig(
-        val enabled: Boolean = false,
-        val packageName: String = "$DEFAULT_PACKAGE_NAME.client",
-    )
+    /**
+     * API generation target.
+     *
+     * This sealed hierarchy intentionally makes invalid configurations
+     * (e.g. client and server at the same time) unrepresentable.
+     */
+    sealed interface ApiConfig {
+        /**
+         * Base package for generated API sources.
+         */
+        val packageName: String
 
-    data class ServerConfig(
-        val enabled: Boolean = false,
-        val packageName: String = "$DEFAULT_PACKAGE_NAME.server",
-        val framework: Framework = Framework.KTOR,
-    ) {
-        enum class Framework(
-            val value: String,
-        ) {
-            KTOR("ktor"),
-            SPRING("spring");
+        /**
+         * Client-side API generation.
+         *
+         * Intended for SDKs and consumers of remote APIs.
+         */
+        data class Client(
+            override val packageName: String = "$DEFAULT_PACKAGE_NAME.client",
+        ) : ApiConfig
 
-            override fun toString(): String = value
+        /**
+         * Server-side API generation.
+         *
+         * Intended for API providers exposing HTTP endpoints.
+         */
+        data class Server(
+            override val packageName: String = "$DEFAULT_PACKAGE_NAME.server",
+            val framework: Framework = Framework.KTOR,
+        ) : ApiConfig {
+            /**
+             * Supported server frameworks.
+             */
+            enum class Framework(
+                val value: String,
+            ) {
+                KTOR("ktor"),
+                SPRING("spring");
 
-            companion object {
-                fun fromValue(value: String): Framework =
-                    Framework.entries.firstOrNull { it.value.equals(value, ignoreCase = true) }
-                        ?: throw kotlin.IllegalArgumentException("Unexpected Framework value: '$value'")
+                override fun toString(): String = value
+
+                companion object {
+                    fun fromValue(value: String): Framework =
+                        entries.firstOrNull { it.value.equals(value, ignoreCase = true) }
+                            ?: throw IllegalArgumentException(
+                                "Unexpected Framework value: '$value'"
+                            )
+                }
             }
         }
     }

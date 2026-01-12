@@ -1,5 +1,7 @@
 package dev.openapi2kotlin.gradleplugin
 
+import org.gradle.api.GradleException
+
 open class OpenApi2KotlinExtension {
     var inputSpec: String? = null
     var outputDir: String? = null
@@ -7,12 +9,47 @@ open class OpenApi2KotlinExtension {
     var srcDirEnabled: Boolean = true
 
     val model = ModelConfigExtension()
-    val client = ClientConfigExtension()
-    val server = ServerConfigExtension()
+
+    var client: ClientConfigExtension? = null
+        private set
+    var server: ServerConfigExtension? = null
+        private set
 
     fun model(block: ModelConfigExtension.() -> Unit) = model.block()
-    fun client(block: ClientConfigExtension.() -> Unit) = client.block()
-    fun server(block: ServerConfigExtension.() -> Unit) = server.block()
+
+    fun client(block: ClientConfigExtension.() -> Unit) {
+        if (server != null) {
+            throwClientServerExclusivityError()
+        }
+        client = (client ?: ClientConfigExtension()).apply(block)
+    }
+
+    fun server(block: ServerConfigExtension.() -> Unit) {
+        if (client != null) {
+            throwClientServerExclusivityError()
+        }
+        server = (server ?: ServerConfigExtension()).apply(block)
+    }
+
+    private fun throwClientServerExclusivityError(): Nothing {
+        throw GradleException(
+            "openapi2kotlin: client{} and server{} cannot coexist.\n" +
+                    "This generator is intentionally single-target.\n" +
+                    "\n" +
+                    "If you feel the need to generate both in one run,\n" +
+                    "the issue is likely architectural rather than configurational.\n" +
+                    "\n" +
+                    "Choose exactly one:\n\n" +
+                    "openapi2kotlin {\n" +
+                    "    client { ... }\n" +
+                    "}\n" +
+                    "\n" +
+                    "or:\n\n" +
+                    "openapi2kotlin {\n" +
+                    "    server { ... }\n" +
+                    "}"
+        )
+    }
 
     open class ModelConfigExtension {
         var packageName: String? = null
@@ -59,12 +96,10 @@ open class OpenApi2KotlinExtension {
     }
 
     open class ClientConfigExtension {
-        var enabled: Boolean? = null
         var packageName: String? = null
     }
 
     open class ServerConfigExtension {
-        var enabled: Boolean? = null
         var packageName: String? = null
         var framework: String? = null
     }
