@@ -10,9 +10,10 @@ import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
-import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.className
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.toParamSpec
-import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.typeName
+import dev.openapi2kotlin.adapter.tools.TypeNameContext
+import dev.openapi2kotlin.adapter.tools.postProcess
+import dev.openapi2kotlin.adapter.tools.toTypeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -32,22 +33,33 @@ fun generate(
     val outputDir = outputDirPath.toFile()
     val byName = models.associateBy { it.rawSchema.originalName }
 
+    val ctxByPackageName: Map<String, TypeNameContext> =
+        models
+            .map { it.packageName }
+            .distinct()
+            .associateWith { pkg ->
+                TypeNameContext(
+                    modelPackageName = pkg,
+                    bySchemaName = byName,
+                )
+            }
+
     models.forEach { model ->
         val fileSpec: FileSpec = when (val shape = model.modelShape) {
             is ModelShapeDO.EnumClass ->
                 buildEnumFile(model, shape)
 
             is ModelShapeDO.SealedInterface ->
-                buildSealedInterfaceFile(model, shape, byName)
+                buildSealedInterfaceFile(model, shape, byName, ctxByPackageName)
 
             is ModelShapeDO.DataClass ->
-                buildDataClassFile(model, shape, byName)
+                buildDataClassFile(model, shape, byName, ctxByPackageName)
 
             is ModelShapeDO.OpenClass ->
-                buildOpenClassFile(model, shape, byName)
+                buildOpenClassFile(model, shape, byName, ctxByPackageName)
 
             is ModelShapeDO.TypeAlias ->
-                buildTypeAliasFile(model, shape, byName)
+                buildTypeAliasFile(model, shape, ctxByPackageName)
 
             is ModelShapeDO.Undecided -> {
                 log.warn { "Shape for ${model.generatedName} is still Undecided, generating simple data class." }
@@ -58,6 +70,7 @@ fun generate(
                         implements = emptyList(),
                     ),
                     byName,
+                    ctxByPackageName,
                 )
             }
         }
@@ -65,20 +78,7 @@ fun generate(
         fileSpec.writeTo(outputDir)
     }
 
-    // strip 'public ' everywhere – you don't want explicit visibility
-    outputDir
-        .walkTopDown()
-        .filter { it.isFile && it.extension == "kt" }
-        .forEach { file ->
-            val text = file.readText()
-            file.writeText(
-                text
-                    // KotlinPoet add redundant public modifiers by default
-                    .replace("public ", "")
-                    // KotlinPoet escapes this package segment; we prefer the normal form.
-                    .replace(".`annotation`.", ".annotation.")
-            )
-        }
+    outputDir.postProcess()
 }
 
 /* ---------- ENUM CLASS ---------- */
@@ -144,7 +144,10 @@ private fun buildSealedInterfaceFile(
     schema: ModelDO,
     shape: ModelShapeDO.SealedInterface,
     byName: Map<String, ModelDO>,
+    ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
+    val ctx = ctxByPackageName.getValue(schema.packageName)
+
     val typeBuilder = TypeSpec.interfaceBuilder(schema.generatedName)
         .addModifiers(KModifier.SEALED)
         .applyModelAnnotations(schema)
@@ -162,7 +165,7 @@ private fun buildSealedInterfaceFile(
     schema.fields.forEach { field ->
         val propBuilder = PropertySpec.builder(
             field.generatedName,
-            field.type.typeName(schema, byName),
+            field.type.toTypeName(ctx),
         )
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
@@ -190,10 +193,13 @@ private fun buildDataClassFile(
     schema: ModelDO,
     shape: ModelShapeDO.DataClass,
     byName: Map<String, ModelDO>,
+    ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
+    val ctx = ctxByPackageName.getValue(schema.packageName)
+
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(schema, byName))
+            addParameter(field.toParamSpec(ctx))
         }
     }.build()
 
@@ -211,7 +217,7 @@ private fun buildDataClassFile(
     schema.fields.forEach { field ->
         val propBuilder = PropertySpec.builder(
             field.generatedName,
-            field.type.typeName(schema, byName),
+            field.type.toTypeName(ctx),
         ).initializer(field.generatedName)
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
@@ -257,10 +263,13 @@ private fun buildOpenClassFile(
     schema: ModelDO,
     shape: ModelShapeDO.OpenClass,
     byName: Map<String, ModelDO>,
+    ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
+    val ctx = ctxByPackageName.getValue(schema.packageName)
+
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(schema, byName))
+            addParameter(field.toParamSpec(ctx))
         }
     }.build()
 
@@ -280,7 +289,7 @@ private fun buildOpenClassFile(
     schema.fields.forEach { field ->
         val propBuilder = PropertySpec.builder(
             field.generatedName,
-            field.type.typeName(schema, byName),
+            field.type.toTypeName(ctx),
         ).initializer(field.generatedName)
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
@@ -325,9 +334,10 @@ private fun buildOpenClassFile(
 private fun buildTypeAliasFile(
     schema: ModelDO,
     shape: ModelShapeDO.TypeAlias,
-    byName: Map<String, ModelDO>,
+    ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
-    val targetTypeName = shape.target.typeName(schema, byName)
+    val ctx = ctxByPackageName.getValue(schema.packageName)
+    val targetTypeName = shape.target.toTypeName(ctx)
 
     val fileBuilder = FileSpec.builder(schema.packageName, schema.generatedName)
 
@@ -339,3 +349,6 @@ private fun buildTypeAliasFile(
         .addTypeAlias(TypeAliasSpec.builder(schema.generatedName, targetTypeName).build())
         .build()
 }
+
+private fun ModelDO.className(): ClassName =
+    ClassName(packageName, generatedName)

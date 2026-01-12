@@ -13,10 +13,23 @@ private val DOUBLE = ClassName("kotlin", "Double")
 private val BOOLEAN = ClassName("kotlin", "Boolean")
 private val ANY = ClassName("kotlin", "Any")
 private val BYTE_ARRAY = ClassName("kotlin", "ByteArray")
+private val LIST = ClassName("kotlin.collections", "List")
+
 private val BIG_DECIMAL = ClassName("java.math", "BigDecimal")
 private val LOCAL_DATE = ClassName("java.time", "LocalDate")
 private val OFFSET_DATE_TIME = ClassName("java.time", "OffsetDateTime")
-private val LIST = ClassName("kotlin.collections", "List")
+
+data class TypeNameContext(
+    /**
+     * Package where referenced model types live (e.g. config.model.packageName).
+     */
+    val modelPackageName: String,
+
+    /**
+     * Map of schema originalName -> ModelDO (optional but improves name resolution).
+     */
+    val bySchemaName: Map<String, ModelDO> = emptyMap(),
+)
 
 private fun TrivialTypeDO.Kind.typeName(): ClassName = when (this) {
     TrivialTypeDO.Kind.STRING -> STRING
@@ -32,19 +45,17 @@ private fun TrivialTypeDO.Kind.typeName(): ClassName = when (this) {
     TrivialTypeDO.Kind.ANY -> ANY
 }
 
-fun FieldTypeDO.toTypeName(
-    modelPackageName: String,
-    bySchemaName: Map<String, ModelDO>,
-): TypeName = when (this) {
-    is TrivialTypeDO -> kind.typeName().copy(nullable = nullable)
+fun FieldTypeDO.toTypeName(ctx: TypeNameContext): TypeName = when (this) {
+    is TrivialTypeDO ->
+        kind.typeName().copy(nullable = nullable)
 
     is RefTypeDO -> {
-        val target = bySchemaName[schemaName]
-        val cls = ClassName(modelPackageName, target?.generatedName ?: schemaName)
-        cls.copy(nullable = nullable)
+        val target = ctx.bySchemaName[schemaName]
+        ClassName(ctx.modelPackageName, target?.generatedName ?: schemaName)
+            .copy(nullable = nullable)
     }
 
     is ListTypeDO ->
-        LIST.parameterizedBy(elementType.toTypeName(modelPackageName, bySchemaName))
+        LIST.parameterizedBy(elementType.toTypeName(ctx))
             .copy(nullable = nullable)
 }

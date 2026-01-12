@@ -2,11 +2,11 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.MemberName
+import dev.openapi2kotlin.adapter.tools.TypeNameContext
 import dev.openapi2kotlin.adapter.tools.toTypeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 
@@ -26,8 +26,7 @@ internal fun buildKtorRoute(
     basePath: String,
     routesFunName: String,
     serverPackageName: String,
-    modelPackageName: String,
-    bySchemaName: Map<String, ModelDO>,
+    ctx: TypeNameContext,
 ): FunSpec {
     val apiType = ClassName(serverPackageName, api.generatedName)
 
@@ -44,12 +43,12 @@ internal fun buildKtorRoute(
                     val idOps = api.endpoints.filter { it.rawOperation.path == basePath + "/{id}" }
                     val otherOps = api.endpoints - baseOps.toSet() - idOps.toSet()
 
-                    baseOps.forEach { addKtorHandler(it, modelPackageName, bySchemaName) }
+                    baseOps.forEach { addKtorHandler(it, ctx) }
 
                     if (idOps.isNotEmpty()) {
                         addStatement("%M(%S) {", M_route, "/{id}")
                         indent()
-                        idOps.forEach { addKtorHandler(it, modelPackageName, bySchemaName) }
+                        idOps.forEach { addKtorHandler(it, ctx) }
                         unindent()
                         addStatement("}")
                     }
@@ -62,7 +61,7 @@ internal fun buildKtorRoute(
                                 addStatement("%M(%S) {", M_route, suffix)
                                 indent()
                             }
-                            eps.forEach { addKtorHandler(it, modelPackageName, bySchemaName) }
+                            eps.forEach { addKtorHandler(it, ctx) }
                             if (suffix.isNotBlank()) {
                                 unindent()
                                 addStatement("}")
@@ -84,8 +83,7 @@ private fun suffixUnderBase(base: String, full: String): String {
 
 private fun CodeBlock.Builder.addKtorHandler(
     ep: ApiEndpointDO,
-    modelPackageName: String,
-    bySchemaName: Map<String, ModelDO>,
+    ctx: TypeNameContext,
 ) {
     val methodMember = when (ep.rawOperation.httpMethod) {
         RawPathDO.HttpMethodDO.GET -> M_get
@@ -130,7 +128,7 @@ private fun CodeBlock.Builder.addKtorHandler(
     }
 
     ep.requestBody?.let { body ->
-        val bodyType = body.type.toTypeName(modelPackageName, bySchemaName)
+        val bodyType = body.type.toTypeName(ctx)
         addStatement("val %L = call.%M<%T>()", body.generatedName, M_receive, bodyType)
     }
 
