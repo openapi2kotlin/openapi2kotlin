@@ -7,5 +7,5 @@ data class ApiParamDO(
     val rawParam: RawPathDO.ParamDO,
     val generatedName: String,
     val type: FieldTypeDO,
-    val annotations: List<ApiAnnotationDO>,
+    var annotations: List<ApiAnnotationDO> = emptyList(),
 )

@@ -5,5 +5,5 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeD
 data class ApiRequestBodyDO(
     val generatedName: String,
     val type: FieldTypeDO,
-    val annotations: List<ApiAnnotationDO>,
+    var annotations: List<ApiAnnotationDO> = emptyList(),
 )

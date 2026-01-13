@@ -16,7 +16,6 @@ internal fun List<RawPathDO>.toApis(
             rawPath = rawPath,
             generatedName = rawPath.generatedApiName(),
             endpoints = rawPath.operations.map { it.toBaseEndpoint(ctx) },
-            annotations = emptyList(),
         )
     }
 
@@ -40,7 +39,6 @@ private fun RawPathDO.OperationDO.toBaseEndpoint(
             rawParam = p,
             generatedName = p.name.toKotlinParamName(),
             type = p.type.toApiFieldType(ctx, required = p.required),
-            annotations = emptyList(),
         )
     }
 
@@ -48,7 +46,6 @@ private fun RawPathDO.OperationDO.toBaseEndpoint(
         ApiRequestBodyDO(
             generatedName = "body",
             type = rb.type.toApiFieldType(ctx, required = rb.required),
-            annotations = emptyList(),
         )
     }
 
@@ -67,7 +64,6 @@ private fun RawPathDO.OperationDO.toBaseEndpoint(
         params = params,
         requestBody = body,
         successResponse = success,
-        annotations = emptyList(),
     )
 }
 

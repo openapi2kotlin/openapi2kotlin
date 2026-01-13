@@ -33,7 +33,7 @@ class OpenApi2KotlinService(
         val apis = prepareApis(
             rawPaths = openApi.rawPaths,
             models = models,
-            mappingCfg = config.model.mapping,
+            config = config,
         )
 
         generateApiPort.generateApi(

@@ -2,6 +2,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.mode
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.toKotlinStringLiteral
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 private const val SCHEMA = "io.swagger.v3.oas.annotations.media.Schema"
@@ -16,7 +17,7 @@ private const val SCHEMA = "io.swagger.v3.oas.annotations.media.Schema"
  *  - name is always RawSchemaDO.originalName
  *  - description is RawSchemaDO.description (when present)
  */
-internal fun List<ModelDO>.handleSwaggerAnnotations(
+internal fun List<ModelDO>.handleModelSwaggerAnnotations(
     cfg: OpenApi2KotlinUseCase.ApiConfig?,
 ) {
     val enabled: Boolean =
@@ -43,19 +44,3 @@ internal fun List<ModelDO>.handleSwaggerAnnotations(
         )
     }
 }
-
-private fun String.toKotlinStringLiteral(): String =
-    buildString {
-        append('"')
-        for (ch in this@toKotlinStringLiteral) {
-            when (ch) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> append(ch)
-            }
-        }
-        append('"')
-    }

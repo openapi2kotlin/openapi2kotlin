@@ -8,5 +8,5 @@ data class ApiEndpointDO(
     val params: List<ApiParamDO>,
     val requestBody: ApiRequestBodyDO?,
     val successResponse: ApiSuccessResponseDO?,
-    val annotations: List<ApiAnnotationDO>,
+    var annotations: List<ApiAnnotationDO> = emptyList(),
 )

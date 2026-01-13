@@ -38,7 +38,7 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
     )
 
     log.info { "Handling swagger annotations" }
-    models.handleSwaggerAnnotations(
+    models.handleModelSwaggerAnnotations(
         cfg = config.api
     )
 

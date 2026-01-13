@@ -2,7 +2,9 @@ package dev.openapi2kotlin.adapter.generateserver.spring.internal
 
 import com.squareup.kotlinpoet.*
 import dev.openapi2kotlin.adapter.tools.TypeNameContext
+import dev.openapi2kotlin.adapter.tools.addImportsAndShortenArgs
 import dev.openapi2kotlin.adapter.tools.postProcess
+import dev.openapi2kotlin.adapter.tools.shortenArgs
 import dev.openapi2kotlin.adapter.tools.toTypeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
@@ -23,23 +25,23 @@ fun generate(
     apis.forEach { api ->
         val typeBuilder = TypeSpec.interfaceBuilder(api.generatedName)
 
-        api.annotations.forEach { typeBuilder.addAnnotation(it.toPoet()) }
+        api.annotations.shortenArgs().forEach { typeBuilder.addAnnotation(it.toPoet()) }
 
         api.endpoints.forEach { ep ->
             val funBuilder = FunSpec.builder(ep.generatedName)
                 .addModifiers(KModifier.ABSTRACT, KModifier.SUSPEND)
 
-            ep.annotations.forEach { funBuilder.addAnnotation(it.toPoet()) }
+            ep.annotations.shortenArgs().forEach { funBuilder.addAnnotation(it.toPoet()) }
 
             ep.params.forEach { p ->
                 val pb = ParameterSpec.builder(p.generatedName, p.type.toTypeName(ctx))
-                p.annotations.forEach { pb.addAnnotation(it.toPoet()) }
+                p.annotations.shortenArgs().forEach { pb.addAnnotation(it.toPoet()) }
                 funBuilder.addParameter(pb.build())
             }
 
             ep.requestBody?.let { body ->
                 val pb = ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx))
-                body.annotations.forEach { pb.addAnnotation(it.toPoet()) }
+                body.annotations.shortenArgs().forEach { pb.addAnnotation(it.toPoet()) }
                 funBuilder.addParameter(pb.build())
             }
 
@@ -57,7 +59,17 @@ fun generate(
             typeBuilder.addFunction(funBuilder.build())
         }
 
+        val allAnnotationsOriginal: List<ApiAnnotationDO> = buildList {
+            addAll(api.annotations)
+            api.endpoints.forEach { ep ->
+                addAll(ep.annotations)
+                ep.params.forEach { addAll(it.annotations) }
+                ep.requestBody?.let { addAll(it.annotations) }
+            }
+        }
+
         FileSpec.builder(serverPackageName, api.generatedName)
+            .addImportsAndShortenArgs(allAnnotationsOriginal)
             .addType(typeBuilder.build())
             .build()
             .writeTo(outDir)

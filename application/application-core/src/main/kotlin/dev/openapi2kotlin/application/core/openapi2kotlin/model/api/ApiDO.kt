@@ -6,5 +6,5 @@ data class ApiDO (
     val rawPath: RawPathDO,
     val generatedName: String,
     val endpoints: List<ApiEndpointDO>,
-    val annotations: List<ApiAnnotationDO>,
+    var annotations: List<ApiAnnotationDO> = emptyList(),
 )

@@ -3,20 +3,33 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.helpers.handleServerSwaggerAnnotations
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.helpers.toApis
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val log = KotlinLogging.logger {}
 
 internal fun prepareApis(
     rawPaths: List<RawPathDO>,
     models: List<ModelDO>,
-    mappingCfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
+    config: OpenApi2KotlinUseCase.Config,
 ): List<ApiDO> {
     val ctx = ApisContext(
         modelsBySchemaName = models.associateBy { it.rawSchema.originalName },
-        mappingCfg = mappingCfg,
+        mappingCfg = config.model.mapping,
     )
 
-    return rawPaths.toApis(ctx)
+    val apis = rawPaths.toApis(ctx)
+
+    // todo
+    log.info { "Handling swagger annotations" }
+    apis.handleServerSwaggerAnnotations(
+        cfg = config.api,
+        ctx = ctx,
+    )
+
+    return apis
 }
 
 internal data class ApisContext(
