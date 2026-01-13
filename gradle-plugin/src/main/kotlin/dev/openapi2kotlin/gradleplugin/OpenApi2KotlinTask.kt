@@ -28,12 +28,6 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
         val effectiveValidationAnnotationsEnabled: Boolean =
             ext.model.annotations.validations.enabled ?: serverMode
 
-        // Conditional default for swagger annotations:
-        //  - explicit user setting wins
-        //  - otherwise: enabled when generating server, disabled otherwise
-        val effectiveSwaggerAnnotationsEnabled: Boolean =
-            ext.model.annotations.swagger.enabled ?: serverMode
-
         val modelConfig = defaultConfig.model.copy(
             packageName = ext.model.packageName ?: defaultConfig.model.packageName,
             annotations = defaultConfig.model.annotations.copy(
@@ -55,13 +49,10 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     enabled = effectiveValidationAnnotationsEnabled,
                     namespace = ext.model.annotations.validations.namespace
                         ?.let {
-                            OpenApi2KotlinUseCase.ModelConfig.AnnotationsConfig.ValidationAnnotationsConfig
+                            OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.ValidationAnnotationsConfig
                                 .ValidationAnnotationsNamespace.fromValue(it)
                         }
                         ?: defaultConfig.model.annotations.validations.namespace,
-                ),
-                swagger = defaultConfig.model.annotations.swagger.copy(
-                    enabled = effectiveSwaggerAnnotationsEnabled,
                 ),
             ),
             mapping = defaultConfig.model.mapping.copy(
@@ -88,7 +79,6 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
         val server = ext.server
         val client = ext.client
 
-        // The extension enforces exclusivity already, but keep a defensive check here.
         if (server != null && client != null) {
             throw GradleException(
                 "openapi2kotlin: client{} and server{} cannot coexist.\n" +
@@ -107,13 +97,19 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
         }
 
         return when {
-            server != null -> OpenApi2KotlinUseCase.ApiConfig.Server(
-                packageName = server.packageName
-                    ?: OpenApi2KotlinUseCase.ApiConfig.Server().packageName,
-                framework = server.framework
-                    ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
-                    ?: OpenApi2KotlinUseCase.ApiConfig.Server().framework,
-            )
+            server != null -> {
+                val defaultServer = OpenApi2KotlinUseCase.ApiConfig.Server()
+
+                OpenApi2KotlinUseCase.ApiConfig.Server(
+                    packageName = server.packageName ?: defaultServer.packageName,
+                    framework = server.framework
+                        ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
+                        ?: defaultServer.framework,
+                    swagger = defaultServer.swagger.copy(
+                        enabled = server.swagger.enabled ?: defaultServer.swagger.enabled
+                    )
+                )
+            }
 
             client != null -> OpenApi2KotlinUseCase.ApiConfig.Client(
                 packageName = client.packageName

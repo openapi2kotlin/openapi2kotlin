@@ -8,10 +8,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUseCase.ModelConfig): List<ModelDO> {
+internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUseCase.Config): List<ModelDO> {
     val models = schemas.map { ModelDO(
         rawSchema = it,
-        packageName = config.packageName,
+        packageName = config.model.packageName,
         generatedName = cleanSchemaNameHandler(it.originalName)
     ) }
 
@@ -25,21 +25,21 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
     models.handleModelShape()
 
     log.info { "Handling fields" }
-    models.handleFields(config.mapping)
+    models.handleFields(config.model.mapping)
 
     log.info { "Handling Jackson annotations" }
     models.handleJacksonAnnotations(
-        cfg = config.annotations.jackson
+        cfg = config.model.annotations.jackson
     )
 
     log.info { "Handling validation annotations" }
     models.handleValidationAnnotations(
-        cfg = config.annotations.validations
+        cfg = config.model.annotations.validations
     )
 
     log.info { "Handling swagger annotations" }
     models.handleSwaggerAnnotations(
-        cfg = config.annotations.swagger
+        cfg = config.api
     )
 
     return models

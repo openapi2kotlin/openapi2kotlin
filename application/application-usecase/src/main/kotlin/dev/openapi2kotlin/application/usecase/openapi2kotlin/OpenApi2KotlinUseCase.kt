@@ -28,13 +28,13 @@ fun interface OpenApi2KotlinUseCase {
     data class ModelConfig(
         val packageName: String = "$DEFAULT_PACKAGE_NAME.model",
 
-        val annotations: AnnotationsConfig = AnnotationsConfig(),
+        val annotations: ModelAnnotationsConfig = ModelAnnotationsConfig(),
         val mapping: MappingConfig = MappingConfig(),
     ) {
         /**
          * Which annotations to emit into the generated model.
          */
-        data class AnnotationsConfig(
+        data class ModelAnnotationsConfig(
             /**
              * Jackson-related generation settings, fully encapsulated here.
              */
@@ -52,16 +52,6 @@ fun interface OpenApi2KotlinUseCase {
              *  3) Else (client API or no API) -> validations.enabled defaults to false.
              */
             val validations: ValidationAnnotationsConfig = ValidationAnnotationsConfig(),
-
-            /**
-             * Swagger annotations are useful primarily for server-side APIs.
-             *
-             * Precedence rules (Gradle plugin behavior):
-             *  1) If the user explicitly sets model.annotations.swagger.enabled -> that value wins.
-             *  2) Else if API target is Server -> swagger.enabled defaults to true.
-             *  3) Else (client API or no API) -> swagger.enabled defaults to false.
-             */
-            val swagger: SwaggerConfig = SwaggerConfig(),
         ) {
             /**
              * Jackson-specific configuration: property-name mapping
@@ -139,13 +129,6 @@ fun interface OpenApi2KotlinUseCase {
                     }
                 }
             }
-
-            data class SwaggerConfig(
-                /**
-                 * Master switch for emitting Swagger / OpenAPI annotations.
-                 */
-                val enabled: Boolean = false,
-            )
         }
 
         /**
@@ -186,6 +169,7 @@ fun interface OpenApi2KotlinUseCase {
          */
         data class Server(
             override val packageName: String = "$DEFAULT_PACKAGE_NAME.server",
+            val swagger: SwaggerConfig = SwaggerConfig(),
             val framework: Framework = Framework.KTOR,
         ) : ApiConfig {
             /**
@@ -207,6 +191,10 @@ fun interface OpenApi2KotlinUseCase {
                             )
                 }
             }
+
+            data class SwaggerConfig(
+                val enabled: Boolean = true,
+            )
         }
     }
 }

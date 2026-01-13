@@ -18,16 +18,12 @@ open class OpenApi2KotlinExtension {
     fun model(block: ModelConfigExtension.() -> Unit) = model.block()
 
     fun client(block: ClientConfigExtension.() -> Unit) {
-        if (server != null) {
-            throwClientServerExclusivityError()
-        }
+        if (server != null) throwClientServerExclusivityError()
         client = (client ?: ClientConfigExtension()).apply(block)
     }
 
     fun server(block: ServerConfigExtension.() -> Unit) {
-        if (client != null) {
-            throwClientServerExclusivityError()
-        }
+        if (client != null) throwClientServerExclusivityError()
         server = (server ?: ServerConfigExtension()).apply(block)
     }
 
@@ -54,20 +50,18 @@ open class OpenApi2KotlinExtension {
     open class ModelConfigExtension {
         var packageName: String? = null
 
-        val annotations = AnnotationsConfigExtension()
+        val annotations = ModelAnnotationsConfigExtension()
         val mapping = MappingConfigExtension()
 
-        fun annotations(block: AnnotationsConfigExtension.() -> Unit) = annotations.block()
+        fun annotations(block: ModelAnnotationsConfigExtension.() -> Unit) = annotations.block()
         fun mapping(block: MappingConfigExtension.() -> Unit) = mapping.block()
 
-        open class AnnotationsConfigExtension {
+        open class ModelAnnotationsConfigExtension {
             val jackson = JacksonConfigExtension()
             val validations = ValidationAnnotationsConfigExtension()
-            val swagger = SwaggerConfigExtension()
 
             fun jackson(block: JacksonConfigExtension.() -> Unit) = jackson.block()
             fun validations(block: ValidationAnnotationsConfigExtension.() -> Unit) = validations.block()
-            fun swagger(block: SwaggerConfigExtension.() -> Unit) = swagger.block()
 
             open class JacksonConfigExtension {
                 var enabled: Boolean? = null
@@ -81,10 +75,6 @@ open class OpenApi2KotlinExtension {
             open class ValidationAnnotationsConfigExtension {
                 var enabled: Boolean? = null
                 var namespace: String? = null
-            }
-
-            open class SwaggerConfigExtension {
-                var enabled: Boolean? = null
             }
         }
 
@@ -102,5 +92,12 @@ open class OpenApi2KotlinExtension {
     open class ServerConfigExtension {
         var packageName: String? = null
         var framework: String? = null
+
+        val swagger = SwaggerConfigExtension()
+        fun swagger(block: SwaggerConfigExtension.() -> Unit) = swagger.block()
+
+        open class SwaggerConfigExtension {
+            var enabled: Boolean? = null
+        }
     }
 }

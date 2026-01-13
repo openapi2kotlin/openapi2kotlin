@@ -21,7 +21,7 @@ import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCa
  * All constraints are derived from RawSchemaDO.SchemaPropertyDO.constraints (including inherited properties via allOf).
  */
 internal fun List<ModelDO>.handleValidationAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.AnnotationsConfig.ValidationAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.ValidationAnnotationsConfig,
 ) {
     if (!cfg.enabled) return
 

@@ -18,7 +18,7 @@ class OpenApi2KotlinService(
 
         val models = prepareModels(
             schemas = openApi.rawSchemas,
-            config = config.model,
+            config = config,
         )
 
         generateModelPort.generateModel(

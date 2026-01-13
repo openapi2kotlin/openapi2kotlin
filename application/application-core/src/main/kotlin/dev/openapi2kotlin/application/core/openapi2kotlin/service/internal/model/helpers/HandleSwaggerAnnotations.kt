@@ -17,9 +17,12 @@ private const val SCHEMA = "io.swagger.v3.oas.annotations.media.Schema"
  *  - description is RawSchemaDO.description (when present)
  */
 internal fun List<ModelDO>.handleSwaggerAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.AnnotationsConfig.SwaggerConfig,
+    cfg: OpenApi2KotlinUseCase.ApiConfig?,
 ) {
-    if (!cfg.enabled) return
+    val enabled: Boolean =
+        (cfg as? OpenApi2KotlinUseCase.ApiConfig.Server)?.swagger?.enabled == true
+
+    if (!enabled) return
 
     forEach { model ->
         val name = model.rawSchema.originalName

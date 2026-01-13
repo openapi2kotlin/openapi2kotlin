@@ -30,7 +30,7 @@ private const val JSON_CREATOR = "com.fasterxml.jackson.annotation.JsonCreator"
  * in ModelDO.modelShape prior to this step.
  */
 internal fun List<ModelDO>.handleJacksonAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.AnnotationsConfig.JacksonConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.JacksonConfig,
 ) {
     if (!cfg.enabled) return
 
