@@ -21,7 +21,9 @@ include("configuration")
 include("application:application-usecase")
 include("application:application-core")
 
-include("adapters:adapter-tools")
+include("tools:generator-tools")
+include("tools:api-generator")
+
 include("adapters:parse-spec-adapter")
 include("adapters:generate-server-ktor-adapter")
 include("adapters:generate-server-spring-adapter")

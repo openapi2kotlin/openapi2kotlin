@@ -1,4 +1,4 @@
-package dev.openapi2kotlin.adapter.tools
+package dev.openapi2kotlin.tools.generatortools
 
 import com.squareup.kotlinpoet.FileSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO

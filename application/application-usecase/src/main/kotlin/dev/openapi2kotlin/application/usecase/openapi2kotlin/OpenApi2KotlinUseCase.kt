@@ -193,7 +193,7 @@ fun interface OpenApi2KotlinUseCase {
             }
 
             data class SwaggerConfig(
-                val enabled: Boolean = true,
+                val enabled: Boolean = false,
             )
         }
     }

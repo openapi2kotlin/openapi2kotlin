@@ -7,8 +7,8 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import dev.openapi2kotlin.adapter.tools.TypeNameContext
-import dev.openapi2kotlin.adapter.tools.toTypeName
+import dev.openapi2kotlin.tools.generatortools.TypeNameContext
+import dev.openapi2kotlin.tools.generatortools.toTypeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO

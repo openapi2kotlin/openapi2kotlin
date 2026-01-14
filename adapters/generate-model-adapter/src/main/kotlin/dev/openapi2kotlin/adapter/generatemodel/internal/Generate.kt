@@ -1,21 +1,15 @@
 package dev.openapi2kotlin.adapter.generatemodel.internal
 
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeAliasSpec
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.*
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.toParamSpec
-import dev.openapi2kotlin.adapter.tools.TypeNameContext
-import dev.openapi2kotlin.adapter.tools.postProcess
-import dev.openapi2kotlin.adapter.tools.toTypeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
+import dev.openapi2kotlin.tools.generatortools.TypeNameContext
+import dev.openapi2kotlin.tools.generatortools.postProcess
+import dev.openapi2kotlin.tools.generatortools.toTypeName
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
 

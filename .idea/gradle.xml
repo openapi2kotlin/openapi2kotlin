@@ -10,7 +10,6 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/adapters" />
-            <option value="$PROJECT_DIR$/adapters/adapter-tools" />
             <option value="$PROJECT_DIR$/adapters/generate-client-adapter" />
             <option value="$PROJECT_DIR$/adapters/generate-model-adapter" />
             <option value="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
@@ -21,6 +20,9 @@
             <option value="$PROJECT_DIR$/application/application-usecase" />
             <option value="$PROJECT_DIR$/configuration" />
             <option value="$PROJECT_DIR$/gradle-plugin" />
+            <option value="$PROJECT_DIR$/tools" />
+            <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
       </GradleProjectSettings>

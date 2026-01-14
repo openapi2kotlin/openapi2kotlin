@@ -1,4 +1,4 @@
-package dev.openapi2kotlin.adapter.tools
+package dev.openapi2kotlin.tools.generatortools
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy

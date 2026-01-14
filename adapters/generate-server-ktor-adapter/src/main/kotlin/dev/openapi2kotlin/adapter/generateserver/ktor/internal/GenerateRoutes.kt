@@ -1,14 +1,13 @@
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.MemberName
-import dev.openapi2kotlin.adapter.tools.TypeNameContext
-import dev.openapi2kotlin.adapter.tools.toTypeName
+import com.squareup.kotlinpoet.*
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.tools.generatortools.TypeNameContext
+import dev.openapi2kotlin.tools.generatortools.toTypeName
+import java.nio.file.Path
 
 private val ROUTE_T = ClassName("io.ktor.server.routing", "Route")
 private val HTTP_STATUS_T = ClassName("io.ktor.http", "HttpStatusCode")
@@ -21,7 +20,53 @@ private val M_delete = MemberName("io.ktor.server.routing", "delete")
 private val M_receive = MemberName("io.ktor.server.request", "receive")
 private val M_respond = MemberName("io.ktor.server.response", "respond")
 
-internal fun buildKtorRoute(
+internal fun generateRoutes(
+    apis: List<ApiDO>,
+    serverPackageName: String,
+    modelPackageName: String,
+    outputDirPath: Path,
+    models: List<ModelDO>,
+) {
+    val outDir = outputDirPath.toFile()
+    val bySchemaName: Map<String, ModelDO> = models.associateBy { it.rawSchema.originalName }
+    val ctx = TypeNameContext(modelPackageName = modelPackageName, bySchemaName = bySchemaName)
+
+    apis.forEach { api ->
+        // Ktor routing is adapter-specific: infer basePath + generate a Route.() extension function.
+        val basePath = inferBasePath(api)
+
+        val apiStem = api.generatedName.removeSuffix("Api").ifBlank { api.generatedName }
+        val routesFileName = apiStem + "Routes"
+        val routesFunName = apiStem.replaceFirstChar { it.lowercaseChar() } + "Routes"
+
+        FileSpec.builder(serverPackageName, routesFileName)
+            .addFunction(
+                generateRoutes(
+                    api = api,
+                    basePath = basePath,
+                    routesFunName = routesFunName,
+                    serverPackageName = serverPackageName,
+                    ctx = ctx,
+                )
+            )
+            .build()
+            .writeTo(outDir)
+    }
+}
+
+private fun inferBasePath(api: ApiDO): String {
+    // Best-effort: choose the shortest concrete path and take its first segment.
+    val shortest = api.rawPath.operations
+        .map { it.path.trim() }
+        .filter { it.isNotBlank() }
+        .minByOrNull { it.length }
+        ?: "/"
+
+    val seg = shortest.trim('/').split('/').firstOrNull().orEmpty()
+    return "/" + seg
+}
+
+private fun generateRoutes(
     api: ApiDO,
     basePath: String,
     routesFunName: String,

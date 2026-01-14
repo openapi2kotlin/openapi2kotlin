@@ -100,13 +100,21 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
             server != null -> {
                 val defaultServer = OpenApi2KotlinUseCase.ApiConfig.Server()
 
+                val framework =
+                    server.framework
+                        ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
+                        ?: defaultServer.framework
+
+                // Default swagger enabled ONLY for Spring, unless user explicitly sets it.
+                val effectiveSwaggerEnabled =
+                    server.swagger.enabled
+                        ?: (framework == OpenApi2KotlinUseCase.ApiConfig.Server.Framework.SPRING)
+
                 OpenApi2KotlinUseCase.ApiConfig.Server(
                     packageName = server.packageName ?: defaultServer.packageName,
-                    framework = server.framework
-                        ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
-                        ?: defaultServer.framework,
+                    framework = framework,
                     swagger = defaultServer.swagger.copy(
-                        enabled = server.swagger.enabled ?: defaultServer.swagger.enabled
+                        enabled = effectiveSwaggerEnabled
                     )
                 )
             }

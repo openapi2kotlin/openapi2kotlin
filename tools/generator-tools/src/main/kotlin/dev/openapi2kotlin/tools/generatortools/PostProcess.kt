@@ -1,4 +1,4 @@
-package dev.openapi2kotlin.adapter.tools
+package dev.openapi2kotlin.tools.generatortools
 
 import java.io.File
 

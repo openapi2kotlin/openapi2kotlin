@@ -4,7 +4,8 @@ plugins {
 
 dependencies {
     implementation(project(":application:application-core"))
-    implementation(project(":adapters:adapter-tools"))
+    implementation(project(":tools:generator-tools"))
+    implementation(project(":tools:api-generator"))
     implementation(libs.kotlin.logging)
     implementation(libs.kotlinpoet)
 }

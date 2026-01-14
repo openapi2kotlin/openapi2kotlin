@@ -1,12 +1,14 @@
 package dev.openapi2kotlin.adapter.generateserver.ktor
 
-import dev.openapi2kotlin.adapter.generateserver.ktor.internal.generate
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
+import dev.openapi2kotlin.tools.apigenerator.ApiGenerator
+import generateRoutes
 
 
 class GenerateServerKtorAdapter : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
-        generate(
+        ApiGenerator().generateApi(command)
+        generateRoutes(
             apis = command.apis,
             serverPackageName = command.packageName,
             modelPackageName = command.modelPackageName,
