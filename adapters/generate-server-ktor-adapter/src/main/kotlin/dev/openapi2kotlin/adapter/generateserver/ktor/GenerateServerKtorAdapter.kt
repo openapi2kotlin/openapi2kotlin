@@ -9,7 +9,7 @@ class GenerateServerKtorAdapter : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         ApiGenerator().generateApi(command)
         generateRoutes(
-            apis = command.apis,
+            apis = command.apiContext.apis,
             serverPackageName = command.packageName,
             modelPackageName = command.modelPackageName,
             outputDirPath = command.outputDirPath,

@@ -14,6 +14,8 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
     fun generate() {
         val ext = project.extensions.getByType(OpenApi2KotlinExtension::class.java)
 
+        if (!ext.enabled) return
+
         val defaultConfig = OpenApi2KotlinUseCase.Config(
             inputSpecPath = resolveInputSpecPath(ext),
             outputDirPath = resolveOutputSpecPath(ext),
@@ -98,31 +100,48 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
         return when {
             server != null -> {
-                val defaultServer = OpenApi2KotlinUseCase.ApiConfig.Server()
+                val defaults = OpenApi2KotlinUseCase.ApiConfig.Server()
 
                 val framework =
                     server.framework
                         ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
-                        ?: defaultServer.framework
+                        ?: defaults.framework
 
                 // Default swagger enabled ONLY for Spring, unless user explicitly sets it.
                 val effectiveSwaggerEnabled =
                     server.swagger.enabled
                         ?: (framework == OpenApi2KotlinUseCase.ApiConfig.Server.Framework.SPRING)
 
+                val basePathVar =
+                    server.basePathVar
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                        ?: defaults.basePathVar
+
                 OpenApi2KotlinUseCase.ApiConfig.Server(
-                    packageName = server.packageName ?: defaultServer.packageName,
+                    packageName = server.packageName ?: defaults.packageName,
+                    basePathVar = basePathVar,
                     framework = framework,
-                    swagger = defaultServer.swagger.copy(
+                    swagger = defaults.swagger.copy(
                         enabled = effectiveSwaggerEnabled
                     )
                 )
             }
 
-            client != null -> OpenApi2KotlinUseCase.ApiConfig.Client(
-                packageName = client.packageName
-                    ?: OpenApi2KotlinUseCase.ApiConfig.Client().packageName,
-            )
+            client != null -> {
+                val defaults = OpenApi2KotlinUseCase.ApiConfig.Client()
+
+                val basePathVar =
+                    client.basePathVar
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                        ?: defaults.basePathVar
+
+                OpenApi2KotlinUseCase.ApiConfig.Client(
+                    packageName = client.packageName ?: defaults.packageName,
+                    basePathVar = basePathVar,
+                )
+            }
 
             else -> null
         }

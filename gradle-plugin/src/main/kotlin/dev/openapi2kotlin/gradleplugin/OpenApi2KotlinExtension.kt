@@ -3,6 +3,7 @@ package dev.openapi2kotlin.gradleplugin
 import org.gradle.api.GradleException
 
 open class OpenApi2KotlinExtension {
+    var enabled: Boolean = true
     var inputSpec: String? = null
     var outputDir: String? = null
 
@@ -87,11 +88,13 @@ open class OpenApi2KotlinExtension {
 
     open class ClientConfigExtension {
         var packageName: String? = null
+        var basePathVar: String? = null
     }
 
     open class ServerConfigExtension {
         var packageName: String? = null
         var framework: String? = null
+        var basePathVar: String? = null
 
         val swagger = SwaggerConfigExtension()
         fun swagger(block: SwaggerConfigExtension.() -> Unit) = swagger.block()

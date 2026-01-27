@@ -9,7 +9,7 @@ internal fun List<ModelDO>.handleParentOneOf() {
     forEach { parent ->
         parent.rawSchema.oneOfChildren.forEach { childName ->
             val child = byName[childName] ?: return@forEach
-            child.parentOneOf = parent.generatedName
+            child.parentOneOf += parent.rawSchema.originalName
         }
     }
 }

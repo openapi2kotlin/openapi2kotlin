@@ -23,7 +23,7 @@ data class ModelDO(
     /**
      * Who includes this in their oneOf (by generatedName).
      */
-    var parentOneOf: String? = null,
+    val parentOneOf: MutableSet<String> = linkedSetOf(),
 
     /**
      * True if this schema is referenced by any discriminator mapping (i.e., it is a polymorphic subtype),

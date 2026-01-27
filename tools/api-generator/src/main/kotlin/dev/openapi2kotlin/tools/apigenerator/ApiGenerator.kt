@@ -1,10 +1,21 @@
 package dev.openapi2kotlin.tools.apigenerator
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
-import dev.openapi2kotlin.tools.generatortools.*
+import dev.openapi2kotlin.tools.apigenerator.internal.formatFunParams
+import dev.openapi2kotlin.tools.generatortools.TypeNameContext
+import dev.openapi2kotlin.tools.generatortools.addImportsAndShortenArgs
+import dev.openapi2kotlin.tools.generatortools.postProcess
+import dev.openapi2kotlin.tools.generatortools.shortenArgs
+import dev.openapi2kotlin.tools.generatortools.toTypeName
 
 class ApiGenerator(
     private val policy: ApiPolicy = ApiPolicy.Default,
@@ -14,7 +25,7 @@ class ApiGenerator(
         val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
         val ctx = TypeNameContext(modelPackageName = command.modelPackageName, bySchemaName = bySchemaName)
 
-        command.apis.forEach { api ->
+        command.apiContext.apis.forEach { api ->
             val typeBuilder = TypeSpec.interfaceBuilder(api.generatedName)
 
             api.annotations.shortenArgs().forEach { typeBuilder.addAnnotation(it.toPoet()) }
@@ -71,6 +82,7 @@ class ApiGenerator(
         }
 
         outDir.postProcess()
+        outDir.formatFunParams()
     }
 
     private fun ApiAnnotationDO.toPoet(): AnnotationSpec {

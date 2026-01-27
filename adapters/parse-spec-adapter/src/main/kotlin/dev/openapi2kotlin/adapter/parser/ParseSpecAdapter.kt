@@ -2,6 +2,7 @@ package dev.openapi2kotlin.adapter.parser
 
 import dev.openapi2kotlin.adapter.parser.internal.toRawPaths
 import dev.openapi2kotlin.adapter.parser.internal.toRawSchemas
+import dev.openapi2kotlin.adapter.parser.internal.toRawServers
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.ParseSpecPort
 import io.swagger.v3.parser.OpenAPIV3Parser
 import java.nio.file.Path
@@ -13,7 +14,8 @@ class ParseSpecAdapter: ParseSpecPort {
 
         return ParseSpecPort.RawOpenApiDO(
             rawSchemas = openApi.toRawSchemas(),
-            rawPaths = openApi.toRawPaths()
+            rawPaths = openApi.toRawPaths(),
+            rawServers = openApi.toRawServers(),
         )
     }
 }

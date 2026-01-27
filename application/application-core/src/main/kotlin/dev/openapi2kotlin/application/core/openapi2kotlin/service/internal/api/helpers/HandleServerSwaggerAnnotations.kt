@@ -5,7 +5,6 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.ApisContext
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 private const val TAG = "io.swagger.v3.oas.annotations.tags.Tag"

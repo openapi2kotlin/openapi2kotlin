@@ -3,7 +3,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateModelPort
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.ParseSpecPort
-import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.prepareApis
+import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.prepareApiContext
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.prepareModels
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
@@ -30,15 +30,16 @@ class OpenApi2KotlinService(
 
         val apiPackageName = config.api?.packageName ?: return
 
-        val apis = prepareApis(
+        val apiContext = prepareApiContext(
             rawPaths = openApi.rawPaths,
+            rawServers = openApi.rawServers,
             models = models,
             config = config,
         )
 
         generateApiPort.generateApi(
             GenerateApiPort.Command(
-                apis = apis,
+                apiContext = apiContext,
                 packageName = apiPackageName,
                 modelPackageName = config.model.packageName,
                 outputDirPath = config.outputDirPath,

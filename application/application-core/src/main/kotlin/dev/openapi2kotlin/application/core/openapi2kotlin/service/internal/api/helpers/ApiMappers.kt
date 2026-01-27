@@ -4,7 +4,6 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.*
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.ApisContext
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.toFinalType
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.withNullability
 

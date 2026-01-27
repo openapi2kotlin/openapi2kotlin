@@ -1,23 +1,32 @@
 package dev.openapi2kotlin.adapter.generateserver.spring.internal
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiContextDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 
-fun List<ApiDO>.applySpringMvcAnnotations() {
-    forEach { api ->
-        api.annotations = api.annotations + listOf(
+fun ApiContextDO.applySpringMvcAnnotations() {
+    val hasBasePath = basePath.isNotBlank()
+
+    apis.forEach { api ->
+        val apiAnnotations = mutableListOf(
             ann("org.springframework.web.bind.annotation.RestController"),
             ann("org.springframework.validation.annotation.Validated"),
-            ann("org.springframework.web.bind.annotation.RequestMapping") {
-                addLiteral("""value = [${api.inferBasePath().quoted()}]""")
-            },
         )
 
+        if (hasBasePath) {
+            apiAnnotations += ann("org.springframework.web.bind.annotation.RequestMapping") {
+                addLiteral("""value = [${basePath.quoted()}]""")
+            }
+        }
+
+        api.annotations = api.annotations + apiAnnotations
+
         api.endpoints.forEach { ep ->
-            ep.annotations = ep.annotations + ep.springRequestMapping()
+            ep.annotations = ep.annotations + ep.springComposedMapping(
+                basePath = if (hasBasePath) basePath else null
+            )
 
             ep.params.forEach { p ->
                 p.annotations = p.annotations + p.springParamAnnotation()
@@ -33,38 +42,41 @@ fun List<ApiDO>.applySpringMvcAnnotations() {
     }
 }
 
-private fun ApiDO.inferBasePath(): String {
-    val paths = endpoints.map { it.rawOperation.path }.distinct().sorted()
-    if (paths.isEmpty()) return "/"
-
-    fun split(p: String) = p.trim().trim('/').split('/').filter { it.isNotBlank() }
-
-    val first = split(paths.first())
-    val last = split(paths.last())
-
-    val common = buildList {
-        val n = minOf(first.size, last.size)
-        for (i in 0 until n) {
-            if (first[i] == last[i]) add(first[i]) else break
-        }
+private fun ApiEndpointDO.springComposedMapping(basePath: String?): ApiAnnotationDO {
+    val endpointPath = if (basePath != null) {
+        rawOperation.path.toRelativeTo(basePath)
+    } else {
+        rawOperation.path.normalizePathForSpring()
     }
 
-    return "/" + common.joinToString("/")
+    val fqAnn = when (rawOperation.httpMethod) {
+        RawPathDO.HttpMethodDO.GET -> "org.springframework.web.bind.annotation.GetMapping"
+        RawPathDO.HttpMethodDO.POST -> "org.springframework.web.bind.annotation.PostMapping"
+        RawPathDO.HttpMethodDO.PUT -> "org.springframework.web.bind.annotation.PutMapping"
+        RawPathDO.HttpMethodDO.PATCH -> "org.springframework.web.bind.annotation.PatchMapping"
+        RawPathDO.HttpMethodDO.DELETE -> "org.springframework.web.bind.annotation.DeleteMapping"
+    }
+
+    return ann(fqAnn) {
+        addLiteral("""value = [${endpointPath.quoted()}]""")
+    }
 }
 
-private fun ApiEndpointDO.springRequestMapping(): ApiAnnotationDO {
-    val method = when (rawOperation.httpMethod) {
-        RawPathDO.HttpMethodDO.GET -> "RequestMethod.GET"
-        RawPathDO.HttpMethodDO.POST -> "RequestMethod.POST"
-        RawPathDO.HttpMethodDO.PUT -> "RequestMethod.PUT"
-        RawPathDO.HttpMethodDO.PATCH -> "RequestMethod.PATCH"
-        RawPathDO.HttpMethodDO.DELETE -> "RequestMethod.DELETE"
-    }
+private fun String.toRelativeTo(basePath: String): String {
+    val b = basePath.normalizePathForSpring()
+    val full = this.normalizePathForSpring()
 
-    return ann("org.springframework.web.bind.annotation.RequestMapping") {
-        addLiteral("""value = [${rawOperation.path.quoted()}]""")
-        addLiteral("""method = [$method]""")
-    }
+    if (b == "/") return full
+    if (full == b) return "/"
+    if (full.startsWith("$b/")) return full.removePrefix(b)
+    return full // base is not a prefix; fall back to absolute
+}
+
+private fun String.normalizePathForSpring(): String {
+    val t = trim()
+    if (t.isBlank() || t == "/") return "/"
+    val collapsed = t.replace(Regex("/+"), "/").trim('/')
+    return "/$collapsed"
 }
 
 private fun ApiParamDO.springParamAnnotation(): ApiAnnotationDO =

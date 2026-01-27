@@ -3,6 +3,7 @@ package dev.openapi2kotlin.application.usecase.openapi2kotlin
 import java.nio.file.Path
 
 const val DEFAULT_PACKAGE_NAME = "dev.openapi2kotlin"
+const val DEFAULT_BASE_PATH_VAR = "basePath"
 
 fun interface OpenApi2KotlinUseCase {
     fun openApi2kotlin(config: Config)
@@ -154,12 +155,19 @@ fun interface OpenApi2KotlinUseCase {
         val packageName: String
 
         /**
+         * Variable for which to look for to define the base path.
+         */
+        val basePathVar: String
+            get() = DEFAULT_BASE_PATH_VAR
+
+        /**
          * Client-side API generation.
          *
          * Intended for SDKs and consumers of remote APIs.
          */
         data class Client(
             override val packageName: String = "$DEFAULT_PACKAGE_NAME.client",
+            override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
         ) : ApiConfig
 
         /**
@@ -169,6 +177,7 @@ fun interface OpenApi2KotlinUseCase {
          */
         data class Server(
             override val packageName: String = "$DEFAULT_PACKAGE_NAME.server",
+            override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
             val swagger: SwaggerConfig = SwaggerConfig(),
             val framework: Framework = Framework.KTOR,
         ) : ApiConfig {

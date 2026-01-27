@@ -7,7 +7,7 @@ import dev.openapi2kotlin.tools.apigenerator.ApiGenerator
 
 class GenerateServerSpringAdapter : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
-        command.apis.applySpringMvcAnnotations()
+        command.apiContext.applySpringMvcAnnotations()
         ApiGenerator(SpringApiPolicy).generateApi(command)
     }
 }

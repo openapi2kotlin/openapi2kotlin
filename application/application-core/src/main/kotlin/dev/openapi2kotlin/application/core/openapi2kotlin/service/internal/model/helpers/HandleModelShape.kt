@@ -65,7 +65,6 @@ internal fun List<ModelDO>.handleModelShape() {
 
         val isUsedSomewhere =
             component.rawSchema.usedInPaths ||
-                    component.rawSchema.usedAsProperty ||
                     component.usedAsDiscriminatorChild
 
         val isAbstractAllOfBase =
@@ -121,7 +120,7 @@ internal fun List<ModelDO>.handleModelShape() {
             }
         }
 
-        component.parentOneOf?.let { parentName ->
+        component.parentOneOf.forEach { parentName ->
             if (!parentInterfaces.contains(parentName)) parentInterfaces += parentName
         }
 

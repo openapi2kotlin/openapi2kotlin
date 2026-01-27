@@ -9,6 +9,9 @@ private val FQCN_CLASS_LITERAL =
 private val FQCN_CALL =
     Regex("""(?<![A-Za-z0-9_`])((?:[a-zA-Z_][a-zA-Z0-9_]*\.)+[A-Za-z_][A-Za-z0-9_]*)(\s*\()""")
 
+private val FQCN_DOT_ACCESS =
+    Regex("""(?<![A-Za-z0-9_`])((?:[a-zA-Z_][a-zA-Z0-9_]*\.)+[A-Z][A-Za-z0-9_]*)(\.[A-Za-z_][A-Za-z0-9_]*)""")
+
 private data class ImportCandidate(val pkg: String, val simple: String)
 
 fun FileSpec.Builder.addImportsAndShortenArgs(
@@ -43,17 +46,27 @@ fun List<ApiAnnotationDO>.shortenArgs(): List<ApiAnnotationDO> {
     fun rewrite(s: String): String {
         var out = s
 
+        // 1) Foo.Bar::class -> Bar::class
         out = out.replace(FQCN_CLASS_LITERAL) { m ->
             val fq = m.groupValues[1]
             val cand = fq.toImportCandidateOrNull()
             if (cand != null && safe[cand.simple] == cand) "${cand.simple}::class" else m.value
         }
 
+        // 2) Foo.Bar( -> Bar(
         out = out.replace(FQCN_CALL) { m ->
             val fq = m.groupValues[1]
             val suffix = m.groupValues[2]
             val cand = fq.toImportCandidateOrNull()
             if (cand != null && safe[cand.simple] == cand) "${cand.simple}$suffix" else m.value
+        }
+
+        // 3) Foo.Bar.BAZ -> Bar.BAZ (enum constants / object members), but only when Foo.Bar is a *Type*
+        out = out.replace(FQCN_DOT_ACCESS) { m ->
+            val fqType = m.groupValues[1]
+            val memberSuffix = m.groupValues[2] // includes leading dot
+            val cand = fqType.toImportCandidateOrNull()
+            if (cand != null && safe[cand.simple] == cand) "${cand.simple}$memberSuffix" else m.value
         }
 
         return out
@@ -71,11 +84,20 @@ private fun collectImportCandidates(annotations: List<ApiAnnotationDO>): LinkedH
 
     annotations.forEach { a ->
         a.fqName.toImportCandidateOrNull()?.let(candidates::add)
+
         a.argsCode.forEach { arg ->
+            // Foo.Bar::class
             FQCN_CLASS_LITERAL.findAll(arg).forEach { m ->
                 m.groupValues[1].toImportCandidateOrNull()?.let(candidates::add)
             }
+
+            // Foo.Bar(
             FQCN_CALL.findAll(arg).forEach { m ->
+                m.groupValues[1].toImportCandidateOrNull()?.let(candidates::add)
+            }
+
+            // Foo.Bar.BAZ  (only when Foo.Bar is a Type name; see regex)
+            FQCN_DOT_ACCESS.findAll(arg).forEach { m ->
                 m.groupValues[1].toImportCandidateOrNull()?.let(candidates::add)
             }
         }
