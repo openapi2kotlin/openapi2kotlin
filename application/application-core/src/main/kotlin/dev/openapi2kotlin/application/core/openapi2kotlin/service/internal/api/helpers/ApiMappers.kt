@@ -72,14 +72,63 @@ private fun inferOperationId(method: RawPathDO.HttpMethodDO, path: String): Stri
 }
 
 private fun String.toKotlinParamName(): String =
-    replace("[^A-Za-z0-9_]".toRegex(), "_")
-        .replace(Regex("_+"), "_")
-        .trim('_')
-        .ifBlank { "param" }
-        .let { s ->
-            val parts = s.split('_').filter { it.isNotBlank() }
-            parts.first().lowercase() + parts.drop(1).joinToString("") { it.replaceFirstChar(Char::uppercase) }
+    splitIdentifierWords()
+        .takeIf { it.isNotEmpty() }
+        ?.let { parts ->
+            parts.first().lowercase() + parts.drop(1).joinToString("") {
+                it.lowercase().replaceFirstChar(Char::uppercase)
+            }
         }
+        ?: "param"
+
+private fun String.splitIdentifierWords(): List<String> {
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+
+    fun flush() {
+        if (current.isNotEmpty()) {
+            tokens += current.toString()
+            current.setLength(0)
+        }
+    }
+
+    for (i in indices) {
+        val c = this[i]
+
+        if (!c.isLetterOrDigit()) {
+            flush()
+            continue
+        }
+
+        val prev = getOrNull(i - 1)
+        val next = getOrNull(i + 1)
+
+        val prevIsLower = prev?.isLowerCase() == true
+        val prevIsUpper = prev?.isUpperCase() == true
+        val prevIsDigit = prev?.isDigit() == true
+        val prevIsLetter = prev?.isLetter() == true
+
+        val cIsUpper = c.isUpperCase()
+        val cIsLower = c.isLowerCase()
+        val cIsDigit = c.isDigit()
+
+        val nextIsLower = next?.isLowerCase() == true
+
+        val boundary =
+            (prev != null) && (
+                (prevIsLower && cIsUpper) ||
+                    (prevIsUpper && cIsUpper && nextIsLower) ||
+                    (prevIsLetter && cIsDigit) ||
+                    (prevIsDigit && (cIsUpper || cIsLower))
+                )
+
+        if (boundary) flush()
+        current.append(c)
+    }
+
+    flush()
+    return tokens.filter { it.isNotBlank() }
+}
 
 private fun String.toKotlinIdentifier(): String =
     replace("[^A-Za-z0-9_]".toRegex(), "_")
