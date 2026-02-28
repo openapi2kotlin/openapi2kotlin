@@ -6,5 +6,6 @@ import dev.openapi2kotlin.tools.apigenerator.ApiGenerator
 class GenerateClientKtorAdapter : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         ApiGenerator().generateApi(command)
+        ApiImplGenerator().generateApi(command)
     }
 }
