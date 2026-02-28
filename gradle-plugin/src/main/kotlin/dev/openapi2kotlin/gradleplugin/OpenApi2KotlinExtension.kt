@@ -85,9 +85,11 @@ open class OpenApi2KotlinExtension {
         open class ModelAnnotationsConfigExtension {
             val jackson = JacksonConfigExtension()
             val validations = ValidationAnnotationsConfigExtension()
+            val kotlinx = KotlinxConfigExtension()
 
             fun jackson(block: JacksonConfigExtension.() -> Unit) = jackson.block()
             fun validations(block: ValidationAnnotationsConfigExtension.() -> Unit) = validations.block()
+            fun kotlinx(block: KotlinxConfigExtension.() -> Unit) = kotlinx.block()
 
             open class JacksonConfigExtension {
                 var enabled: Boolean? = null
@@ -101,6 +103,11 @@ open class OpenApi2KotlinExtension {
             open class ValidationAnnotationsConfigExtension {
                 var enabled: Boolean? = null
                 var namespace: String? = null
+            }
+
+            open class KotlinxConfigExtension {
+                var enabled: Boolean? = null
+                var serializable: Boolean? = null
             }
         }
 

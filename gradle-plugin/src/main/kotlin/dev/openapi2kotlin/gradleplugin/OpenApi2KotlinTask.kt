@@ -56,6 +56,12 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         }
                         ?: defaultConfig.model.annotations.validations.namespace,
                 ),
+                kotlinx = defaultConfig.model.annotations.kotlinx.copy(
+                    enabled = ext.model.annotations.kotlinx.enabled
+                        ?: defaultConfig.model.annotations.kotlinx.enabled,
+                    serializable = ext.model.annotations.kotlinx.serializable
+                        ?: defaultConfig.model.annotations.kotlinx.serializable,
+                ),
             ),
             mapping = defaultConfig.model.mapping.copy(
                 double2BigDecimal = ext.model.mapping.double2BigDecimal

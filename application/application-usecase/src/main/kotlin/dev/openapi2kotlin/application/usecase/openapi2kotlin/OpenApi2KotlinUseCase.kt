@@ -55,6 +55,8 @@ fun interface OpenApi2KotlinUseCase {
              *  3) Else (client API or no API) -> validations.enabled defaults to false.
              */
             val validations: ValidationAnnotationsConfig = ValidationAnnotationsConfig(),
+
+            val kotlinx: KotlinxConfig = KotlinxConfig(),
         ) {
             /**
              * Jackson-specific configuration: property-name mapping
@@ -67,7 +69,7 @@ fun interface OpenApi2KotlinUseCase {
                  * - When false: no @JsonProperty, no @JsonTypeInfo, no @JsonSubTypes, etc.
                  * - When true: other switches below apply if enabled.
                  */
-                val enabled: Boolean = true,
+                val enabled: Boolean = false,
 
                 /**
                  * Generate @JsonProperty for fields where originalName != generatedName
@@ -107,7 +109,7 @@ fun interface OpenApi2KotlinUseCase {
                  *
                  * When disabled, no @Valid, @Size, @Pattern, etc. are generated.
                  */
-                val enabled: Boolean = true,
+                val enabled: Boolean = false,
 
                 /**
                  * Namespace for validation annotations: "jakarta" or "javax".
@@ -132,14 +134,23 @@ fun interface OpenApi2KotlinUseCase {
                     }
                 }
             }
+
+            data class KotlinxConfig(
+                val enabled: Boolean = false,
+
+                /**
+                 * Generates @Serializable annotation.
+                 */
+                val serializable: Boolean = true,
+            )
         }
 
         /**
          * Type-mapping knobs for the generated model.
          */
         data class MappingConfig(
-            val double2BigDecimal: Boolean = true,
-            val float2BigDecimal: Boolean = true,
+            val double2BigDecimal: Boolean = false,
+            val float2BigDecimal: Boolean = false,
             val integer2Long: Boolean = true,
         )
     }

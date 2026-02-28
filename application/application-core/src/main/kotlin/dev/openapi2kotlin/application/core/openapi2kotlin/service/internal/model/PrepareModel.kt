@@ -37,6 +37,11 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
         cfg = config.model.annotations.validations
     )
 
+    log.info { "Handling kotlinx annotations" }
+    models.handleKotlinxAnnotations(
+        cfg = config.model.annotations.kotlinx
+    )
+
     log.info { "Handling swagger annotations" }
     models.handleModelSwaggerAnnotations(
         cfg = config.api
