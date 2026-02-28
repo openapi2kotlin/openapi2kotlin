@@ -15,15 +15,16 @@ export function ThemeSwitch() {
           borderWidth={1}
           borderColor="$borderColor"
           cursor="pointer"
+          height={26}
       >
         <Switch.Thumb
-            animation="bouncier"
+            transition="medium"
             bg="$color"
             borderRadius={13}
             items="center"
             justify="center"
-            mt={1}
             elevation="$2"
+            size="$3"
             shadowColor={isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.15)'}
         >
           {isDark ? (

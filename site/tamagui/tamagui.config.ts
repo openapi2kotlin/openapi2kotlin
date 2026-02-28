@@ -2,7 +2,7 @@ import {themes} from './themes'
 import {defaultConfig} from '@tamagui/config/v4'
 import {createTamagui} from "tamagui";
 import {fonts} from "./fonts";
-import {animations} from "./animations";
+import { animations } from '@tamagui/config/v5-motion'
 
 export const config = createTamagui({
   ...defaultConfig,

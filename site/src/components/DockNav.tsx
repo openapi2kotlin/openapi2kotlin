@@ -1,4 +1,4 @@
-import {Stack, XStack} from "tamagui";
+import {XStack, YStack} from "tamagui";
 import Logo from "./Logo";
 import {ThemeSwitch} from "./ThemeSwitch";
 import {useAppTheme} from "../hooks/useAppTheme.ts";
@@ -9,7 +9,7 @@ export default function DockNav() {
   const { theme } = useAppTheme()
   const isDark = theme === 'dark'
   return (
-      <Stack
+      <YStack
           $platform-web={{
             position: 'fixed',
           }}
@@ -49,6 +49,6 @@ export default function DockNav() {
             <ThemeSwitch />
           </XStack>
         </XStack>
-      </Stack>
+      </YStack>
   );
 }

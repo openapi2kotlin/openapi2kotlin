@@ -1,5 +1,5 @@
 import "./App.css";
-import {Stack, Text, XStack} from "tamagui";
+import {Text, XStack, YStack} from "tamagui";
 import DockNav from "./components/DockNav";
 import CodeBlock from "./components/CodeBlock";
 import {AmbientBackground} from "./components/AmbientBackground.tsx";
@@ -55,7 +55,7 @@ export default function App() {
       <AmbientBackground>
         <HeroAmbient />
         <DockNav/>
-        <Stack
+        <YStack
             maxW={980}
             width="100%"
             mx="auto"
@@ -63,11 +63,11 @@ export default function App() {
             pb="$7"
             gap="$6"
         >
-          <Stack minH="80vh" maxW={980} flex={1} justify="center" items="center" position="relative" px={media.maxXs ? 0 : 100}>
+          <YStack minH="80vh" maxW={980} flex={1} justify="center" items="center" position="relative" px={media.maxXs ? 0 : 100}>
             <HeroHeading />
-          </Stack>
+          </YStack>
 
-          <Stack gap="$3">
+          <YStack gap="$3">
             <Text fontFamily="$heading" fontSize="$7" fontWeight="800">
               Installation &amp; Usage
             </Text>
@@ -76,10 +76,10 @@ export default function App() {
               Copy and paste the snippet below to apply the plugin. The OpenAPI specification will then be processed as part of the build, producing the generated Kotlin sources.
             </Text>
 
-            <Stack gap="$4">
+            <YStack gap="$4">
               <CodeBlock title="libs.versions.toml" code={TOML}/>
               <CodeBlock title="build.gradle.kts" code={GRADLE}/>
-            </Stack>
+            </YStack>
 
             <Text fontSize="$4" opacity={0.85} color="$color11">
               The plugin is published to{" "}
@@ -90,7 +90,7 @@ export default function App() {
                     rel="noopener noreferrer"
                     style={{textDecoration: "none"}}
                 >
-                  <XStack
+                  <YStack
                       asChild
                       display="inline-flex"
                       items="center"
@@ -102,21 +102,21 @@ export default function App() {
                       hoverStyle={{bg: "$pink4"}}
                       pressStyle={{bg: "$pink5"}}
                   >
-                    <span>
+                    <XStack>
                       <Text fontWeight="600" color="$color12" fontFamily="$mono">
                         Maven Central
                       </Text>
                       <Link size={14}/>
-                    </span>
-                  </XStack>
+                    </XStack>
+                  </YStack>
                 </a>
               </Text>
               .
             </Text>
 
             <ConfigOptionsTable rows={CONFIG_ROWS}/>
-          </Stack>
-        </Stack>
+          </YStack>
+        </YStack>
       </AmbientBackground>
   );
 }

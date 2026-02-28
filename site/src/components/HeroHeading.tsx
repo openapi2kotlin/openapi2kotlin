@@ -33,7 +33,7 @@ export function HeroHeading() {
           <tspan>Open</tspan>
           <tspan fontWeight="900">API</tspan>
           <tspan
-              baseline-shift="super"
+              baselineShift="super"
               dy="-35"
               dx="5"
               fontSize="40"

@@ -52,8 +52,8 @@ export default function ChromelessCircularButton(
             x={0}
             y={0}
             opacity={1}
-            animation={[
-              'bouncier',
+            transition={[
+              'medium',
               {
                 opacity: {
                   overshootClamping: true,
@@ -61,7 +61,7 @@ export default function ChromelessCircularButton(
               },
             ]}
         >
-          <Text fontSize="$2">{tooltip}</Text>
+          <Text fontSize="$2" whiteSpace="nowrap">{tooltip}</Text>
           <Tooltip.Arrow/>
         </Tooltip.Content>
       </Tooltip>

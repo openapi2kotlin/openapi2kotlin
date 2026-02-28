@@ -12,9 +12,6 @@ export default function GitHubLink() {
             size="$4"
             width={100}
             rounded="$10"
-            fontFamily="$mono"
-            fontSize="$3"
-            fontWeight="700"
             icon={Github}
             tooltip="Open Source Code"
         >

@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { Button, Stack, Text, Theme, XStack } from "tamagui";
-import { CheckCheck } from "lucide-react";
+import {useMemo, useState} from "react";
+import {Button, Text, Theme, XStack, YStack} from "tamagui";
+import {CheckCheck} from "lucide-react";
 
 type Props = {
   title: string;
@@ -135,7 +135,7 @@ export default function CodeBlock({
 
   return (
       <Theme name="pink">
-        <Stack
+        <YStack
             rounded="$6"
             overflow="hidden"
             borderWidth={1}
@@ -170,7 +170,7 @@ export default function CodeBlock({
           </XStack>
 
           {/* Code scroll area */}
-          <Stack
+          <YStack
               px="$3"
               py="$3"
               style={{
@@ -179,7 +179,7 @@ export default function CodeBlock({
               }}
           >
             {/* This wrapper forces the content width to be as wide as the longest line */}
-            <Stack style={{ minWidth: "max-content" }}>
+            <YStack style={{ minWidth: "max-content" }}>
               {lines.map((line, idx) => {
                 const segs = splitLine(line);
                 const lineNumber = idx + 1;
@@ -231,9 +231,9 @@ export default function CodeBlock({
                     </XStack>
                 );
               })}
-            </Stack>
-          </Stack>
-        </Stack>
+            </YStack>
+          </YStack>
+        </YStack>
       </Theme>
   );
 }

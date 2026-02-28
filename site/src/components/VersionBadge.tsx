@@ -5,7 +5,7 @@ import {Tag} from "lucide-react";
 const MAVEN_URL =
     "https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin";
 
-const LATEST_STABLE_RELEASE_VERSION = import.meta.env.VITE_LATEST_STABLE_RELEASE_VERSION as string
+const LATEST_STABLE_RELEASE_VERSION = __LATEST_STABLE_RELEASE_VERSION__;
 
 export default function VersionBadge() {
   return (

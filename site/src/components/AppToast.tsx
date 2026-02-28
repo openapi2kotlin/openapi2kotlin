@@ -13,7 +13,7 @@ export default function AppToast() {
   return (
       <Toast
           {...currentToast}
-          animation="200ms"
+          transition="200ms"
           key={currentToast.id}
           duration={currentToast.duration}
           enterStyle={{opacity: 0, transform: [{translateY: 100}]}}

@@ -1,7 +1,14 @@
 import {Button, type ButtonProps, Text, Tooltip, useTheme} from "tamagui";
+import type { ComponentProps } from "react";
 import type {LucideIcon} from "lucide-react";
 
-export interface ButtonWithTooltipProps extends ButtonProps {
+type ButtonTextProps = {
+  fontFamily?: ComponentProps<typeof Text>["fontFamily"];
+  fontSize?: ComponentProps<typeof Text>["fontSize"];
+  fontWeight?: ComponentProps<typeof Text>["fontWeight"];
+};
+
+export interface ButtonWithTooltipProps extends Omit<ButtonProps, keyof ButtonTextProps>, ButtonTextProps {
   tooltip?: string;
   icon: LucideIcon;
 }
@@ -11,6 +18,10 @@ export default function ButtonWithTooltip(
       size = "$2",
       tooltip,
       icon: Icon,
+      fontFamily,
+      fontSize,
+      fontWeight,
+      children,
       ...props
     }: ButtonWithTooltipProps
 ) {
@@ -24,7 +35,15 @@ export default function ButtonWithTooltip(
           borderColor="transparent"
           aria-label={tooltip}
           icon={(props) => <Icon {...props} color={iconColor}/>}
-      />
+      >
+        <Button.Text
+            fontFamily={fontFamily}
+            fontSize={fontSize}
+            fontWeight={fontWeight}
+        >
+          {children}
+        </Button.Text>
+      </Button>
   );
 
   if (!tooltip) {
@@ -47,8 +66,8 @@ export default function ButtonWithTooltip(
             x={0}
             y={0}
             opacity={1}
-            animation={[
-              'bouncier',
+            transition={[
+              'medium',
               {
                 opacity: {
                   overshootClamping: true,
@@ -56,7 +75,9 @@ export default function ButtonWithTooltip(
               },
             ]}
         >
-          <Text fontSize="$2">{tooltip}</Text>
+          <Text fontSize="$2" whiteSpace="nowrap">
+            {tooltip}
+          </Text>
           <Tooltip.Arrow/>
         </Tooltip.Content>
       </Tooltip>

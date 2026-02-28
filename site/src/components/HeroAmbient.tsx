@@ -1,5 +1,5 @@
-import { Stack, useThemeName } from "tamagui";
-import { useEffect } from "react";
+import {useThemeName, YStack} from "tamagui";
+import {useEffect} from "react";
 
 const HERO_KEYFRAMES_ID = "hero-ambient-keyframes";
 
@@ -54,7 +54,7 @@ export function HeroAmbient() {
   const dur2 = isDark ? "60s" : "50s";
 
   return (
-      <Stack
+      <YStack
           pointerEvents="none"
           position="absolute"
           inset={0}
@@ -62,7 +62,7 @@ export function HeroAmbient() {
           style={{ overflow: "hidden" }}
       >
         {/* blob 1 */}
-        <Stack
+        <YStack
             className="hero-ambient-blob"
             style={{
               position: "absolute",
@@ -84,7 +84,7 @@ export function HeroAmbient() {
         />
 
         {/* blob 2 */}
-        <Stack
+        <YStack
             className="hero-ambient-blob"
             style={{
               position: "absolute",
@@ -103,6 +103,6 @@ export function HeroAmbient() {
               animationIterationCount: "infinite",
             }}
         />
-      </Stack>
+      </YStack>
   );
 }

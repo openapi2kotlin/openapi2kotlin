@@ -1,19 +1,26 @@
-import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import { tamaguiPlugin } from '@tamagui/vite-plugin'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
+const siteDir = dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, siteDir, '')
+  return {
+    envDir: siteDir,
+    define: {
+      __LATEST_STABLE_RELEASE_VERSION__: JSON.stringify(env.VITE_LATEST_STABLE_RELEASE_VERSION ?? ''),
+    },
+    plugins: [
       react(),
       tamaguiPlugin({
-        // points to your tamagui config file
         config: 'tamagui/tamagui.config.ts',
-        // points to any linked packages or node_modules
-        // that have tamagui components to optimize
         components: ['tamagui'],
-        // turns on the optimizing compiler
-        optimize: true,
+        disableExtraction: true,
       }),
-  ],
+    ].filter(Boolean)
+  }
 })

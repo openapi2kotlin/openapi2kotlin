@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import { useMemo } from "react";
-import { Stack, useTheme, useThemeName } from "tamagui";
+import type {ReactNode} from "react";
+import {useMemo} from "react";
+import {useTheme, useThemeName, YStack} from "tamagui";
 
 function toCss(val: any, fallback: string) {
   const v = typeof val === "object" && val && "val" in val ? val.val : val;
@@ -91,8 +91,8 @@ export function AmbientBackground({ children, scale = 1 }: Props) {
   }, [theme, isDark, scale]);
 
   return (
-      <Stack minH="100vh" width="100%" position="relative">
-        <Stack
+      <YStack minH="100vh" width="100%" position="relative">
+        <YStack
             pointerEvents="none"
             style={{
               position: "absolute",
@@ -103,7 +103,7 @@ export function AmbientBackground({ children, scale = 1 }: Props) {
             }}
         />
 
-        <Stack
+        <YStack
             pointerEvents="none"
             style={{
               position: "absolute",
@@ -115,9 +115,9 @@ export function AmbientBackground({ children, scale = 1 }: Props) {
             }}
         />
 
-        <Stack position="relative" z={1}>
+        <YStack position="relative" z={1}>
           {children}
-        </Stack>
-      </Stack>
+        </YStack>
+      </YStack>
   );
 }
