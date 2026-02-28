@@ -3,7 +3,11 @@ package dev.openapi2kotlin.tools.generatortools
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.*
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 
 private val STRING = ClassName("kotlin", "String")
 private val INT = ClassName("kotlin", "Int")
@@ -16,8 +20,10 @@ private val BYTE_ARRAY = ClassName("kotlin", "ByteArray")
 private val LIST = ClassName("kotlin.collections", "List")
 
 private val BIG_DECIMAL = ClassName("java.math", "BigDecimal")
-private val LOCAL_DATE = ClassName("java.time", "LocalDate")
-private val OFFSET_DATE_TIME = ClassName("java.time", "OffsetDateTime")
+private val JAVA_LOCAL_DATE = ClassName("java.time", "LocalDate")
+private val JAVA_OFFSET_DATE_TIME = ClassName("java.time", "OffsetDateTime")
+private val KOTLINX_LOCAL_DATE = ClassName("kotlinx.datetime", "LocalDate")
+private val KOTLIN_TIME_INSTANT = ClassName("kotlin.time", "Instant")
 
 data class TypeNameContext(
     /**
@@ -25,9 +31,6 @@ data class TypeNameContext(
      */
     val modelPackageName: String,
 
-    /**
-     * Map of schema originalName -> ModelDO (optional but improves name resolution).
-     */
     val bySchemaName: Map<String, ModelDO> = emptyMap(),
 )
 
@@ -39,8 +42,10 @@ private fun TrivialTypeDO.Kind.typeName(): ClassName = when (this) {
     TrivialTypeDO.Kind.DOUBLE -> DOUBLE
     TrivialTypeDO.Kind.BIG_DECIMAL -> BIG_DECIMAL
     TrivialTypeDO.Kind.BOOLEAN -> BOOLEAN
-    TrivialTypeDO.Kind.LOCAL_DATE -> LOCAL_DATE
-    TrivialTypeDO.Kind.OFFSET_DATE_TIME -> OFFSET_DATE_TIME
+    TrivialTypeDO.Kind.JAVA_LOCAL_DATE -> JAVA_LOCAL_DATE
+    TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE -> KOTLINX_LOCAL_DATE
+    TrivialTypeDO.Kind.OFFSET_DATE_TIME -> JAVA_OFFSET_DATE_TIME
+    TrivialTypeDO.Kind.INSTANT -> KOTLIN_TIME_INSTANT
     TrivialTypeDO.Kind.BYTE_ARRAY -> BYTE_ARRAY
     TrivialTypeDO.Kind.ANY -> ANY
 }

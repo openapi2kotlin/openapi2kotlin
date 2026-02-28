@@ -16,8 +16,10 @@ data class TrivialTypeDO(
         DOUBLE,
         BIG_DECIMAL,
         BOOLEAN,
-        LOCAL_DATE,
+        JAVA_LOCAL_DATE,
+        KOTLINX_LOCAL_DATE,
         OFFSET_DATE_TIME,
+        INSTANT,
         BYTE_ARRAY,
         ANY,
     }

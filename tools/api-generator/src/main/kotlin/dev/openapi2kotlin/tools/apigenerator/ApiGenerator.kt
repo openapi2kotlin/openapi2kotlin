@@ -23,7 +23,10 @@ class ApiGenerator(
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
         val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
-        val ctx = TypeNameContext(modelPackageName = command.modelPackageName, bySchemaName = bySchemaName)
+        val ctx = TypeNameContext(
+            modelPackageName = command.modelPackageName,
+            bySchemaName = bySchemaName,
+        )
 
         command.apiContext.apis.forEach { api ->
             val typeBuilder = TypeSpec.interfaceBuilder(api.generatedName)
