@@ -101,7 +101,7 @@ fi
 
 echo
 echo "Changes:"
-git diff -- "${SITE_ENV}" "${README}" || true
+git --no-pager diff -- "${SITE_ENV}" "${README}" || true
 echo
 
 git add "${SITE_ENV}" "${README}"
