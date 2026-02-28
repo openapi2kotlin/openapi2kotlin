@@ -25,7 +25,11 @@ include("tools:generator-tools")
 include("tools:api-generator")
 
 include("adapters:parse-spec-adapter")
+
 include("adapters:generate-server-ktor-adapter")
 include("adapters:generate-server-spring-adapter")
-include("adapters:generate-client-adapter")
+
+include("adapters:generate-client-ktor-adapter")
+include("adapters:generate-client-restclient-adapter")
+
 include("adapters:generate-model-adapter")

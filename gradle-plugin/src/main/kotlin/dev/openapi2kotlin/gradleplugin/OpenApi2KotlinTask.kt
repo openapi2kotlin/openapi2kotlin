@@ -86,12 +86,15 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                 "openapi2kotlin: client{} and server{} cannot coexist.\n" +
                         "This generator is intentionally single-target.\n" +
                         "\n" +
-                        "Choose exactly one:\n" +
+                        "If you feel the need to generate both in one run,\n" +
+                        "the issue is likely architectural rather than configurational.\n" +
+                        "\n" +
+                        "Choose exactly one:\n\n" +
                         "openapi2kotlin {\n" +
                         "    client { ... }\n" +
                         "}\n" +
                         "\n" +
-                        "or:\n" +
+                        "or:\n\n" +
                         "openapi2kotlin {\n" +
                         "    server { ... }\n" +
                         "}"
@@ -100,17 +103,19 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
         return when {
             server != null -> {
-                val defaults = OpenApi2KotlinUseCase.ApiConfig.Server()
+                val library = server.library ?: throw GradleException(
+                    "openapi2kotlin: server.library is required, e.g.\n" +
+                        "openapi2kotlin {\n" +
+                        "    server {\n" +
+                        "        library = Spring\n" +
+                        "    }\n" +
+                        "}"
+                )
 
-                val framework =
-                    server.framework
-                        ?.let { OpenApi2KotlinUseCase.ApiConfig.Server.Framework.fromValue(it) }
-                        ?: defaults.framework
-
-                // Default swagger enabled ONLY for Spring, unless user explicitly sets it.
-                val effectiveSwaggerEnabled =
-                    server.swagger.enabled
-                        ?: (framework == OpenApi2KotlinUseCase.ApiConfig.Server.Framework.SPRING)
+                val defaults = when (library) {
+                    OpenApi2KotlinExtension.ServerLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ServerKtor()
+                    OpenApi2KotlinExtension.ServerLibrary.Spring -> OpenApi2KotlinUseCase.ApiConfig.ServerSpring()
+                }
 
                 val basePathVar =
                     server.basePathVar
@@ -118,18 +123,37 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         ?.takeIf { it.isNotBlank() }
                         ?: defaults.basePathVar
 
-                OpenApi2KotlinUseCase.ApiConfig.Server(
-                    packageName = server.packageName ?: defaults.packageName,
-                    basePathVar = basePathVar,
-                    framework = framework,
-                    swagger = defaults.swagger.copy(
-                        enabled = effectiveSwaggerEnabled
+                val effectiveSwaggerEnabled =
+                    server.swagger.enabled ?: defaults.swagger.enabled
+
+                when (library) {
+                    OpenApi2KotlinExtension.ServerLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ServerKtor(
+                        packageName = server.packageName ?: defaults.packageName,
+                        basePathVar = basePathVar,
+                        swagger = defaults.swagger.copy(enabled = effectiveSwaggerEnabled),
                     )
-                )
+                    OpenApi2KotlinExtension.ServerLibrary.Spring -> OpenApi2KotlinUseCase.ApiConfig.ServerSpring(
+                        packageName = server.packageName ?: defaults.packageName,
+                        basePathVar = basePathVar,
+                        swagger = defaults.swagger.copy(enabled = effectiveSwaggerEnabled),
+                    )
+                }
             }
 
             client != null -> {
-                val defaults = OpenApi2KotlinUseCase.ApiConfig.Client()
+                val library = client.library ?: throw GradleException(
+                    "openapi2kotlin: client.library is required, e.g.\n" +
+                        "openapi2kotlin {\n" +
+                        "    client {\n" +
+                        "        library = Ktor\n" +
+                        "    }\n" +
+                        "}"
+                )
+
+                val defaults = when (library) {
+                    OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor()
+                    OpenApi2KotlinExtension.ClientLibrary.RestClient -> OpenApi2KotlinUseCase.ApiConfig.ClientRestClient()
+                }
 
                 val basePathVar =
                     client.basePathVar
@@ -137,10 +161,16 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         ?.takeIf { it.isNotBlank() }
                         ?: defaults.basePathVar
 
-                OpenApi2KotlinUseCase.ApiConfig.Client(
-                    packageName = client.packageName ?: defaults.packageName,
-                    basePathVar = basePathVar,
-                )
+                when (library) {
+                    OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor(
+                        packageName = client.packageName ?: defaults.packageName,
+                        basePathVar = basePathVar,
+                    )
+                    OpenApi2KotlinExtension.ClientLibrary.RestClient -> OpenApi2KotlinUseCase.ApiConfig.ClientRestClient(
+                        packageName = client.packageName ?: defaults.packageName,
+                        basePathVar = basePathVar,
+                    )
+                }
             }
 
             else -> null

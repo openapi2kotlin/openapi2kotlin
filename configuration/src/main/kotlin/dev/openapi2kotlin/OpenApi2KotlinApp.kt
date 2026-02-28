@@ -1,6 +1,7 @@
 package dev.openapi2kotlin
 
-import dev.openapi2kotlin.adapter.generateclient.GenerateClientAdapter
+import dev.openapi2kotlin.adapter.generateclient.ktor.GenerateClientKtorAdapter
+import dev.openapi2kotlin.adapter.generateclient.restclient.GenerateClientRestClientAdapter
 import dev.openapi2kotlin.adapter.generatemodel.GenerateModelAdapter
 import dev.openapi2kotlin.adapter.generateserver.ktor.GenerateServerKtorAdapter
 import dev.openapi2kotlin.adapter.generateserver.spring.GenerateServerSpringAdapter
@@ -25,16 +26,14 @@ object OpenApi2KotlinApp {
         )
 
     private fun generateApiPort(config: OpenApi2KotlinUseCase.Config): GenerateApiPort =
-        when (val api = config.api) {
+        when (config.api) {
             null -> NoopGenerateApiAdapter
 
-            is OpenApi2KotlinUseCase.ApiConfig.Client ->
-                generateClientPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ClientKtor -> generateClientKtorPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient -> generateClientRestClientPort()
 
-            is OpenApi2KotlinUseCase.ApiConfig.Server -> when (api.framework) {
-                OpenApi2KotlinUseCase.ApiConfig.Server.Framework.KTOR -> generateServerKtorPort()
-                OpenApi2KotlinUseCase.ApiConfig.Server.Framework.SPRING -> generateServerSpringPort()
-            }
+            is OpenApi2KotlinUseCase.ApiConfig.ServerKtor -> generateServerKtorPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ServerSpring -> generateServerSpringPort()
         }
 
     private fun parseSpecPort(): ParseSpecPort =
@@ -49,8 +48,11 @@ object OpenApi2KotlinApp {
     private fun generateServerSpringPort(): GenerateApiPort =
         GenerateServerSpringAdapter()
 
-    private fun generateClientPort(): GenerateApiPort =
-        GenerateClientAdapter()
+    private fun generateClientKtorPort(): GenerateApiPort =
+        GenerateClientKtorAdapter()
+
+    private fun generateClientRestClientPort(): GenerateApiPort =
+        GenerateClientRestClientAdapter()
 
     private data object NoopGenerateApiAdapter : GenerateApiPort {
         override fun generateApi(command: GenerateApiPort.Command) {

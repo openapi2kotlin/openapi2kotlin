@@ -9,5 +9,6 @@ dependencies {
     implementation(project(":adapters:generate-server-ktor-adapter"))
     implementation(project(":adapters:generate-server-spring-adapter"))
     implementation(project(":adapters:generate-model-adapter"))
-    implementation(project(":adapters:generate-client-adapter"))
+    implementation(project(":adapters:generate-client-ktor-adapter"))
+    implementation(project(":adapters:generate-client-restclient-adapter"))
 }

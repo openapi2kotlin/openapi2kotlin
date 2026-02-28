@@ -3,6 +3,8 @@ package dev.openapi2kotlin.application.usecase.openapi2kotlin
 import java.nio.file.Path
 
 const val DEFAULT_PACKAGE_NAME = "dev.openapi2kotlin"
+const val DEFAULT_PACKAGE_NAME_CLIENT = "$DEFAULT_PACKAGE_NAME.client"
+const val DEFAULT_PACKAGE_NAME_SERVER = "$DEFAULT_PACKAGE_NAME.server"
 const val DEFAULT_BASE_PATH_VAR = "basePath"
 
 fun interface OpenApi2KotlinUseCase {
@@ -18,8 +20,8 @@ fun interface OpenApi2KotlinUseCase {
          * API generation target.
          *
          * - null        -> generate models only
-         * - ApiConfig.Client -> generate client APIs
-         * - ApiConfig.Server -> generate server APIs
+         * - ApiConfig.Client* -> generate client APIs
+         * - ApiConfig.Server* -> generate server APIs
          *
          * Exactly one API target may be specified per invocation.
          */
@@ -161,49 +163,36 @@ fun interface OpenApi2KotlinUseCase {
             get() = DEFAULT_BASE_PATH_VAR
 
         /**
-         * Client-side API generation.
-         *
-         * Intended for SDKs and consumers of remote APIs.
+         * Api Client
          */
-        data class Client(
-            override val packageName: String = "$DEFAULT_PACKAGE_NAME.client",
+        sealed interface Client : ApiConfig
+        data class ClientKtor(
+            override val packageName: String = DEFAULT_PACKAGE_NAME_CLIENT,
             override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
-        ) : ApiConfig
+        ) : Client
+        data class ClientRestClient(
+            override val packageName: String = DEFAULT_PACKAGE_NAME_CLIENT,
+            override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
+        ) : Client
 
         /**
-         * Server-side API generation.
-         *
-         * Intended for API providers exposing HTTP endpoints.
+         * Api Server
          */
-        data class Server(
-            override val packageName: String = "$DEFAULT_PACKAGE_NAME.server",
-            override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
-            val swagger: SwaggerConfig = SwaggerConfig(),
-            val framework: Framework = Framework.KTOR,
-        ) : ApiConfig {
-            /**
-             * Supported server frameworks.
-             */
-            enum class Framework(
-                val value: String,
-            ) {
-                KTOR("ktor"),
-                SPRING("spring");
-
-                override fun toString(): String = value
-
-                companion object {
-                    fun fromValue(value: String): Framework =
-                        entries.firstOrNull { it.value.equals(value, ignoreCase = true) }
-                            ?: throw IllegalArgumentException(
-                                "Unexpected Framework value: '$value'"
-                            )
-                }
-            }
-
+        sealed interface Server : ApiConfig {
+            val swagger: SwaggerConfig
             data class SwaggerConfig(
                 val enabled: Boolean = false,
             )
         }
+        data class ServerKtor(
+            override val packageName: String = DEFAULT_PACKAGE_NAME_SERVER,
+            override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
+            override val swagger: Server.SwaggerConfig = Server.SwaggerConfig(),
+        ) : Server
+        data class ServerSpring(
+            override val packageName: String = DEFAULT_PACKAGE_NAME_SERVER,
+            override val basePathVar: String = DEFAULT_BASE_PATH_VAR,
+            override val swagger: Server.SwaggerConfig = Server.SwaggerConfig(enabled = true),
+        ) : Server
     }
 }

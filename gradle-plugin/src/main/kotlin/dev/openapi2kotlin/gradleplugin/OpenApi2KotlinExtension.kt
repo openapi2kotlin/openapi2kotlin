@@ -11,21 +11,23 @@ open class OpenApi2KotlinExtension {
 
     val model = ModelConfigExtension()
 
-    var client: ClientConfigExtension? = null
+    var client: ClientExtension? = null
         private set
-    var server: ServerConfigExtension? = null
+    var server: ServerExtension? = null
         private set
 
     fun model(block: ModelConfigExtension.() -> Unit) = model.block()
 
-    fun client(block: ClientConfigExtension.() -> Unit) {
+    fun client(block: ClientExtension.() -> Unit) {
         if (server != null) throwClientServerExclusivityError()
-        client = (client ?: ClientConfigExtension()).apply(block)
+        val draft = (client ?: ClientExtension()).apply(block)
+        client = resolveClientExtension(draft)
     }
 
-    fun server(block: ServerConfigExtension.() -> Unit) {
+    fun server(block: ServerExtension.() -> Unit) {
         if (client != null) throwClientServerExclusivityError()
-        server = (server ?: ServerConfigExtension()).apply(block)
+        val draft = (server ?: ServerExtension()).apply(block)
+        server = resolveServerExtension(draft)
     }
 
     private fun throwClientServerExclusivityError(): Nothing {
@@ -46,6 +48,29 @@ open class OpenApi2KotlinExtension {
                     "    server { ... }\n" +
                     "}"
         )
+    }
+
+    private fun resolveClientExtension(draft: ClientExtension): ClientExtension {
+        val library = draft.library ?: return draft
+        val resolved: ClientExtension = when (library) {
+            ClientLibrary.Ktor -> ClientKtorExtension()
+            ClientLibrary.RestClient -> ClientRestClientExtension()
+        }
+        resolved.copyFrom(draft)
+        resolved.library = library
+        return resolved
+    }
+
+    private fun resolveServerExtension(draft: ServerExtension): ServerExtension {
+        val library = draft.library ?: return draft
+        val resolved: ServerExtension = when (library) {
+            ServerLibrary.Ktor -> ServerKtorExtension()
+            ServerLibrary.Spring -> ServerSpringExtension()
+        }
+        resolved.copyFrom(draft)
+        resolved.library = library
+        resolved.swagger.enabled = draft.swagger.enabled
+        return resolved
     }
 
     open class ModelConfigExtension {
@@ -86,21 +111,88 @@ open class OpenApi2KotlinExtension {
         }
     }
 
-    open class ClientConfigExtension {
+    open class ApiBaseExtension {
         var packageName: String? = null
         var basePathVar: String? = null
     }
 
-    open class ServerConfigExtension {
-        var packageName: String? = null
-        var framework: String? = null
-        var basePathVar: String? = null
+    private fun ApiBaseExtension.copyFrom(from: ApiBaseExtension) {
+        packageName = from.packageName
+        basePathVar = from.basePathVar
+    }
 
+    open class ClientExtension : ApiBaseExtension() {
+        var library: ClientLibrary? = null
+
+        fun setLibrary(value: String?) {
+            library = value?.let { ClientLibrary.fromValue(it) }
+        }
+
+        val Ktor: ClientLibrary
+            get() = ClientLibrary.Ktor
+
+        val RestClient: ClientLibrary
+            get() = ClientLibrary.RestClient
+    }
+
+    open class ServerExtension : ApiBaseExtension() {
+        var library: ServerLibrary? = null
         val swagger = SwaggerConfigExtension()
-        fun swagger(block: SwaggerConfigExtension.() -> Unit) = swagger.block()
 
-        open class SwaggerConfigExtension {
-            var enabled: Boolean? = null
+        fun setLibrary(value: String?) {
+            library = value?.let { ServerLibrary.fromValue(it) }
+        }
+
+        val Ktor: ServerLibrary
+            get() = ServerLibrary.Ktor
+
+        val Spring: ServerLibrary
+            get() = ServerLibrary.Spring
+    }
+
+    open class ClientKtorExtension : ClientExtension()
+
+    open class ClientRestClientExtension : ClientExtension()
+
+    open class ServerKtorExtension : ServerExtension()
+
+    open class ServerSpringExtension : ServerExtension()
+
+    open class SwaggerConfigExtension {
+        var enabled: Boolean? = null
+    }
+
+    enum class ClientLibrary(
+        val value: String,
+    ) {
+        Ktor("Ktor"),
+        RestClient("RestClient"),
+        ;
+
+        companion object {
+            fun fromValue(value: String): ClientLibrary =
+                ClientLibrary.entries.firstOrNull {
+                    it.value.equals(value, ignoreCase = true)
+                } ?: throw IllegalArgumentException(
+                    "Unexpected ClientLibrary value: '$value'"
+                )
+        }
+    }
+
+    enum class ServerLibrary(
+        val value: String,
+    ) {
+        Ktor("Ktor"),
+        Spring("Spring"),
+        ;
+
+        companion object {
+            fun fromValue(value: String): ServerLibrary =
+                ServerLibrary.entries.firstOrNull {
+                    it.value.equals(value, ignoreCase = true)
+                } ?: throw IllegalArgumentException(
+                    "Unexpected ServerLibrary value: '$value'"
+                )
         }
     }
 }

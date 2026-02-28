@@ -10,7 +10,8 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/adapters" />
-            <option value="$PROJECT_DIR$/adapters/generate-client-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-ktor-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-restclient-adapter" />
             <option value="$PROJECT_DIR$/adapters/generate-model-adapter" />
             <option value="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
             <option value="$PROJECT_DIR$/adapters/generate-server-spring-adapter" />
