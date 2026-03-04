@@ -21,13 +21,13 @@ import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCa
  * All constraints are derived from RawSchemaDO.SchemaPropertyDO.constraints (including inherited properties via allOf).
  */
 internal fun List<ModelDO>.handleValidationAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.ValidationAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ) {
-    if (!cfg.enabled) return
+    val validation = cfg.validation ?: return
 
     val bySchemaName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
 
-    val ns = cfg.namespace.value
+    val ns = validation.value
     val VALID = "$ns.validation.Valid"
     val NOT_NULL = "$ns.validation.constraints.NotNull"
     val SIZE = "$ns.validation.constraints.Size"

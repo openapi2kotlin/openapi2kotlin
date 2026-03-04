@@ -14,28 +14,26 @@ internal fun FieldTypeDO.withNullability(nullable: Boolean): FieldTypeDO = when 
 }
 
 internal fun RawSchemaDO.RawFieldTypeDO.toFinalType(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
-    annotationsCfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ): FieldTypeDO = when (this) {
     is RawSchemaDO.RawRefTypeDO ->
         RefTypeDO(schemaName = schemaName, nullable = nullable)
 
     is RawSchemaDO.RawArrayTypeDO ->
         ListTypeDO(
-            elementType = elementType.toFinalType(cfg, annotationsCfg),
+            elementType = elementType.toFinalType(cfg),
             nullable = nullable,
         )
 
     is RawSchemaDO.RawPrimitiveTypeDO ->
         TrivialTypeDO(
-            kind = toFinalTrivialKind(cfg, annotationsCfg),
+            kind = toFinalTrivialKind(cfg),
             nullable = nullable,
         )
 }
 
 private fun RawSchemaDO.RawPrimitiveTypeDO.toFinalTrivialKind(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
-    annotationsCfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ): TrivialTypeDO.Kind = when (type) {
     RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN ->
         TrivialTypeDO.Kind.BOOLEAN
@@ -64,13 +62,13 @@ private fun RawSchemaDO.RawPrimitiveTypeDO.toFinalTrivialKind(
     RawSchemaDO.RawPrimitiveTypeDO.Type.STRING ->
         when (format?.lowercase()) {
             "date" -> when {
-                annotationsCfg.jackson.enabled -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
-                annotationsCfg.kotlinx.enabled -> TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE
+                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
+                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE
                 else -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
             }
             "date-time" -> when {
-                annotationsCfg.jackson.enabled -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
-                annotationsCfg.kotlinx.enabled -> TrivialTypeDO.Kind.INSTANT
+                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
+                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.INSTANT
                 else -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
             }
             "binary", "byte" -> TrivialTypeDO.Kind.BYTE_ARRAY
@@ -83,11 +81,10 @@ private fun RawSchemaDO.RawPrimitiveTypeDO.toFinalTrivialKind(
 
 internal fun renderDefault(
     rawType: RawSchemaDO.RawFieldTypeDO,
-    cfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
-    annotationsCfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
     rawDefault: String,
 ): String {
-    val finalType = rawType.toFinalType(cfg, annotationsCfg)
+    val finalType = rawType.toFinalType(cfg)
     return renderDefaultForFinalType(finalType, rawDefault)
 }
 

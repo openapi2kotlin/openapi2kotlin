@@ -16,65 +16,11 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
         if (!ext.enabled) return
 
-        val defaultConfig = OpenApi2KotlinUseCase.Config(
+        val apiConfig = resolveApiConfig(ext)
+        val config = OpenApi2KotlinUseCase.Config(
             inputSpecPath = resolveInputSpecPath(ext),
             outputDirPath = resolveOutputSpecPath(ext),
-        )
-
-        val apiConfig = resolveApiConfig(ext)
-        val serverMode = apiConfig is OpenApi2KotlinUseCase.ApiConfig.Server
-
-        // Conditional default for validation annotations:
-        //  - explicit user setting wins
-        //  - otherwise: enabled when generating server, disabled otherwise
-        val effectiveValidationAnnotationsEnabled: Boolean =
-            ext.model.annotations.validations.enabled ?: serverMode
-
-        val modelConfig = defaultConfig.model.copy(
-            packageName = ext.model.packageName ?: defaultConfig.model.packageName,
-            annotations = defaultConfig.model.annotations.copy(
-                jackson = defaultConfig.model.annotations.jackson.copy(
-                    enabled = ext.model.annotations.jackson.enabled
-                        ?: defaultConfig.model.annotations.jackson.enabled,
-                    jsonPropertyMapping = ext.model.annotations.jackson.jsonPropertyMapping
-                        ?: defaultConfig.model.annotations.jackson.jsonPropertyMapping,
-                    defaultDiscriminatorValue = ext.model.annotations.jackson.defaultDiscriminatorValue
-                        ?: defaultConfig.model.annotations.jackson.defaultDiscriminatorValue,
-                    strictDiscriminatorSerialization = ext.model.annotations.jackson.strictDiscriminatorSerialization
-                        ?: defaultConfig.model.annotations.jackson.strictDiscriminatorSerialization,
-                    jsonValue = ext.model.annotations.jackson.jsonValue
-                        ?: defaultConfig.model.annotations.jackson.jsonValue,
-                    jsonCreator = ext.model.annotations.jackson.jsonCreator
-                        ?: defaultConfig.model.annotations.jackson.jsonCreator,
-                ),
-                validations = defaultConfig.model.annotations.validations.copy(
-                    enabled = effectiveValidationAnnotationsEnabled,
-                    namespace = ext.model.annotations.validations.namespace
-                        ?.let {
-                            OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.ValidationAnnotationsConfig
-                                .ValidationAnnotationsNamespace.fromValue(it)
-                        }
-                        ?: defaultConfig.model.annotations.validations.namespace,
-                ),
-                kotlinx = defaultConfig.model.annotations.kotlinx.copy(
-                    enabled = ext.model.annotations.kotlinx.enabled
-                        ?: defaultConfig.model.annotations.kotlinx.enabled,
-                    serializable = ext.model.annotations.kotlinx.serializable
-                        ?: defaultConfig.model.annotations.kotlinx.serializable,
-                ),
-            ),
-            mapping = defaultConfig.model.mapping.copy(
-                double2BigDecimal = ext.model.mapping.double2BigDecimal
-                    ?: defaultConfig.model.mapping.double2BigDecimal,
-                float2BigDecimal = ext.model.mapping.float2BigDecimal
-                    ?: defaultConfig.model.mapping.float2BigDecimal,
-                integer2Long = ext.model.mapping.integer2Long
-                    ?: defaultConfig.model.mapping.integer2Long,
-            ),
-        )
-
-        val config = defaultConfig.copy(
-            model = modelConfig,
+            model = ext.toUseCaseModelConfig(),
             api = apiConfig,
         )
 
@@ -90,20 +36,20 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
         if (server != null && client != null) {
             throw GradleException(
                 "openapi2kotlin: client{} and server{} cannot coexist.\n" +
-                        "This generator is intentionally single-target.\n" +
-                        "\n" +
-                        "If you feel the need to generate both in one run,\n" +
-                        "the issue is likely architectural rather than configurational.\n" +
-                        "\n" +
-                        "Choose exactly one:\n\n" +
-                        "openapi2kotlin {\n" +
-                        "    client { ... }\n" +
-                        "}\n" +
-                        "\n" +
-                        "or:\n\n" +
-                        "openapi2kotlin {\n" +
-                        "    server { ... }\n" +
-                        "}"
+                    "This generator is intentionally single-target.\n" +
+                    "\n" +
+                    "If you feel the need to generate both in one run,\n" +
+                    "the issue is likely architectural rather than configurational.\n" +
+                    "\n" +
+                    "Choose exactly one:\n\n" +
+                    "openapi2kotlin {\n" +
+                    "    client { ... }\n" +
+                    "}\n" +
+                    "\n" +
+                    "or:\n\n" +
+                    "openapi2kotlin {\n" +
+                    "    server { ... }\n" +
+                    "}"
             )
         }
 
@@ -118,30 +64,27 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         "}"
                 )
 
-                val defaults = when (library) {
-                    OpenApi2KotlinExtension.ServerLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ServerKtor()
-                    OpenApi2KotlinExtension.ServerLibrary.Spring -> OpenApi2KotlinUseCase.ApiConfig.ServerSpring()
+                val swagger = when (library) {
+                    OpenApi2KotlinExtension.ServerLibrary.Ktor ->
+                        server.swagger ?: false
+
+                    OpenApi2KotlinExtension.ServerLibrary.Spring ->
+                        server.swagger ?: true
                 }
-
-                val basePathVar =
-                    server.basePathVar
-                        ?.trim()
-                        ?.takeIf { it.isNotBlank() }
-                        ?: defaults.basePathVar
-
-                val effectiveSwaggerEnabled =
-                    server.swagger.enabled ?: defaults.swagger.enabled
 
                 when (library) {
                     OpenApi2KotlinExtension.ServerLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ServerKtor(
-                        packageName = server.packageName ?: defaults.packageName,
-                        basePathVar = basePathVar,
-                        swagger = defaults.swagger.copy(enabled = effectiveSwaggerEnabled),
+                        packageName = server.packageName,
+                        basePathVar = server.basePathVar.trim().takeIf { it.isNotBlank() }
+                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        swagger = swagger,
                     )
+
                     OpenApi2KotlinExtension.ServerLibrary.Spring -> OpenApi2KotlinUseCase.ApiConfig.ServerSpring(
-                        packageName = server.packageName ?: defaults.packageName,
-                        basePathVar = basePathVar,
-                        swagger = defaults.swagger.copy(enabled = effectiveSwaggerEnabled),
+                        packageName = server.packageName,
+                        basePathVar = server.basePathVar.trim().takeIf { it.isNotBlank() }
+                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        swagger = swagger,
                     )
                 }
             }
@@ -156,25 +99,17 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         "}"
                 )
 
-                val defaults = when (library) {
-                    OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor()
-                    OpenApi2KotlinExtension.ClientLibrary.RestClient -> OpenApi2KotlinUseCase.ApiConfig.ClientRestClient()
-                }
-
-                val basePathVar =
-                    client.basePathVar
-                        ?.trim()
-                        ?.takeIf { it.isNotBlank() }
-                        ?: defaults.basePathVar
-
                 when (library) {
                     OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor(
-                        packageName = client.packageName ?: defaults.packageName,
-                        basePathVar = basePathVar,
+                        packageName = client.packageName,
+                        basePathVar = client.basePathVar.trim().takeIf { it.isNotBlank() }
+                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
                     )
+
                     OpenApi2KotlinExtension.ClientLibrary.RestClient -> OpenApi2KotlinUseCase.ApiConfig.ClientRestClient(
-                        packageName = client.packageName ?: defaults.packageName,
-                        basePathVar = basePathVar,
+                        packageName = client.packageName,
+                        basePathVar = client.basePathVar.trim().takeIf { it.isNotBlank() }
+                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
                     )
                 }
             }
@@ -188,9 +123,9 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
             ?.takeIf { it.isNotBlank() }
             ?: throw GradleException(
                 "openapi2kotlin: inputSpec is required, e.g.\n" +
-                        "openapi2kotlin {\n" +
-                        "    inputSpec = \"${'$'}projectDir/src/main/resources/openapi.yaml\"\n" +
-                        "}"
+                    "openapi2kotlin {\n" +
+                    "    inputSpec = \"${'$'}projectDir/src/main/resources/openapi.yaml\"\n" +
+                    "}"
             )
 
         val inputSpecFile = project.file(inputSpecStr)
@@ -205,9 +140,9 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
             ?.takeIf { it.isNotBlank() }
             ?: throw GradleException(
                 "openapi2kotlin: outputDir is required, e.g.\n" +
-                        "openapi2kotlin {\n" +
-                        "    outputDir = \"layout.buildDirectory.dir(\\\"generated/openapi/src/main/kotlin\\\").get().asFile.path\"\n" +
-                        "}"
+                    "openapi2kotlin {\n" +
+                    "    outputDir = \"layout.buildDirectory.dir(\\\"generated/openapi/src/main/kotlin\\\").get().asFile.path\"\n" +
+                    "}"
             )
 
         val outputDirFile = project.file(outputDirString)

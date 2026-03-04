@@ -24,7 +24,7 @@ internal fun List<ApiDO>.handleServerSwaggerAnnotations(
     ctx: ApisContext,
 ) {
     val serverCfg = cfg as? OpenApi2KotlinUseCase.ApiConfig.Server ?: return
-    if (!serverCfg.swagger.enabled) return
+    if (!serverCfg.swagger) return
 
     forEach { api ->
         val tags = api.rawPath.tags.distinct().filter { it.isNotBlank() }

@@ -25,14 +25,11 @@ class OpenApi2KotlinPlugin : Plugin<Project> {
                 dependsOn(task)
             }
 
-        // Optionally register outputDir as a source root
+        // Register outputDir as a source root
         project.afterEvaluate {
             val sourceSets = extensions.findByType(SourceSetContainer::class.java) ?: return@afterEvaluate
             val main = sourceSets.getByName("main")
-
-            if (ext.srcDirEnabled) {
-                main.java.srcDir(ext.outputDir!!)
-            }
+            main.java.srcDir(ext.outputDir!!)
         }
     }
 }

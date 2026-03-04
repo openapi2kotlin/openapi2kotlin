@@ -15,8 +15,7 @@ internal fun prepareApis(
 ): List<ApiDO> {
     val ctx = ApisContext(
         modelsBySchemaName = models.associateBy { it.rawSchema.originalName },
-        mappingCfg = config.model.mapping,
-        annotationsCfg = config.model.annotations,
+        modelCfg = config.model,
     )
 
     val apis = rawPaths.toApis(ctx)
@@ -32,6 +31,5 @@ internal fun prepareApis(
 
 internal data class ApisContext(
     val modelsBySchemaName: Map<String, ModelDO>,
-    val mappingCfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
-    val annotationsCfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig,
+    val modelCfg: OpenApi2KotlinUseCase.ModelConfig,
 )

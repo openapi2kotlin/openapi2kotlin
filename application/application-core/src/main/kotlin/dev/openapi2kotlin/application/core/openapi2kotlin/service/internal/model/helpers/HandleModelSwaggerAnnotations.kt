@@ -21,7 +21,7 @@ internal fun List<ModelDO>.handleModelSwaggerAnnotations(
     cfg: OpenApi2KotlinUseCase.ApiConfig?,
 ) {
     val enabled: Boolean =
-        (cfg as? OpenApi2KotlinUseCase.ApiConfig.Server)?.swagger?.enabled == true
+        (cfg as? OpenApi2KotlinUseCase.ApiConfig.Server)?.swagger == true
 
     if (!enabled) return
 

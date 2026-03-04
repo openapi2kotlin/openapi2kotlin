@@ -7,11 +7,11 @@ import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCa
 private const val SERIALIZABLE = "kotlinx.serialization.Serializable"
 
 internal fun List<ModelDO>.handleKotlinxAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.KotlinxConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ) {
-    if (!cfg.enabled) return
+    if (cfg.serialization != OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX) return
 
-    if (cfg.serializable) {
+    if (cfg.kotlinxSerializable) {
         forEach { model ->
             model.annotations = model.annotations + ModelAnnotationDO(
                 fqName = SERIALIZABLE,

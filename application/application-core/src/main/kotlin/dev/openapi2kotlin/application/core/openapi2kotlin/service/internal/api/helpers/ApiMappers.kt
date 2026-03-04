@@ -141,7 +141,7 @@ private fun RawSchemaDO.RawFieldTypeDO.toApiFieldType(
     ctx: ApisContext,
     required: Boolean,
 ): FieldTypeDO {
-    val base = toFinalType(cfg = ctx.mappingCfg, annotationsCfg = ctx.annotationsCfg)
+    val base = toFinalType(cfg = ctx.modelCfg)
     val finalNullable = base.nullable || !required
     return base.withNullability(finalNullable)
 }

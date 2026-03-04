@@ -30,9 +30,9 @@ private const val JSON_CREATOR = "com.fasterxml.jackson.annotation.JsonCreator"
  * in ModelDO.modelShape prior to this step.
  */
 internal fun List<ModelDO>.handleJacksonAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig.JacksonConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ) {
-    if (!cfg.enabled) return
+    if (cfg.serialization != OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON) return
 
     val bySchemaName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
 
@@ -40,11 +40,11 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
      * 0) Enum Jackson annotations (@JsonValue / @JsonCreator)
      * ------------------------------------------------------------------- */
 
-    if (cfg.jsonValue || cfg.jsonCreator) {
+    if (cfg.jacksonJsonValue || cfg.jacksonJsonCreator) {
         forEach { model ->
             if (model.modelShape !is ModelShapeDO.EnumClass) return@forEach
 
-            if (cfg.jsonValue) {
+            if (cfg.jacksonJsonValue) {
                 model.enumValueAnnotations =
                     model.enumValueAnnotations + ModelAnnotationDO(
                         useSite = ModelAnnotationDO.UseSiteDO.GET,
@@ -52,7 +52,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
                     )
             }
 
-            if (cfg.jsonCreator) {
+            if (cfg.jacksonJsonCreator) {
                 model.enumFromValueAnnotations =
                     model.enumFromValueAnnotations + ModelAnnotationDO(
                         fqName = JSON_CREATOR,
@@ -66,7 +66,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
      * 1) @JsonProperty for renamed fields
      * ------------------------------------------------------------------- */
 
-    if (cfg.jsonPropertyMapping) {
+    if (cfg.jacksonJsonPropertyMapping) {
         forEach { model ->
             val useSite = model.jsonPropertyUseSite()
 
@@ -209,7 +209,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         }
 
         val annotations = buildList {
-            if (cfg.strictDiscriminatorSerialization) {
+            if (cfg.jacksonStrictDiscriminatorSerialization) {
                 add(
                     ModelAnnotationDO(
                         fqName = JSON_IGNORE_PROPERTIES,
@@ -303,7 +303,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
      * provide @type for instantiable instances (including intermediate allOf bases).
      * ------------------------------------------------------------------- */
 
-    if (cfg.defaultDiscriminatorValue) {
+    if (cfg.jacksonDefaultDiscriminatorValue) {
         forEach { model ->
             val isConcrete =
                 model.modelShape is ModelShapeDO.DataClass ||

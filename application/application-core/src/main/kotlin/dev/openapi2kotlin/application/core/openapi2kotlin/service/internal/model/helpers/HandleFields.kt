@@ -7,8 +7,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.commo
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 internal fun List<ModelDO>.handleFields(
-    cfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
-    annotationsCfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ) {
     val byName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
 
@@ -24,7 +23,6 @@ internal fun List<ModelDO>.handleFields(
                 into = parentPropSchemas,
                 visited = mutableSetOf(),
                 cfg = cfg,
-                annotationsCfg = annotationsCfg,
             )
         }
 
@@ -45,9 +43,9 @@ internal fun List<ModelDO>.handleFields(
         val ownPropSchemas = component.rawSchema.ownProperties
             .mapValues { (_, prop) ->
                 PropInfo(
-                    type = prop.type.toFinalType(cfg, annotationsCfg),
+                    type = prop.type.toFinalType(cfg),
                     required = prop.required,
-                    defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, annotationsCfg, it) },
+                    defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it) },
                     kdoc = prop.description,
                 )
             }
@@ -139,17 +137,16 @@ private fun collectAllPropertiesFromSchema(
     schemas: Map<String, ModelDO>,
     into: MutableMap<String, PropInfo>,
     visited: MutableSet<String>,
-    cfg: OpenApi2KotlinUseCase.ModelConfig.MappingConfig,
-    annotationsCfg: OpenApi2KotlinUseCase.ModelConfig.ModelAnnotationsConfig,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
 ) {
     if (!visited.add(schemaName)) return
     val schema = schemas[schemaName] ?: return
 
     schema.rawSchema.ownProperties.values.forEach { prop ->
         val info = PropInfo(
-            type = prop.type.toFinalType(cfg, annotationsCfg),
+            type = prop.type.toFinalType(cfg),
             required = prop.required,
-            defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, annotationsCfg, it) },
+            defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it) },
             kdoc = prop.description,
         )
         into.merge(prop.name, info) { a, b ->
@@ -164,6 +161,6 @@ private fun collectAllPropertiesFromSchema(
     }
 
     schema.rawSchema.allOfParents.forEach { parentName ->
-        collectAllPropertiesFromSchema(parentName, schemas, into, visited, cfg, annotationsCfg)
+        collectAllPropertiesFromSchema(parentName, schemas, into, visited, cfg)
     }
 }

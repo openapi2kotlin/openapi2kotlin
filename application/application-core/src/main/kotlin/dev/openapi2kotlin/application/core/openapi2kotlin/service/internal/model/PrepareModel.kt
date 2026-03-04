@@ -25,25 +25,16 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
     models.handleModelShape()
 
     log.info { "Handling fields" }
-    models.handleFields(
-        cfg = config.model.mapping,
-        annotationsCfg = config.model.annotations,
-    )
+    models.handleFields(cfg = config.model)
 
     log.info { "Handling Jackson annotations" }
-    models.handleJacksonAnnotations(
-        cfg = config.model.annotations.jackson
-    )
+    models.handleJacksonAnnotations(cfg = config.model)
 
     log.info { "Handling validation annotations" }
-    models.handleValidationAnnotations(
-        cfg = config.model.annotations.validations
-    )
+    models.handleValidationAnnotations(cfg = config.model)
 
     log.info { "Handling kotlinx annotations" }
-    models.handleKotlinxAnnotations(
-        cfg = config.model.annotations.kotlinx
-    )
+    models.handleKotlinxAnnotations(cfg = config.model)
 
     log.info { "Handling swagger annotations" }
     models.handleModelSwaggerAnnotations(
