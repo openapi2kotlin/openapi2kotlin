@@ -14,6 +14,10 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
   },
+  {
+    path: '/:version',
+    element: <App />,
+  },
 ])
 
 createRoot(document.getElementById('root')!).render(

@@ -30,10 +30,12 @@ fi
 TAG="v${VERSION}"
 SITE_ENV="./site/.env"
 README="./README.md"
+DOCS_SCRIPT="./scripts/generate-version-docs.py"
 
 # Ensure required files exist
 [[ -f "${SITE_ENV}" ]] || { echo "ERROR: ${SITE_ENV} not found."; exit 1; }
 [[ -f "${README}"   ]] || { echo "ERROR: ${README} not found."; exit 1; }
+[[ -f "${DOCS_SCRIPT}" ]] || { echo "ERROR: ${DOCS_SCRIPT} not found."; exit 1; }
 
 # Ensure clean working tree before release
 if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -55,6 +57,8 @@ fi
 
 echo "Releasing ${TAG}"
 echo "Updating ${SITE_ENV} and ${README}"
+
+"${DOCS_SCRIPT}" "${VERSION}"
 
 # -----------------------------------------------------------------------------
 # Update site/.env
@@ -101,10 +105,10 @@ fi
 
 echo
 echo "Changes:"
-git --no-pager diff -- "${SITE_ENV}" "${README}" || true
+git --no-pager diff -- "${SITE_ENV}" "${README}" "./site/docs" || true
 echo
 
-git add "${SITE_ENV}" "${README}"
+git add "${SITE_ENV}" "${README}" "./site/docs"
 git commit -m "chore(release): ${TAG}"
 
 git tag -a "${TAG}" -m "${TAG}"

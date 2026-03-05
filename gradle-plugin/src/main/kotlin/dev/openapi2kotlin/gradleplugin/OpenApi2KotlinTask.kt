@@ -20,7 +20,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
         val config = OpenApi2KotlinUseCase.Config(
             inputSpecPath = resolveInputSpecPath(ext),
             outputDirPath = resolveOutputSpecPath(ext),
-            model = ext.toUseCaseModelConfig(),
+            model = ext.toUseCaseModelConfig(apiConfig = apiConfig),
             api = apiConfig,
         )
 
@@ -55,14 +55,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
         return when {
             server != null -> {
-                val library = server.library ?: throw GradleException(
-                    "openapi2kotlin: server.library is required, e.g.\n" +
-                        "openapi2kotlin {\n" +
-                        "    server {\n" +
-                        "        library = Spring\n" +
-                        "    }\n" +
-                        "}"
-                )
+                val library = server.library ?: OpenApi2KotlinExtension.ServerLibrary.Ktor
 
                 val swagger = when (library) {
                     OpenApi2KotlinExtension.ServerLibrary.Ktor ->
@@ -90,14 +83,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
             }
 
             client != null -> {
-                val library = client.library ?: throw GradleException(
-                    "openapi2kotlin: client.library is required, e.g.\n" +
-                        "openapi2kotlin {\n" +
-                        "    client {\n" +
-                        "        library = Ktor\n" +
-                        "    }\n" +
-                        "}"
-                )
+                val library = client.library ?: OpenApi2KotlinExtension.ClientLibrary.Ktor
 
                 when (library) {
                     OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor(

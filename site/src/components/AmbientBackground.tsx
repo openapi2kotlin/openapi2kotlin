@@ -39,17 +39,17 @@ export function AmbientBackground({ children, scale = 1 }: Props) {
         backgroundColor: background,
         backgroundImage: `
           radial-gradient(
-            ${px(700, scale)} ${px(420, scale)} at 50% 32%,
+            ${px(700, scale)} ${px(420, scale)} at 50% 35%,
             rgba(226, 68, 98, ${a(0.18, alphaK)}),
             transparent 70%
           ),
           radial-gradient(
-            ${px(900, scale)} ${px(520, scale)} at 55% 36%,
+            ${px(900, scale)} ${px(520, scale)} at 55% 46%,
             rgba(127, 82, 255, ${a(0.10, alphaK)}),
             transparent 75%
           ),
           radial-gradient(
-            ${px(1600, scale)} ${px(1100, scale)} at 50% 45%,
+            ${px(1600, scale)} ${px(1100, scale)} at 50% 55%,
             transparent 0%,
             rgba(255,255,255, ${a(0.85, 1)} ) 78%,
             rgba(255,255,255, ${a(0.95, 1)} ) 100%

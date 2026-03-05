@@ -10,13 +10,23 @@ import org.gradle.api.GradleException
  * the public configuration surface and the effective generation behavior.
  */
 open class OpenApi2KotlinExtension {
-    /** Enables or disables code generation for the current Gradle run. */
+    /**
+     * description: Enables or disables code generation for the current Gradle run.
+     * default: true
+     * values: true, false
+     */
     var enabled: Boolean = true
 
-    /** Path to the OpenAPI specification file. */
+    /**
+     * description: Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml".
+     * required: true
+     */
     var inputSpec: String? = null
 
-    /** Output directory for generated Kotlin sources. */
+    /**
+     * description: Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
+     * required: true
+     */
     var outputDir: String? = null
 
     /** Generated model configuration. */
@@ -42,8 +52,16 @@ open class OpenApi2KotlinExtension {
         server = (server ?: ServerExtension()).apply(block)
     }
 
-    internal fun toUseCaseModelConfig(): OpenApi2KotlinUseCase.ModelConfig {
+    internal fun toUseCaseModelConfig(apiConfig: OpenApi2KotlinUseCase.ApiConfig?): OpenApi2KotlinUseCase.ModelConfig {
         val effectiveSerialization = model.serialization?.toUseCaseSerialization()
+            ?: when (apiConfig) {
+                is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient,
+                is OpenApi2KotlinUseCase.ApiConfig.ServerSpring,
+                -> OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON
+
+                else -> OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX
+            }
+
         val effectiveValidation = model.validation?.toUseCaseValidation()
 
         return OpenApi2KotlinUseCase.ModelConfig(
@@ -78,34 +96,45 @@ open class OpenApi2KotlinExtension {
 
     /** Model generation options. */
     open class ModelConfigExtension {
-        /** Base package for generated model classes. */
+        /**
+         * description: Package name for generated model classes.
+         * default: "dev.openapi2kotlin.model"
+         */
         var packageName: String = DEFAULT_MODEL_PACKAGE_NAME
 
         /**
-         * Serialization annotation family for generated models.
-         *
-         * - `Jackson` emits Jackson annotations.
-         * - `KotlinX` emits kotlinx serialization annotations.
-         * - `null` emits no serialization annotations.
+         * description: Serialization annotation family for generated model classes.
+         * default: Ktor -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
+         * values: KotlinX, Jackson
          */
-        var serialization: Serialization? = DEFAULT_SERIALIZATION
+        var serialization: Serialization? = null
 
         /**
-         * Validation annotation namespace for generated models.
-         *
-         * - `Jakarta` emits `jakarta.validation.*`.
-         * - `JavaX` emits `javax.validation.*`.
-         * - `null` disables validation annotations.
+         * description: Validation annotations namespace used in generated models.
+         * default: None
+         * values: None, Jakarta, JavaX
          */
         var validation: Validation? = null
 
-        /** Maps OpenAPI `number/double` to `BigDecimal` instead of `Double`. */
+        /**
+         * description: Maps OpenAPI number/double to BigDecimal instead of Double.
+         * default: false
+         * values: true, false
+         */
         var double2BigDecimal: Boolean = DEFAULT_DOUBLE_2_BIG_DECIMAL
 
-        /** Maps OpenAPI `number/float` to `BigDecimal` instead of `Float`. */
+        /**
+         * description: Maps OpenAPI number/float to BigDecimal instead of Float.
+         * default: false
+         * values: true, false
+         */
         var float2BigDecimal: Boolean = DEFAULT_FLOAT_2_BIG_DECIMAL
 
-        /** Maps OpenAPI `integer` to `Long` instead of `Int`. */
+        /**
+         * description: Maps OpenAPI integer to Long instead of Int.
+         * default: true
+         * values: true, false
+         */
         var integer2Long: Boolean = DEFAULT_INTEGER_2_LONG
 
         val Jackson: Serialization
@@ -119,21 +148,31 @@ open class OpenApi2KotlinExtension {
 
         val JavaX: Validation
             get() = Validation.JavaX
-    }
 
-    /** Shared API package configuration. */
-    open class ApiBaseExtension {
-        /** Base package for generated API classes. */
-        var packageName: String = DEFAULT_PACKAGE_NAME
-
-        /** Name of the generated base-path variable. */
-        var basePathVar: String = DEFAULT_BASE_PATH_VAR
+        val None: Validation
+            get() = Validation.None
     }
 
     /** Client generation options. */
-    open class ClientExtension : ApiBaseExtension() {
-        /** Target client library. Required when `client {}` is used. */
-        var library: ClientLibrary? = null
+    open class ClientExtension {
+        /**
+         * description: Base package for generated API classes.
+         * default: "dev.openapi2kotlin.client"
+         */
+        var packageName: String = DEFAULT_CLIENT_PACKAGE_NAME
+
+        /**
+         * description: Variable name used for generated base path.
+         * default: "basePath"
+         */
+        var basePathVar: String = DEFAULT_BASE_PATH_VAR
+
+        /**
+         * description: Target HTTP client library used by generated client API.
+         * default: Ktor
+         * values: Ktor, RestClient
+         */
+        var library: ClientLibrary? = ClientLibrary.Ktor
 
         fun setLibrary(value: String?) {
             library = value?.let { ClientLibrary.fromValue(it) }
@@ -144,21 +183,33 @@ open class OpenApi2KotlinExtension {
 
         val RestClient: ClientLibrary
             get() = ClientLibrary.RestClient
-
-        init {
-            packageName = DEFAULT_CLIENT_PACKAGE_NAME
-        }
     }
 
     /** Server generation options. */
-    open class ServerExtension : ApiBaseExtension() {
-        /** Target server library. Required when `server {}` is used. */
-        var library: ServerLibrary? = null
+    open class ServerExtension {
+        /**
+         * description: Base package for generated API classes.
+         * default: "dev.openapi2kotlin.server"
+         */
+        var packageName: String = DEFAULT_SERVER_PACKAGE_NAME
 
         /**
-         * Enables or disables generated Swagger/OpenAPI annotations.
-         *
-         * If omitted, Spring defaults to `true` and Ktor defaults to `false`.
+         * description: Variable name used for generated base path.
+         * default: "basePath"
+         */
+        var basePathVar: String = DEFAULT_BASE_PATH_VAR
+
+        /**
+         * description: Target server framework used by generated server API.
+         * default: Ktor
+         * values: Ktor, Spring
+         */
+        var library: ServerLibrary? = ServerLibrary.Ktor
+
+        /**
+         * description: Enables generated Swagger/OpenAPI annotations.
+         * default: Ktor -> false, Spring -> true
+         * values: true, false
          */
         var swagger: Boolean? = null
 
@@ -171,10 +222,6 @@ open class OpenApi2KotlinExtension {
 
         val Spring: ServerLibrary
             get() = ServerLibrary.Spring
-
-        init {
-            packageName = DEFAULT_SERVER_PACKAGE_NAME
-        }
     }
 
     enum class Serialization {
@@ -188,10 +235,12 @@ open class OpenApi2KotlinExtension {
     }
 
     enum class Validation {
+        None,
         Jakarta,
         JavaX;
 
-        internal fun toUseCaseValidation(): OpenApi2KotlinUseCase.ModelConfig.Validation = when (this) {
+        internal fun toUseCaseValidation(): OpenApi2KotlinUseCase.ModelConfig.Validation? = when (this) {
+            None -> null
             Jakarta -> OpenApi2KotlinUseCase.ModelConfig.Validation.JAKARTA
             JavaX -> OpenApi2KotlinUseCase.ModelConfig.Validation.JAVAX
         }
@@ -237,7 +286,6 @@ open class OpenApi2KotlinExtension {
         const val DEFAULT_CLIENT_PACKAGE_NAME = "$DEFAULT_PACKAGE_NAME.client"
         const val DEFAULT_SERVER_PACKAGE_NAME = "$DEFAULT_PACKAGE_NAME.server"
         const val DEFAULT_BASE_PATH_VAR = "basePath"
-        val DEFAULT_SERIALIZATION = Serialization.KotlinX
 
         const val DEFAULT_DOUBLE_2_BIG_DECIMAL = false
         const val DEFAULT_FLOAT_2_BIG_DECIMAL = false

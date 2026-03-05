@@ -1,10 +1,5 @@
-import {Text, XStack, YStack} from "tamagui";
-
-export type ConfigRow = {
-  property: string;
-  description: string;
-  example: string;
-};
+import { Text, Tooltip, XStack, YStack } from "tamagui";
+import type {ConfigRow} from "../model/version-docs";
 
 type Props = {
   title?: string;
@@ -12,196 +7,369 @@ type Props = {
 };
 
 const COLS = {
-  property: 1.4,
-  description: 1.2,
-  example: 2.2,
+  property: 2.8,
+  description: 2.8,
+  values: 1.3,
+  defaultValue: 1.6,
 };
 
 export default function ConfigOptionsTable({
-                                             title = "Configuration options",
-                                             rows,
-                                           }: Props) {
+  title = "Configuration options",
+  rows,
+}: Props) {
   return (
-      <YStack gap="$4" theme="blue" mt="$10">
+    <YStack gap="$4" theme="blue" mt="$12">
+      <Text fontFamily="$heading" fontSize="$4" fontWeight="800" display="flex" $md={{ display: "none" }}>
+        {title}
+      </Text>
+
+      <YStack display="flex" gap="$3" $md={{ display: "none" }}>
+        {rows.map((r, idx) => (
+          <ConfigCard key={idx} row={r} />
+        ))}
+      </YStack>
+
+      <YStack
+        display="none"
+        $md={{ display: "flex" }}
+        gap="$4"
+      >
         <Text fontFamily="$heading" fontSize="$4" fontWeight="800">
           {title}
         </Text>
 
-        {/* Mobile: cards */}
-        <YStack
-            display="flex"
-            gap="$3"
-            $md={{ display: "none" }}
-        >
-          {rows.map((r, idx) => (
-              <ConfigCard key={idx} row={r} />
-          ))}
-        </YStack>
-
-        {/* Desktop+: table */}
-        <YStack
-            display="none"
-            $md={{ display: "flex" }}
-            rounded="$6"
-            overflow="hidden"
-        >
-          <XStack bg="$color3" px="$4" py="$3" borderBottomWidth={1} borderBottomColor="$color3">
+        <YStack rounded="$6" borderWidth={1} borderColor="$color5" overflow="hidden">
+          <XStack
+            bg="$color3"
+            px="$4"
+            py="$3"
+            borderBottomWidth={1}
+            borderBottomColor="$color3"
+          >
             <HeaderCell flex={COLS.property} label="Property" />
             <HeaderCell flex={COLS.description} label="Description" />
-            <HeaderCell flex={COLS.example} label="Example" />
+            <HeaderCell flex={COLS.values} label="Values" />
+            <HeaderCell flex={COLS.defaultValue} label="Default" />
           </XStack>
 
           <YStack bg="$color2">
             {rows.map((r, idx) => (
-                <Row key={idx} row={r} isLast={idx === rows.length - 1} />
+              <Row key={idx} row={r} isLast={idx === rows.length - 1} />
             ))}
           </YStack>
         </YStack>
       </YStack>
+    </YStack>
   );
 }
 
 function ConfigCard({ row }: { row: ConfigRow }) {
+  const values = row.values ?? "";
+  const defaultValue = row.default ?? "";
+  const hasValues = splitValues(values).length > 0;
+  const hasDefault = defaultValue.trim().length > 0;
+
   return (
-      <YStack
-          bg="$color2"
-          borderWidth={1}
-          borderColor="$color3"
-          rounded="$6"
-          px="$4"
-          py="$4"
-          gap="$3"
-      >
+    <YStack
+      bg="$color2"
+      borderWidth={1}
+      borderColor="$color3"
+      rounded="$6"
+      px="$4"
+      py="$4"
+      gap="$3"
+    >
+      <XStack items="center" justify="flex-start" gap="$3" mb="$1">
+        <CodePill text={row.property} required={row.required} />
+      </XStack>
 
-        <XStack items="center" justify="flex-start" gap="$3" mb="$3">
-          <CodePill text={row.property} />
-        </XStack>
+      <DescriptionBlock title="Description" text={row.description} />
+      {hasValues ? <LabelBlock title="Values" text={values} isValues /> : null}
+      {hasDefault ? <DefaultLabelBlock title="Default" text={defaultValue} /> : null}
+    </YStack>
+  );
+}
 
-        <YStack gap="$2">
-          <Text fontSize="$2" opacity={0.7} fontWeight="700">
-            Description
-          </Text>
-          <Text fontSize="$4" lineHeight="$5" opacity={0.9}>
-            {row.description}
-          </Text>
-        </YStack>
-
-        <YStack gap="$2">
-          <Text fontSize="$2" opacity={0.7} fontWeight="700">
-            Example
-          </Text>
-          {/* This is intentionally scrollable horizontally on mobile */}
-          <ExampleBlockScrollable text={row.example} />
-        </YStack>
-      </YStack>
+function LabelBlock({
+  title,
+  text,
+  isValues,
+}: {
+  title: string;
+  text: string;
+  isValues?: boolean;
+}) {
+  const valueItems = isValues ? splitValues(text) : [];
+  return (
+    <YStack gap="$2">
+      <Text fontSize="$2" opacity={0.7} fontWeight="700">
+        {title}
+      </Text>
+      {isValues ? <PillList items={valueItems} mono /> : null}
+      {!isValues ? <ExampleBlock text={text} /> : null}
+    </YStack>
   );
 }
 
 function HeaderCell({ label, flex }: { label: string; flex: number }) {
   return (
-      <YStack style={{ flexBasis: 0 }} flex={flex} minW={0} pr="$4">
-        <Text fontSize="$4" fontWeight="800" opacity={0.95}>
-          {label}
-        </Text>
-      </YStack>
+    <YStack style={{ flexBasis: 0 }} flex={flex} minW={0} pr="$4">
+      <Text fontSize="$4" fontWeight="800" opacity={0.95}>
+        {label}
+      </Text>
+    </YStack>
   );
 }
 
 function Row({ row, isLast }: { row: ConfigRow; isLast: boolean }) {
   return (
-      <XStack
-          px="$4"
-          py="$4"
-          bg="$color2"
-          borderBottomWidth={isLast ? 0 : 1}
-          borderBottomColor="$color3"
-      >
-        <Cell flex={COLS.property}>
-          <CodePill text={row.property} />
-        </Cell>
+    <XStack
+      px="$4"
+      py="$4"
+      bg="$color2"
+      borderBottomWidth={isLast ? 0 : 1}
+      borderBottomColor="$color3"
+    >
+      <Cell flex={COLS.property}>
+        <CodePill text={row.property} required={row.required} />
+      </Cell>
 
-        <Cell flex={COLS.description}>
-          <Text fontSize="$4" lineHeight="$5" opacity={0.9}>
-            {row.description}
-          </Text>
-        </Cell>
+      <Cell flex={COLS.description}>
+        <DescriptionBlock text={row.description} />
+      </Cell>
 
-        <Cell flex={COLS.example}>
-          {/* Desktop can wrap; it has space */}
-          <ExampleBlock text={row.example} />
-        </Cell>
-      </XStack>
+      <Cell flex={COLS.values}>
+        <PillList items={splitValues(row.values || "")} mono />
+      </Cell>
+
+      <Cell flex={COLS.defaultValue}>
+        <DefaultBlock text={row.default || ""} />
+      </Cell>
+
+    </XStack>
   );
 }
 
 function Cell({ children, flex }: { children: React.ReactNode; flex: number }) {
   return (
-      <YStack style={{ flexBasis: 0 }} flex={flex} minW={0} pr="$4" justify="center">
-        {children}
-      </YStack>
+    <YStack style={{ flexBasis: 0 }} flex={flex} minW={0} pr="$4" justify="center">
+      {children}
+    </YStack>
   );
 }
 
-function CodePill({ text }: { text: string }) {
-  return (
-      <YStack
-          bg="$color4"
-          borderWidth={1}
-          borderColor="$color5"
-          rounded="$4"
-          px="$2"
-          py="$1"
-          self="flex-start"
-          maxW="100%"
-      >
-        <Text fontFamily="$mono" fontSize="$1" lineHeight="$4" numberOfLines={1}>
-          {text}
+function CodePill({ text, required }: { text: string; required?: boolean }) {
+  const content = (
+    <YStack
+      position="relative"
+      bg="$color4"
+      borderWidth={1}
+      borderColor="$color5"
+      rounded="$4"
+      px="$2"
+      py="$1"
+      self="flex-start"
+      maxW="100%"
+      cursor={required ? "pointer" : "default"}
+    >
+      {required ? (
+        <Text
+          position="absolute"
+          t={-6}
+          r={-6}
+          color="#ff4d4f"
+          fontSize="$2"
+          fontWeight="800"
+        >
+          *
         </Text>
-      </YStack>
-  );
-}
-
-function ExampleBlock({ text }: { text: string }) {
-  return (
-      <YStack
-          bg="$color1"
-          borderWidth={1}
-          borderColor="$color5"
-          rounded="$4"
-          px="$2"
-          py="$1"
-          maxW="100%"
+      ) : null}
+      <Text
+        fontFamily="$mono"
+        fontSize="$1"
+        lineHeight="$4"
+        style={{ overflowWrap: "anywhere" }}
       >
-        <Text fontFamily="$mono" fontSize="$1" lineHeight="$4" whiteSpace="pre-wrap">
-          {text}
-        </Text>
-      </YStack>
+        {text}
+      </Text>
+    </YStack>
   );
-}
 
-/**
- * Mobile-friendly: show examples as one-line code that scrolls horizontally,
- * similar to Tamagui docs (code blocks don’t wrap aggressively on mobile).
- */
-function ExampleBlockScrollable({ text }: { text: string }) {
+  if (!required) {
+    return content;
+  }
+
   return (
-      <YStack
-          bg="$color1"
-          borderWidth={1}
-          borderColor="$color5"
-          rounded="$4"
-          px="$2"
-          py="$2"
-          style={{
-            overflowX: "auto",
-            WebkitOverflowScrolling: "touch",
-          }}
-      >
-        <YStack style={{ minWidth: "max-content" }}>
-          <Text fontFamily="$mono" fontSize="$1" lineHeight="$4" whiteSpace="pre">
-            {text}
+      <Tooltip delay={120}>
+        <Tooltip.Trigger asChild>{content}</Tooltip.Trigger>
+        <Tooltip.Content
+            theme="red"
+            bg="$color1"
+            p="$2" rounded="$3"
+            z={2000}
+            enterStyle={{ x: 0, y: -5, opacity: 0, scale: 0.9 }}
+            exitStyle={{ x: 0, y: -5, opacity: 0, scale: 0.9 }}
+            scale={1}
+            x={0}
+            y={0}
+            opacity={1}
+            transition={[
+              'medium',
+              {
+                opacity: {
+                  overshootClamping: true,
+                },
+              },
+            ]}
+        >
+          <Text fontSize="$1" whiteSpace="nowrap">
+            Required
           </Text>
-        </YStack>
-      </YStack>
+          <Tooltip.Arrow />
+        </Tooltip.Content>
+      </Tooltip>
   );
+}
+
+function ExampleBlock({ text, mono = false }: { text: string; mono?: boolean }) {
+  return (
+    <YStack bg="$color1" borderWidth={1} borderColor="$color5" rounded="$4" px="$2" py="$1" maxW="100%">
+      <Text fontFamily={mono ? "$mono" : "$body"} fontSize="$1" lineHeight="$4" whiteSpace="pre-wrap">
+        {text}
+      </Text>
+    </YStack>
+  );
+}
+
+function splitValues(values: string): string[] {
+  return values
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0 && v !== "-");
+}
+
+function PillList({ items, mono = false }: { items: string[]; mono?: boolean }) {
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <YStack gap="$2" maxW="100%">
+      {items.map((item, idx) => (
+        <ExampleBlock key={`${item}-${idx}`} text={item} mono={mono} />
+      ))}
+    </YStack>
+  );
+}
+
+function DefaultLabelBlock({ title, text }: { title: string; text: string }) {
+  return (
+    <YStack gap="$2">
+      <Text fontSize="$2" opacity={0.7} fontWeight="700">
+        {title}
+      </Text>
+      <DefaultBlock text={text} />
+    </YStack>
+  );
+}
+
+function DefaultBlock({ text }: { text: string }) {
+  const normalized = text.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  const rules = splitArrowRules(normalized);
+  if (rules.length > 0) {
+    return (
+      <YStack gap="$2" maxW="100%">
+        {rules.map((rule, idx) => (
+          <YStack
+            key={`${rule.left}-${rule.right}-${idx}`}
+            gap="$2"
+            py="$2"
+            borderBottomWidth={idx === rules.length - 1 ? 0 : 1}
+            borderBottomColor="$color4"
+          >
+            <Text fontSize="$2" opacity={0.9} whiteSpace="nowrap">
+              {rule.left} →
+            </Text>
+            <YStack pl="$1" maxW="100%">
+              <ExampleBlock text={rule.right} mono />
+            </YStack>
+          </YStack>
+        ))}
+      </YStack>
+    );
+  }
+  return <ExampleBlock text={normalized} mono />;
+}
+
+function splitArrowRules(text: string): Array<{ left: string; right: string }> {
+  if (!text.includes("->")) return [];
+  return text
+    .split(",")
+    .map((part) => part.trim())
+    .map((part) => {
+      const [leftRaw, rightRaw] = part.split("->").map((x) => x?.trim() ?? "");
+      return { left: leftRaw, right: rightRaw };
+    })
+    .filter((x) => x.left.length > 0 && x.right.length > 0);
+}
+
+function DescriptionBlock({
+  text,
+  title,
+}: {
+  text: string;
+  title?: string;
+}) {
+  const parts = splitDescriptionExample(text);
+  return (
+    <YStack gap="$2">
+      {title ? (
+        <Text fontSize="$2" opacity={0.7} fontWeight="700">
+          {title}
+        </Text>
+      ) : null}
+      <Text fontSize="$4" lineHeight="$5" opacity={0.9}>
+        {parts.description}
+      </Text>
+      {parts.hint ? (
+        <YStack gap="$1" maxW="100%">
+          <Text fontSize="$2" opacity={0.75}>
+            {parts.hintPrefix}
+          </Text>
+          <ExampleBlock text={parts.hint} mono />
+        </YStack>
+      ) : null}
+    </YStack>
+  );
+}
+
+function splitDescriptionExample(text: string): {
+  description: string;
+  hintPrefix: "e.g." | "i.e.";
+  hint: string;
+} | {
+  description: string;
+  hintPrefix?: never;
+  hint?: never;
+} {
+  const normalized = text.trim();
+  const match = normalized.match(/\b(e\.g\.|i\.e\.)\s*(.+)$/i);
+  if (!match || match.index == null) {
+    return { description: normalized };
+  }
+
+  const marker = match[1].toLowerCase() === "i.e." ? "i.e." : "e.g.";
+  const before = normalized.slice(0, match.index).trim().replace(/[,;:]$/, "");
+  const after = match[2].trim().replace(/[.]$/, "");
+  if (before.length === 0 || after.length === 0) {
+    return { description: normalized };
+  }
+  return {
+    description: before,
+    hintPrefix: marker,
+    hint: after,
+  };
 }

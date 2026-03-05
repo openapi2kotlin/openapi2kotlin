@@ -61,16 +61,34 @@ openapi2kotlin {
     model {
         packageName = "dev.openapi2kotlin.model"
     }
+
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = Ktor
+    }
 }
 ```
 
 ### Configuration options
 
-| Property            | Description                                 | Example                                                                  |
-|---------------------|---------------------------------------------|--------------------------------------------------------------------------|
-| `inputSpec`         | Path to OpenAPI YAML or JSON specification  | "$projectDir/src/main/resources/openapi.yaml"                            |
-| `outputDir`         | Root directory for generated Kotlin sources | layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path |
-| `model.packageName` | Package name for generated model classes    | "dev.openapi2kotlin.model"                                               |
+| Property | Description | Values | Required | Default |
+|---|---|---|---|---|
+| `enabled` | Enables or disables code generation for the current Gradle run. | true, false | false | true |
+| `inputSpec` | Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml". | - | true | - |
+| `outputDir` | Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path. | - | true | - |
+| `model.packageName` | Package name for generated model classes. | - | false | "dev.openapi2kotlin.model" |
+| `model.serialization` | Serialization annotation family for generated model classes. | KotlinX, Jackson | false | Ktor -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson |
+| `model.validation` | Validation annotations namespace used in generated models. | None, Jakarta, JavaX | false | None |
+| `model.double2BigDecimal` | Maps OpenAPI number/double to BigDecimal instead of Double. | true, false | false | false |
+| `model.float2BigDecimal` | Maps OpenAPI number/float to BigDecimal instead of Float. | true, false | false | false |
+| `model.integer2Long` | Maps OpenAPI integer to Long instead of Int. | true, false | false | true |
+| `client.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.client" |
+| `client.basePathVar` | Variable name used for generated base path. | - | false | "basePath" |
+| `client.library` | Target HTTP client library used by generated client API. | Ktor, RestClient | false | Ktor |
+| `server.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.server" |
+| `server.basePathVar` | Variable name used for generated base path. | - | false | "basePath" |
+| `server.library` | Target server framework used by generated server API. | Ktor, Spring | false | Ktor |
+| `server.swagger` | Enables generated Swagger/OpenAPI annotations. | true, false | false | Ktor -> false, Spring -> true |
 
 ### Requirements
 

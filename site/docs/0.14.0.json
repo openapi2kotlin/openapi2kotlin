@@ -1,0 +1,138 @@
+{
+  "version": "0.14.0",
+  "generatedAt": "2026-03-05T18:30:01.998492+00:00",
+  "clientLibraries": [
+    "Ktor",
+    "RestClient"
+  ],
+  "serverLibraries": [
+    "Ktor",
+    "Spring"
+  ],
+  "defaultClientLibrary": "Ktor",
+  "defaultServerLibrary": "Ktor",
+  "configRows": [
+    {
+      "property": "enabled",
+      "description": "Enables or disables code generation for the current Gradle run.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
+    },
+    {
+      "property": "inputSpec",
+      "description": "Path to OpenAPI YAML or JSON specification, e.g. \"$projectDir/src/main/resources/openapi.yaml\".",
+      "values": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "property": "outputDir",
+      "description": "Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path.",
+      "values": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "property": "model.packageName",
+      "description": "Package name for generated model classes.",
+      "values": "",
+      "default": "\"dev.openapi2kotlin.model\"",
+      "required": false
+    },
+    {
+      "property": "model.serialization",
+      "description": "Serialization annotation family for generated model classes.",
+      "values": "KotlinX, Jackson",
+      "default": "Ktor -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson",
+      "required": false
+    },
+    {
+      "property": "model.validation",
+      "description": "Validation annotations namespace used in generated models.",
+      "values": "None, Jakarta, JavaX",
+      "default": "None",
+      "required": false
+    },
+    {
+      "property": "model.double2BigDecimal",
+      "description": "Maps OpenAPI number/double to BigDecimal instead of Double.",
+      "values": "true, false",
+      "default": "false",
+      "required": false
+    },
+    {
+      "property": "model.float2BigDecimal",
+      "description": "Maps OpenAPI number/float to BigDecimal instead of Float.",
+      "values": "true, false",
+      "default": "false",
+      "required": false
+    },
+    {
+      "property": "model.integer2Long",
+      "description": "Maps OpenAPI integer to Long instead of Int.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
+    },
+    {
+      "property": "client.packageName",
+      "description": "Base package for generated API classes.",
+      "values": "",
+      "default": "\"dev.openapi2kotlin.client\"",
+      "required": false
+    },
+    {
+      "property": "client.basePathVar",
+      "description": "Variable name used for generated base path.",
+      "values": "",
+      "default": "\"basePath\"",
+      "required": false
+    },
+    {
+      "property": "client.library",
+      "description": "Target HTTP client library used by generated client API.",
+      "values": "Ktor, RestClient",
+      "default": "Ktor",
+      "required": false
+    },
+    {
+      "property": "server.packageName",
+      "description": "Base package for generated API classes.",
+      "values": "",
+      "default": "\"dev.openapi2kotlin.server\"",
+      "required": false
+    },
+    {
+      "property": "server.basePathVar",
+      "description": "Variable name used for generated base path.",
+      "values": "",
+      "default": "\"basePath\"",
+      "required": false
+    },
+    {
+      "property": "server.library",
+      "description": "Target server framework used by generated server API.",
+      "values": "Ktor, Spring",
+      "default": "Ktor",
+      "required": false
+    },
+    {
+      "property": "server.swagger",
+      "description": "Enables generated Swagger/OpenAPI annotations.",
+      "values": "true, false",
+      "default": "Ktor -> false, Spring -> true",
+      "required": false
+    }
+  ],
+  "snippets": {
+    "client": {
+      "Ktor": "    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = Ktor\n    }",
+      "RestClient": "    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = RestClient\n    }"
+    },
+    "server": {
+      "Ktor": "    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Ktor\n    }",
+      "Spring": "    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Spring\n    }"
+    }
+  }
+}

@@ -1,33 +1,115 @@
-import { createAnimations } from '@tamagui/animations-css'
+import { createAnimations } from '@tamagui/animations-motion'
 
-// const overshootSoft   = 'cubic-bezier(.14,.64,.5,1.07)'
-const overshootMedium = 'cubic-bezier(.14,.64,.54,1.13)'
-const overshootStrong = 'cubic-bezier(0.18, 1.60, 0.40, 1.0)'
-
-const smooth = 'cubic-bezier(0.22, 1, 0.36, 1)'
-
-const bouncySmooth = `linear(0, 0.023 1.7%, 0.098 3.8%, 0.551 12.3%, 0.749 16.9%, 0.887 21.8%, 0.934 24.4%, 0.97 27.2%, 1.002 32%, 1.014 38.1%, 1.001 63.6%, 1)`
-
-export const animations = createAnimations({
-  '75ms': `${smooth} 75ms`,
-  '100ms': `${smooth} 100ms`,
-  '200ms': `${smooth} 200ms`,
-
-  // ↓ slower + bouncy
-  bouncy:      `${bouncySmooth} 1100ms`,
-  bouncier:    `${overshootMedium} 380ms`,
-  superBouncy: `${overshootStrong} 440ms`,
-
-  springy: 'spring-settle 380ms cubic-bezier(0.15, 1.0, 0.30, 1.0)',
-
-  overlay: `cubic-bezier(.34,.03,.89,.71) 550ms`,
-  lazy: `ease-in 1150ms`,
-
-  // restore more “normal” speeds
-  medium: `ease-in 320ms`,
-  slow: `ease-in 550ms`,
-  quick: `${smooth} 240ms`,
-  quicker: `${smooth} 200ms`,
-  quickest: `${smooth} 160ms`,
-  tooltip: `${smooth} 260ms`,
+export const animationsMotion = createAnimations({
+  '0ms': {
+    duration: 0,
+  },
+  '50ms': {
+    duration: 50,
+  },
+  '75ms': {
+    duration: 75,
+  },
+  '100ms': {
+    duration: 100,
+  },
+  '200ms': {
+    duration: 200,
+  },
+  '250ms': {
+    duration: 250,
+  },
+  '300ms': {
+    duration: 300,
+  },
+  '400ms': {
+    duration: 400,
+  },
+  '500ms': {
+    duration: 500,
+  },
+  superLazy: {
+    type: 'spring',
+    damping: 15,
+    mass: 2,
+    stiffness: 20,
+  },
+  lazy: {
+    type: 'spring',
+    damping: 11,
+    mass: 0.25,
+    stiffness: 12,
+  },
+  slowest: {
+    type: 'spring',
+    damping: 9,
+    stiffness: 7.5,
+  },
+  slow: {
+    type: 'spring',
+    damping: 27,
+    stiffness: 45,
+  },
+  medium: {
+    damping: 12,
+    stiffness: 100,
+    mass: 0.85,
+  },
+  mediumLessBouncy: {
+    type: 'spring',
+    damping: 18,
+    stiffness: 130,
+    mass: 1,
+  },
+  superBouncy: {
+    type: 'spring',
+    damping: 3,
+    mass: 0.7,
+    stiffness: 135,
+  },
+  bouncy: {
+    type: 'spring',
+    damping: 5.4,
+    mass: 0.9,
+    stiffness: 90,
+  },
+  quick: {
+    type: 'spring',
+    damping: 17,
+    mass: 0.5,
+    stiffness: 410,
+  },
+  quickLessBouncy: {
+    type: 'spring',
+    damping: 40,
+    mass: 1,
+    stiffness: 400,
+    velocity: 5,
+  },
+  quicker: {
+    type: 'spring',
+    damping: 20,
+    mass: 0.35,
+    stiffness: 450,
+  },
+  quickerLessBouncy: {
+    type: 'spring',
+    damping: 26,
+    mass: 0.5,
+    stiffness: 500,
+  },
+  quickest: {
+    type: 'spring',
+    damping: 22,
+    mass: 0.3,
+    stiffness: 550,
+  },
+  quickestLessBouncy: {
+    type: 'spring',
+    damping: 28,
+    mass: 0.4,
+    stiffness: 600,
+  },
 })
+
+export const animations = animationsMotion
