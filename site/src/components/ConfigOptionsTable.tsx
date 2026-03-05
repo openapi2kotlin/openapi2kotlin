@@ -6,6 +6,12 @@ type Props = {
   rows: ConfigRow[];
 };
 
+type ConfigSection = {
+  key: "root" | "model" | "client" | "server";
+  title?: string;
+  rows: ConfigRow[];
+};
+
 const COLS = {
   property: 2.8,
   description: 2.8,
@@ -17,6 +23,8 @@ export default function ConfigOptionsTable({
   title = "Configuration options",
   rows,
 }: Props) {
+  const sections = toSections(rows);
+
   return (
     <YStack gap="$4" theme="blue" mt="$10">
       <Text fontFamily="$heading" fontSize="$4" fontWeight="800" display="flex" $md={{ display: "none" }}>
@@ -24,8 +32,29 @@ export default function ConfigOptionsTable({
       </Text>
 
       <YStack display="flex" gap="$3" $md={{ display: "none" }}>
-        {rows.map((r, idx) => (
-          <ConfigCard key={idx} row={r} />
+        {sections.map((section) => (
+          <YStack key={`mobile-${section.key}`} gap="$3">
+            {section.title ? (
+              <Text
+                fontFamily="$mono"
+                fontSize="$2"
+                fontWeight="700"
+                opacity={0.92}
+                bg="$gray2"
+                borderWidth={1}
+                borderColor="$gray6"
+                rounded="$3"
+                px="$2"
+                py="$1"
+                self="flex-start"
+              >
+                {section.title}
+              </Text>
+            ) : null}
+            {section.rows.map((r, idx) => (
+              <ConfigCard key={`${section.key}-${idx}-${r.property}`} row={r} />
+            ))}
+          </YStack>
         ))}
       </YStack>
 
@@ -38,29 +67,73 @@ export default function ConfigOptionsTable({
           {title}
         </Text>
 
-        <YStack rounded="$6" borderWidth={1} borderColor="$color5" overflow="hidden">
-          <XStack
-            bg="$color3"
-            px="$4"
-            py="$3"
-            borderBottomWidth={1}
-            borderBottomColor="$color3"
-          >
-            <HeaderCell flex={COLS.property} label="Property" />
-            <HeaderCell flex={COLS.description} label="Description" />
-            <HeaderCell flex={COLS.values} label="Values" />
-            <HeaderCell flex={COLS.defaultValue} label="Default" />
-          </XStack>
+        {sections.map((section) => (
+          <YStack key={`desktop-${section.key}`} gap="$2">
+            {section.title ? (
+              <Text
+                fontFamily="$mono"
+                fontSize="$2"
+                fontWeight="700"
+                opacity={0.92}
+                bg="$gray2"
+                borderWidth={1}
+                borderColor="$gray6"
+                rounded="$3"
+                px="$2"
+                py="$1"
+                self="flex-start"
+              >
+                {section.title}
+              </Text>
+            ) : null}
 
-          <YStack bg="$color2">
-            {rows.map((r, idx) => (
-              <Row key={idx} row={r} isLast={idx === rows.length - 1} />
-            ))}
+            <YStack rounded="$6" borderWidth={1} borderColor="$color5" overflow="hidden">
+              <XStack
+                bg="$color3"
+                px="$4"
+                py="$3"
+                borderBottomWidth={1}
+                borderBottomColor="$color3"
+              >
+                <HeaderCell flex={COLS.property} label="Property" />
+                <HeaderCell flex={COLS.description} label="Description" />
+                <HeaderCell flex={COLS.values} label="Values" />
+                <HeaderCell flex={COLS.defaultValue} label="Default" />
+              </XStack>
+
+              <YStack bg="$color2">
+                {section.rows.map((r, idx) => (
+                  <Row key={`${section.key}-${idx}-${r.property}`} row={r} isLast={idx === section.rows.length - 1} />
+                ))}
+              </YStack>
+            </YStack>
           </YStack>
-        </YStack>
+        ))}
       </YStack>
     </YStack>
   );
+}
+
+function toSections(rows: ConfigRow[]): ConfigSection[] {
+  const rootRows = rows.filter((r) => !r.property.includes("."));
+  const modelRows = rows
+    .filter((r) => r.property.startsWith("model."))
+    .map((r) => ({ ...r, property: r.property.replace(/^model\./, "") }));
+  const clientRows = rows
+    .filter((r) => r.property.startsWith("client."))
+    .map((r) => ({ ...r, property: r.property.replace(/^client\./, "") }));
+  const serverRows = rows
+    .filter((r) => r.property.startsWith("server."))
+    .map((r) => ({ ...r, property: r.property.replace(/^server\./, "") }));
+
+  const sections: ConfigSection[] = [
+    { key: "root", title: "openapi2kotlin", rows: rootRows },
+    { key: "model", title: "openapi2kotlin.model", rows: modelRows },
+    { key: "client", title: "openapi2kotlin.client", rows: clientRows },
+    { key: "server", title: "openapi2kotlin.server", rows: serverRows },
+  ];
+
+  return sections.filter((section) => section.rows.length > 0);
 }
 
 function ConfigCard({ row }: { row: ConfigRow }) {

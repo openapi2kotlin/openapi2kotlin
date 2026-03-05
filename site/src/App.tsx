@@ -1,7 +1,7 @@
 import "./App.css";
 import { useLayoutEffect, useMemo, useState } from "react";
 import {Text, Theme, XStack, YStack} from "tamagui";
-import {AlertTriangle, Link} from "lucide-react";
+import {AlertTriangle, Link as LinkIcon} from "lucide-react";
 import DockNav from "./components/DockNav";
 import CodeBlock from "./components/CodeBlock";
 import { AmbientBackground } from "./components/AmbientBackground.tsx";
@@ -11,7 +11,7 @@ import { HeroHeading } from "./components/HeroHeading.tsx";
 import { useMedia } from "@tamagui/core";
 import SegmentedControl from "./components/SegmentedControl.tsx";
 import { VERSION_DOCS_BY_VERSION, VERSION_DOCS_LIST } from "./service/version-docs-registry";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router-dom";
 
 type ApiTarget = "Client" | "Server";
 
@@ -170,9 +170,9 @@ ${apiSnippet.trimEnd()}
                   <Text color="$color12" fontSize="$3" lineHeight="$3">
                     You are viewing an older version of the documentation. For the latest features and updates, see the current version{" "}
                     <Text asChild color="$color12" textDecorationLine="underline" fontWeight="700">
-                      <Link to="/">
+                      <RouterLink to="/">
                         here
-                      </Link>
+                      </RouterLink>
                     </Text>
                     .
                   </Text>
@@ -251,7 +251,7 @@ ${apiSnippet.trimEnd()}
                     <Text fontWeight="600" color="$color12" fontFamily="$mono">
                       Maven Central
                     </Text>
-                    <Link size={14}/>
+                    <LinkIcon size={14}/>
                   </XStack>
                 </YStack>
               </a>
