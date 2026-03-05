@@ -1,7 +1,7 @@
 import "./App.css";
 import { useLayoutEffect, useMemo, useState } from "react";
 import {Text, Theme, XStack, YStack} from "tamagui";
-import { AlertTriangle } from "lucide-react";
+import {AlertTriangle, Link} from "lucide-react";
 import DockNav from "./components/DockNav";
 import CodeBlock from "./components/CodeBlock";
 import { AmbientBackground } from "./components/AmbientBackground.tsx";
@@ -11,7 +11,7 @@ import { HeroHeading } from "./components/HeroHeading.tsx";
 import { useMedia } from "@tamagui/core";
 import SegmentedControl from "./components/SegmentedControl.tsx";
 import { VERSION_DOCS_BY_VERSION, VERSION_DOCS_LIST } from "./service/version-docs-registry";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 type ApiTarget = "Client" | "Server";
 
@@ -225,6 +225,39 @@ ${apiSnippet.trimEnd()}
 
             <CodeBlock title="build.gradle.kts" code={gradleSnippet} />
           </YStack>
+
+          <Text fontSize="$4" opacity={0.85} color="$color11">
+            The plugin is published to{" "}
+            <Text asChild>
+              <a
+                  href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{textDecoration: "none"}}
+              >
+                <YStack
+                    asChild
+                    display="inline-flex"
+                    items="center"
+                    gap="$2"
+                    px="$2"
+                    py="$1"
+                    rounded="$3"
+                    bg="$pink3"
+                    hoverStyle={{bg: "$pink4"}}
+                    pressStyle={{bg: "$pink5"}}
+                >
+                  <XStack>
+                    <Text fontWeight="600" color="$color12" fontFamily="$mono">
+                      Maven Central
+                    </Text>
+                    <Link size={14}/>
+                  </XStack>
+                </YStack>
+              </a>
+            </Text>
+            .
+          </Text>
 
           <ConfigOptionsTable rows={docs.configRows} />
         </YStack>

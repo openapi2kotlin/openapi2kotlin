@@ -18,7 +18,7 @@ export default function ConfigOptionsTable({
   rows,
 }: Props) {
   return (
-    <YStack gap="$4" theme="blue" mt="$12">
+    <YStack gap="$4" theme="blue" mt="$10">
       <Text fontFamily="$heading" fontSize="$4" fontWeight="800" display="flex" $md={{ display: "none" }}>
         {title}
       </Text>
