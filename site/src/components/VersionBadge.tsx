@@ -1,5 +1,4 @@
 import {Anchor} from "tamagui";
-import { useMedia } from "@tamagui/core";
 import ButtonWithTooltip from "./ButtonWithTooltip.tsx";
 import {Tag} from "lucide-react";
 
@@ -9,14 +8,10 @@ const MAVEN_URL =
 const LATEST_STABLE_RELEASE_VERSION = __LATEST_STABLE_RELEASE_VERSION__;
 
 export default function VersionBadge() {
-  const media = useMedia();
-
   return (
       <Anchor href={MAVEN_URL} target="_blank" rel="noreferrer">
         <ButtonWithTooltip
             theme="green"
-            size="$1"
-            width={media.maxXs ? 72 : 100}
             rounded="$10"
             fontFamily="$mono"
             fontSize="$3"

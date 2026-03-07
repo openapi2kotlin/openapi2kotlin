@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, Button, Text, Tooltip, XStack, YStack } from 'tamagui'
+import { useMedia } from '@tamagui/core'
 import { ChevronDown, Tag } from 'lucide-react'
 
 export default function VersionPicker({
@@ -15,6 +16,8 @@ export default function VersionPicker({
 }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const media = useMedia()
+  const pickerWidth = media.maxXs ? 90 : 130
 
   const versions = useMemo(() => availableVersions, [availableVersions])
   const tooltipText =
@@ -50,7 +53,7 @@ export default function VersionPicker({
             icon={Tag}
             onPress={() => setOpen((v) => !v)}
             pressStyle={{ scale: 0.96 }}
-            width={130}
+            width={pickerWidth}
           >
             <Button.Text fontFamily="$mono" fontSize="$3" fontWeight="700">
               {selectedVersion}
@@ -102,7 +105,7 @@ export default function VersionPicker({
             position="absolute"
             t={42}
             l={0}
-            minW={130}
+            minW={pickerWidth}
             bg="$background"
             borderWidth={1}
             borderColor="$borderColor"
