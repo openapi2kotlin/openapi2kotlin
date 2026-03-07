@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@tamagui/animations-motion": "^2.0.0-rc.21",
     "@tamagui/colors": "^2.0.0-rc.21",
     "@tamagui/config": "^2.0.0-rc.21",

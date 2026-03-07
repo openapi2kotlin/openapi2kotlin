@@ -56,8 +56,8 @@ export default function ConfigOptionsTable({
           <YStack key={`desktop-${section.key}`} id={section.anchorId} gap="$2">
             {section.title ? (
               <Text
-                fontFamily="$heading"
-                fontSize="$5"
+                fontFamily="$mono"
+                fontSize="$8"
                 fontWeight="700"
                 opacity={0.92}
                 mt="$4"
@@ -343,7 +343,7 @@ function DefaultBlock({ text }: { text: string }) {
             borderBottomWidth={idx === rules.length - 1 ? 0 : 1}
             borderBottomColor="$color4"
           >
-            <Text fontSize="$2" opacity={0.9} whiteSpace="nowrap">
+            <Text fontFamily="$mono" fontSize="$2" opacity={0.9} whiteSpace="nowrap">
               {rule.left} →
             </Text>
             <YStack pl="$1" maxW="100%">

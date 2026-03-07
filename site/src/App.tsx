@@ -251,7 +251,7 @@ ${apiSnippet.trimEnd()}
                 </Text>
 
                 <Theme name="pink">
-                  <YStack gap="$2" mt="$10">
+                  <YStack gap="$2" mt="$5">
                     <SegmentedControl
                         value={apiTarget}
                         onChange={onApiTargetChange}

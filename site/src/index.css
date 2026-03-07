@@ -1,8 +1,11 @@
 @import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
 
 :root {
   --font-body: 'Inter Variable', system-ui, -apple-system, BlinkMacSystemFont,
   'Segoe UI', sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+  "Liberation Mono", monospace;
 }
 
 *,

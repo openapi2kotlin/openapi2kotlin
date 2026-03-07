@@ -10,10 +10,10 @@ type MenuItem = {
 const MENU_ITEMS: MenuItem[] = [
   { id: "installation", label: "Installation", level: 0 },
   { id: "api-reference", label: "API Reference", level: 0 },
-  { id: "openapi2kotlin", label: "openapi2kotlin", level: 1 },
-  { id: "openapi2kotlin-model", label: "model", level: 2 },
-  { id: "openapi2kotlin-client", label: "client", level: 2 },
-  { id: "openapi2kotlin-server", label: "server", level: 2 },
+  { id: "openapi2kotlin", label: "Openapi2kotlin", level: 1 },
+  { id: "openapi2kotlin-model", label: "Model", level: 2 },
+  { id: "openapi2kotlin-client", label: "Client", level: 2 },
+  { id: "openapi2kotlin-server", label: "Server", level: 2 },
 ];
 
 const NAV_OFFSET = 90;
@@ -185,7 +185,7 @@ export default function ContentsMenu() {
       gap="$2"
       pointerEvents="auto"
     >
-      <Text fontSize="$2" opacity={0.65} fontWeight="700">
+      <Text fontFamily="$mono" fontSize="$4" opacity={0.4} fontWeight="500" mb="$4">
         Contents
       </Text>
 

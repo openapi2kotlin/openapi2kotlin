@@ -39,8 +39,7 @@ export const fonts = {
   }),
 
   mono: createFont({
-    family:
-        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    family: "var(--font-mono)",
     size: sizes,
     lineHeight: lineHeights,
     weight: { 4: "400", 7: "700" },

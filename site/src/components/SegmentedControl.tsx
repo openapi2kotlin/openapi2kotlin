@@ -77,7 +77,7 @@ export default function SegmentedControl<T extends string>({
                 position="absolute"
                 t={0}
                 b={0}
-                rounded="$9"
+                rounded="$10"
                 bg="$color5"
                 opacity={hoveredIndex >= 0 ? 0.5 : 0}
                 transition={hoverCanAnimateTransform ? "mediumLessBouncy" : "0ms"}
@@ -91,7 +91,7 @@ export default function SegmentedControl<T extends string>({
                 position="absolute"
                 t={0}
                 b={0}
-                rounded="$9"
+                rounded="$10"
                 bg="$color4"
                 opacity={0.9}
                 transition="mediumLessBouncy"
@@ -108,7 +108,7 @@ export default function SegmentedControl<T extends string>({
                     key={option.value}
                     unstyled
                     height={32}
-                    rounded="$9"
+                    rounded="$10"
                     flex={1}
                     flexBasis={0}
                     items="center"
