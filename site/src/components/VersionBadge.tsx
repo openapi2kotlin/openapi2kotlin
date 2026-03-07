@@ -16,7 +16,7 @@ export default function VersionBadge() {
         <ButtonWithTooltip
             theme="green"
             size="$1"
-            width={media.maxXs ? 80 : 100}
+            width={media.maxXs ? 72 : 100}
             rounded="$10"
             fontFamily="$mono"
             fontSize="$3"
