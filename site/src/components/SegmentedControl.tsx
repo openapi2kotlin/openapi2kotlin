@@ -70,14 +70,14 @@ export default function SegmentedControl<T extends string>({
   };
 
   return (
-      <YStack width="100%" borderWidth={1} borderColor="$color3" rounded="$6" bg="$background" elevation="$2">
+      <YStack width="100%" borderWidth={1} borderColor="$color3" rounded="$9" bg="$background" elevation="$2">
         <YStack position="relative" p={insetPx}>
           <YStack position="absolute" l={insetPx} r={insetPx} t={insetPx} b={insetPx} pointerEvents="none">
             <YStack
                 position="absolute"
                 t={0}
                 b={0}
-                rounded="$5"
+                rounded="$9"
                 bg="$color5"
                 opacity={hoveredIndex >= 0 ? 0.5 : 0}
                 transition={hoverCanAnimateTransform ? "mediumLessBouncy" : "0ms"}
@@ -91,7 +91,7 @@ export default function SegmentedControl<T extends string>({
                 position="absolute"
                 t={0}
                 b={0}
-                rounded="$5"
+                rounded="$9"
                 bg="$color4"
                 opacity={0.9}
                 transition="mediumLessBouncy"
@@ -108,7 +108,7 @@ export default function SegmentedControl<T extends string>({
                     key={option.value}
                     unstyled
                     height={32}
-                    rounded="$5"
+                    rounded="$9"
                     flex={1}
                     flexBasis={0}
                     items="center"

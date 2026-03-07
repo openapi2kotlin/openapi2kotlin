@@ -1,4 +1,4 @@
-import { Text, Tooltip, XStack, YStack } from "tamagui";
+import {Text, Tooltip, XStack, YStack} from "tamagui";
 import type {ConfigRow} from "../model/version-docs";
 
 type Props = {
@@ -9,6 +9,7 @@ type Props = {
 type ConfigSection = {
   key: "root" | "model" | "client" | "server";
   title?: string;
+  anchorId: string;
   rows: ConfigRow[];
 };
 
@@ -20,33 +21,21 @@ const COLS = {
 };
 
 export default function ConfigOptionsTable({
-  title = "Configuration options",
   rows,
 }: Props) {
   const sections = toSections(rows);
 
   return (
-    <YStack gap="$4" theme="blue" mt="$10">
-      <Text fontFamily="$heading" fontSize="$4" fontWeight="800" display="flex" $md={{ display: "none" }}>
-        {title}
-      </Text>
-
+    <YStack gap="$4" theme="blue" mt="$2">
       <YStack display="flex" gap="$3" $md={{ display: "none" }}>
         {sections.map((section) => (
           <YStack key={`mobile-${section.key}`} gap="$3">
             {section.title ? (
               <Text
-                fontFamily="$mono"
-                fontSize="$2"
+                fontFamily="$heading"
+                fontSize="$5"
                 fontWeight="700"
                 opacity={0.92}
-                bg="$gray2"
-                borderWidth={1}
-                borderColor="$gray6"
-                rounded="$3"
-                px="$2"
-                py="$1"
-                self="flex-start"
               >
                 {section.title}
               </Text>
@@ -61,27 +50,18 @@ export default function ConfigOptionsTable({
       <YStack
         display="none"
         $md={{ display: "flex" }}
-        gap="$4"
+        gap="$6"
       >
-        <Text fontFamily="$heading" fontSize="$4" fontWeight="800">
-          {title}
-        </Text>
-
         {sections.map((section) => (
-          <YStack key={`desktop-${section.key}`} gap="$2">
+          <YStack key={`desktop-${section.key}`} id={section.anchorId} gap="$2">
             {section.title ? (
               <Text
-                fontFamily="$mono"
-                fontSize="$2"
+                fontFamily="$heading"
+                fontSize="$5"
                 fontWeight="700"
                 opacity={0.92}
-                bg="$gray2"
-                borderWidth={1}
-                borderColor="$gray6"
-                rounded="$3"
-                px="$2"
-                py="$1"
-                self="flex-start"
+                mt="$4"
+                mb="$3"
               >
                 {section.title}
               </Text>
@@ -127,10 +107,10 @@ function toSections(rows: ConfigRow[]): ConfigSection[] {
     .map((r) => ({ ...r, property: r.property.replace(/^server\./, "") }));
 
   const sections: ConfigSection[] = [
-    { key: "root", title: "openapi2kotlin", rows: rootRows },
-    { key: "model", title: "openapi2kotlin.model", rows: modelRows },
-    { key: "client", title: "openapi2kotlin.client", rows: clientRows },
-    { key: "server", title: "openapi2kotlin.server", rows: serverRows },
+    { key: "root", title: "openapi2kotlin", anchorId: "openapi2kotlin", rows: rootRows },
+    { key: "model", title: "openapi2kotlin.model", anchorId: "openapi2kotlin-model", rows: modelRows },
+    { key: "client", title: "openapi2kotlin.client", anchorId: "openapi2kotlin-client", rows: clientRows },
+    { key: "server", title: "openapi2kotlin.server", anchorId: "openapi2kotlin-server", rows: serverRows },
   ];
 
   return sections.filter((section) => section.rows.length > 0);
