@@ -1,6 +1,6 @@
 {
   "version": "0.15.0",
-  "generatedAt": "2026-03-05T18:40:33.706137+00:00",
+  "generatedAt": "2026-03-07T17:44:01.211034+00:00",
   "clientLibraries": [
     "Ktor",
     "RestClient"
@@ -12,13 +12,6 @@
   "defaultClientLibrary": "Ktor",
   "defaultServerLibrary": "Ktor",
   "configRows": [
-    {
-      "property": "enabled",
-      "description": "Enables or disables code generation for the current Gradle run.",
-      "values": "true, false",
-      "default": "true",
-      "required": false
-    },
     {
       "property": "inputSpec",
       "description": "Path to OpenAPI YAML or JSON specification, e.g. \"$projectDir/src/main/resources/openapi.yaml\".",
@@ -32,6 +25,13 @@
       "values": "",
       "default": "",
       "required": true
+    },
+    {
+      "property": "enabled",
+      "description": "Enables or disables code generation for the current Gradle run.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
     },
     {
       "property": "model.packageName",
@@ -83,13 +83,6 @@
       "required": false
     },
     {
-      "property": "client.basePathVar",
-      "description": "Variable name used for generated base path.",
-      "values": "",
-      "default": "\"basePath\"",
-      "required": false
-    },
-    {
       "property": "client.library",
       "description": "Target HTTP client library used by generated client API.",
       "values": "Ktor, RestClient",
@@ -97,17 +90,17 @@
       "required": false
     },
     {
+      "property": "client.basePathVar",
+      "description": "Variable name used for generated base path.",
+      "values": "",
+      "default": "\"basePath\"",
+      "required": false
+    },
+    {
       "property": "server.packageName",
       "description": "Base package for generated API classes.",
       "values": "",
       "default": "\"dev.openapi2kotlin.server\"",
-      "required": false
-    },
-    {
-      "property": "server.basePathVar",
-      "description": "Variable name used for generated base path.",
-      "values": "",
-      "default": "\"basePath\"",
       "required": false
     },
     {
@@ -122,6 +115,13 @@
       "description": "Enables generated Swagger/OpenAPI annotations.",
       "values": "true, false",
       "default": "Ktor -> false, Spring -> true",
+      "required": false
+    },
+    {
+      "property": "server.basePathVar",
+      "description": "Variable name used for generated base path.",
+      "values": "",
+      "default": "\"basePath\"",
       "required": false
     }
   ],

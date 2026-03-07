@@ -45,22 +45,57 @@ def parse_kdoc_meta(block: str) -> dict[str, str]:
 
 def parse_props(class_body: str) -> list[dict[str, str]]:
     results: list[dict[str, str]] = []
-    pattern = re.compile(r"/\*\*(.*?)\*/\s*var\s+(\w+)\s*:\s*([^=\n]+?)(?:\s*=\s*([^\n]+))?\n", re.S)
-    for m in pattern.finditer(class_body):
-        kdoc = parse_kdoc_meta(m.group(1))
-        name = m.group(2)
-        typ = m.group(3).strip()
-        if "Extension" in typ:
-            continue
-        row = {
-            "name": name,
-            "type": typ,
-            "description": kdoc.get("description", ""),
-            "default": kdoc.get("default", ""),
-            "values": kdoc.get("values", ""),
-            "required": kdoc.get("required", "false"),
-        }
-        results.append(row)
+    lines = class_body.splitlines()
+
+    member_lines = [ln for ln in lines if ln.strip()]
+    if not member_lines:
+        return results
+
+    # Top-level members in this class share the smallest indentation in its body.
+    base_indent = min(len(ln) - len(ln.lstrip(" ")) for ln in member_lines)
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+
+        if indent == base_indent and stripped.startswith("/**"):
+            kdoc_lines: list[str] = [line]
+            while i + 1 < len(lines) and "*/" not in lines[i]:
+                i += 1
+                kdoc_lines.append(lines[i])
+
+            # find the next meaningful line
+            j = i + 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+
+            if j >= len(lines):
+                break
+
+            next_line = lines[j]
+            next_indent = len(next_line) - len(next_line.lstrip(" "))
+            next_stripped = next_line.strip()
+
+            if next_indent == base_indent and next_stripped.startswith("var "):
+                m = re.match(r"var\s+(\w+)\s*:\s*([^=\n]+?)(?:\s*=\s*(.+))?$", next_stripped)
+                if m:
+                    name = m.group(1)
+                    typ = m.group(2).strip()
+                    if "Extension" not in typ:
+                        kdoc = parse_kdoc_meta("\n".join(kdoc_lines))
+                        results.append({
+                            "name": name,
+                            "type": typ,
+                            "description": kdoc.get("description", ""),
+                            "default": kdoc.get("default", ""),
+                            "values": kdoc.get("values", ""),
+                            "required": kdoc.get("required", "false"),
+                        })
+                i = j
+        i += 1
+
     return results
 
 
@@ -77,6 +112,20 @@ def parse_enum_values(text: str, enum_name: str) -> list[str]:
         if m:
             vals.append(m.group(1))
     return vals
+
+
+def parse_all_enums(text: str) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for m in re.finditer(r"\benum\s+class\s+(\w+)\b", text):
+        enum_name = m.group(1)
+        out[enum_name] = parse_enum_values(text, enum_name)
+    return out
+
+
+def normalize_type_name(type_name: str) -> str:
+    base = type_name.strip().replace("?", "")
+    base = base.split("<", 1)[0].strip()
+    return base.split(".")[-1]
 
 
 def row(property_name: str, data: dict[str, str]) -> dict[str, str]:
@@ -98,41 +147,26 @@ def generate(version: str) -> dict:
     client_props = parse_props(extract_class_body(text, "ClientExtension"))
     server_props = parse_props(extract_class_body(text, "ServerExtension"))
 
-    client_enum_values = parse_enum_values(text, "ClientLibrary")
-    server_enum_values = parse_enum_values(text, "ServerLibrary")
-
-    by_name_root = {p["name"]: p for p in root_props}
-    by_name_model = {p["name"]: p for p in model_props}
-    by_name_client = {p["name"]: p for p in client_props}
-    by_name_server = {p["name"]: p for p in server_props}
+    enum_values_by_type = parse_all_enums(text)
+    client_enum_values = enum_values_by_type.get("ClientLibrary", [])
+    server_enum_values = enum_values_by_type.get("ServerLibrary", [])
 
     rows: list[dict[str, str]] = []
 
-    for n in ["enabled", "inputSpec", "outputDir"]:
-        if n in by_name_root:
-            rows.append(row(n, by_name_root[n]))
+    def append_props(props: list[dict[str, str]], prefix: str = "") -> None:
+        for p in props:
+            enriched = dict(p)
+            type_name = normalize_type_name(enriched.get("type", ""))
+            if not enriched.get("values") and type_name in enum_values_by_type:
+                enriched["values"] = ", ".join(enum_values_by_type[type_name])
 
-    for n in ["packageName", "serialization", "validation", "double2BigDecimal", "float2BigDecimal", "integer2Long"]:
-        if n in by_name_model:
-            rows.append(row(f"model.{n}", by_name_model[n]))
+            property_name = enriched["name"] if not prefix else f"{prefix}.{enriched['name']}"
+            rows.append(row(property_name, enriched))
 
-    for n in ["packageName", "basePathVar"]:
-        if n in by_name_client:
-            rows.append(row(f"client.{n}", by_name_client[n]))
-    if "library" in by_name_client:
-        c = dict(by_name_client["library"])
-        c["values"] = ", ".join(client_enum_values)
-        rows.append(row("client.library", c))
-
-    for n in ["packageName", "basePathVar"]:
-        if n in by_name_server:
-            rows.append(row(f"server.{n}", by_name_server[n]))
-    if "library" in by_name_server:
-        s = dict(by_name_server["library"])
-        s["values"] = ", ".join(server_enum_values)
-        rows.append(row("server.library", s))
-    if "swagger" in by_name_server:
-        rows.append(row("server.swagger", by_name_server["swagger"]))
+    append_props(root_props)
+    append_props(model_props, "model")
+    append_props(client_props, "client")
+    append_props(server_props, "server")
 
     docs = {
         "version": version,

@@ -16,21 +16,22 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "openapi2kotlin-server", label: "Server", level: 2 },
 ];
 
-const NAV_OFFSET = 90;
+const NAV_OFFSET = 120;
 const ACTIVE_MARKER_OFFSET = NAV_OFFSET;
 const CLICK_SCROLL_MUTE_MS = 2000;
 
 export default function ContentsMenu() {
-  const [activeId, setActiveId] = useState<string>(MENU_ITEMS[0].id);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [sliderTop, setSliderTop] = useState(0);
   const [railTop, setRailTop] = useState(0);
   const [railHeight, setRailHeight] = useState(0);
   const itemRefs = useRef<Record<string, TamaguiElement | null>>({});
+  const activeIdRef = useRef(activeId);
   const muteScrollSyncRef = useRef(false);
   const unmuteTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const updateActive = () => {
+    const updateActive = (syncHash: boolean) => {
       const marker = window.innerHeight * 0.5;
       const candidates = MENU_ITEMS
         .map((item) => {
@@ -43,11 +44,20 @@ export default function ContentsMenu() {
       if (candidates.length === 0) return;
 
       const passed = candidates.filter((c) => c.top <= marker);
-      if (passed.length > 0) {
-        setActiveId(passed[passed.length - 1].id);
-        return;
+      const nextId = passed.length > 0 ? passed[passed.length - 1].id : null;
+      if (nextId === activeIdRef.current) return;
+
+      activeIdRef.current = nextId;
+      setActiveId(nextId);
+      if (syncHash) {
+        if (nextId === null) {
+          if (window.location.hash) {
+            window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+          }
+        } else if (window.location.hash !== `#${nextId}`) {
+          window.history.replaceState(null, "", `#${nextId}`);
+        }
       }
-      setActiveId(candidates[0].id);
     };
 
     let rafId = 0;
@@ -56,7 +66,7 @@ export default function ContentsMenu() {
       if (rafId) return;
       rafId = window.requestAnimationFrame(() => {
         rafId = 0;
-        updateActive();
+        updateActive(true);
       });
     };
 
@@ -68,11 +78,13 @@ export default function ContentsMenu() {
       document.scrollingElement ?? document.documentElement,
     ].filter((target, index, arr) => arr.indexOf(target) === index);
 
-    updateActive();
+    const onResize = () => updateActive(false);
+
+    updateActive(false);
     for (const target of scrollTargets) {
       target.addEventListener("scroll", onScroll, { passive: true });
     }
-    window.addEventListener("resize", updateActive);
+    window.addEventListener("resize", onResize);
 
     const unmuteOnUserIntent = () => {
       if (!muteScrollSyncRef.current) return;
@@ -81,7 +93,7 @@ export default function ContentsMenu() {
         window.clearTimeout(unmuteTimerRef.current);
         unmuteTimerRef.current = null;
       }
-      updateActive();
+      updateActive(false);
     };
     window.addEventListener("wheel", unmuteOnUserIntent, { passive: true });
     window.addEventListener("touchmove", unmuteOnUserIntent, { passive: true });
@@ -94,7 +106,7 @@ export default function ContentsMenu() {
       for (const target of scrollTargets) {
         target.removeEventListener("scroll", onScroll);
       }
-      window.removeEventListener("resize", updateActive);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("wheel", unmuteOnUserIntent);
       window.removeEventListener("touchmove", unmuteOnUserIntent);
       window.removeEventListener("keydown", unmuteOnUserIntent);
@@ -110,6 +122,10 @@ export default function ContentsMenu() {
   }, []);
 
   useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
+  useEffect(() => {
     const scrollMarginTop = `${NAV_OFFSET}px`;
     for (const item of MENU_ITEMS) {
       const el = document.getElementById(item.id);
@@ -119,6 +135,7 @@ export default function ContentsMenu() {
   }, []);
 
   useEffect(() => {
+    if (!activeId) return;
     const activeEl = itemRefs.current[activeId];
     if (!activeEl) return;
     setSliderTop(activeEl.offsetTop + activeEl.offsetHeight / 2 - 13);
@@ -152,6 +169,7 @@ export default function ContentsMenu() {
     if (unmuteTimerRef.current !== null) {
       window.clearTimeout(unmuteTimerRef.current);
     }
+    activeIdRef.current = id;
     setActiveId(id);
     const bodyIsScrollable =
       document.body.scrollHeight > document.body.clientHeight &&
@@ -209,6 +227,7 @@ export default function ContentsMenu() {
           rounded="$10"
           bg="$color11"
           transition="mediumLessBouncy"
+          opacity={activeId ? 1 : 0}
         />
 
         <YStack gap="$1">

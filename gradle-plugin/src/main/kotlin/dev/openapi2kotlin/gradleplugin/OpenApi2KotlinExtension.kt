@@ -11,13 +11,6 @@ import org.gradle.api.GradleException
  */
 open class OpenApi2KotlinExtension {
     /**
-     * description: Enables or disables code generation for the current Gradle run.
-     * default: true
-     * values: true, false
-     */
-    var enabled: Boolean = true
-
-    /**
      * description: Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml".
      * required: true
      */
@@ -28,6 +21,13 @@ open class OpenApi2KotlinExtension {
      * required: true
      */
     var outputDir: String? = null
+
+    /**
+     * description: Enables or disables code generation for the current Gradle run.
+     * default: true
+     * values: true, false
+     */
+    var enabled: Boolean = true
 
     /** Generated model configuration. */
     val model = ModelConfigExtension()
@@ -162,17 +162,17 @@ open class OpenApi2KotlinExtension {
         var packageName: String = DEFAULT_CLIENT_PACKAGE_NAME
 
         /**
-         * description: Variable name used for generated base path.
-         * default: "basePath"
-         */
-        var basePathVar: String = DEFAULT_BASE_PATH_VAR
-
-        /**
          * description: Target HTTP client library used by generated client API.
          * default: Ktor
          * values: Ktor, RestClient
          */
         var library: ClientLibrary? = ClientLibrary.Ktor
+
+        /**
+         * description: Variable name used for generated base path.
+         * default: "basePath"
+         */
+        var basePathVar: String = DEFAULT_BASE_PATH_VAR
 
         fun setLibrary(value: String?) {
             library = value?.let { ClientLibrary.fromValue(it) }
@@ -194,12 +194,6 @@ open class OpenApi2KotlinExtension {
         var packageName: String = DEFAULT_SERVER_PACKAGE_NAME
 
         /**
-         * description: Variable name used for generated base path.
-         * default: "basePath"
-         */
-        var basePathVar: String = DEFAULT_BASE_PATH_VAR
-
-        /**
          * description: Target server framework used by generated server API.
          * default: Ktor
          * values: Ktor, Spring
@@ -212,6 +206,12 @@ open class OpenApi2KotlinExtension {
          * values: true, false
          */
         var swagger: Boolean? = null
+
+        /**
+         * description: Variable name used for generated base path.
+         * default: "basePath"
+         */
+        var basePathVar: String = DEFAULT_BASE_PATH_VAR
 
         fun setLibrary(value: String?) {
             library = value?.let { ServerLibrary.fromValue(it) }

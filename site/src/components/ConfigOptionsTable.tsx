@@ -1,5 +1,6 @@
 import {Text, Tooltip, XStack, YStack} from "tamagui";
 import type {ConfigRow} from "../model/version-docs";
+import SectionCopyLinkButton from "./SectionCopyLinkButton";
 
 type Props = {
   title?: string;
@@ -14,7 +15,7 @@ type ConfigSection = {
 };
 
 const COLS = {
-  property: 2.8,
+  property: 2,
   description: 2.8,
   values: 1.3,
   defaultValue: 1.6,
@@ -31,14 +32,7 @@ export default function ConfigOptionsTable({
         {sections.map((section) => (
           <YStack key={`mobile-${section.key}`} gap="$3">
             {section.title ? (
-              <Text
-                fontFamily="$heading"
-                fontSize="$5"
-                fontWeight="700"
-                opacity={0.92}
-              >
-                {section.title}
-              </Text>
+              <SectionHeader title={section.title} anchorId={section.anchorId} mobile />
             ) : null}
             {section.rows.map((r, idx) => (
               <ConfigCard key={`${section.key}-${idx}-${r.property}`} row={r} />
@@ -50,21 +44,12 @@ export default function ConfigOptionsTable({
       <YStack
         display="none"
         $md={{ display: "flex" }}
-        gap="$6"
+        gap="$9"
       >
         {sections.map((section) => (
           <YStack key={`desktop-${section.key}`} id={section.anchorId} gap="$2">
             {section.title ? (
-              <Text
-                fontFamily="$mono"
-                fontSize="$8"
-                fontWeight="700"
-                opacity={0.92}
-                mt="$4"
-                mb="$3"
-              >
-                {section.title}
-              </Text>
+              <SectionHeader title={section.title} anchorId={section.anchorId} />
             ) : null}
 
             <YStack rounded="$6" borderWidth={1} borderColor="$color5" overflow="hidden">
@@ -91,6 +76,30 @@ export default function ConfigOptionsTable({
         ))}
       </YStack>
     </YStack>
+  );
+}
+
+function SectionHeader({
+  title,
+  anchorId,
+  mobile = false,
+}: {
+  title: string;
+  anchorId: string;
+  mobile?: boolean;
+}) {
+  return (
+    <XStack mt={mobile ? 0 : "$4"} mb="$3" items="center" justify="space-between" gap="$3">
+      <Text
+        fontFamily={mobile ? "$heading" : "$mono"}
+        fontSize={mobile ? "$5" : "$8"}
+        fontWeight="700"
+        opacity={0.92}
+      >
+        {title}
+      </Text>
+      <SectionCopyLinkButton anchorId={anchorId} title={title} />
+    </XStack>
   );
 }
 

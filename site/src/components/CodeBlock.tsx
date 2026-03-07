@@ -1,6 +1,6 @@
-import {useMemo, useState} from "react";
-import {Button, Text, Theme, XStack, YStack} from "tamagui";
-import {CheckCheck} from "lucide-react";
+import {useMemo} from "react";
+import {Text, Theme, XStack, YStack} from "tamagui";
+import CodeCopyButton from "./CodeCopyButton";
 
 type Props = {
   title: string;
@@ -113,20 +113,8 @@ export default function CodeBlock({
                                     code,
                                     lineNumbers = true,
                                   }: Props) {
-  const [copied, setCopied] = useState(false);
-
   const cleaned = useMemo(() => code.replace(/\s+$/, ""), [code]);
   const lines = useMemo(() => cleaned.split("\n"), [cleaned]);
-
-  const canClipboard =
-      typeof navigator !== "undefined" && !!navigator.clipboard?.writeText;
-
-  const onCopy = async () => {
-    if (!canClipboard) return;
-    await navigator.clipboard.writeText(cleaned);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 900);
-  };
 
   const lineNoWidth = useMemo(() => {
     const digits = String(lines.length).length;
@@ -155,18 +143,7 @@ export default function CodeBlock({
               ) : null}
             </XStack>
 
-            {canClipboard ? (
-                <Button
-                    size="$2"
-                    onPress={onCopy}
-                    icon={copied ? CheckCheck : undefined}
-                    bg="$color4"
-                    hoverStyle={{ bg: "$color5" }}
-                    shrink={0}
-                >
-                  {copied ? "Copied" : "Copy"}
-                </Button>
-            ) : null}
+            <CodeCopyButton value={cleaned} />
           </XStack>
 
           {/* Code scroll area */}
