@@ -178,7 +178,7 @@ export default function ContentsMenu() {
     }, CLICK_SCROLL_MUTE_MS);
   };
 
-  const minMenuHeight = useMemo(() => MENU_ITEMS.length * 34, []);
+  const minMenuHeight = useMemo(() => MENU_ITEMS.length * 32, []);
 
   return (
     <YStack
@@ -202,10 +202,10 @@ export default function ContentsMenu() {
         />
         <YStack
           position="absolute"
-          l={3}
+          l={5}
           t={sliderTop}
-          width={8}
-          height={26}
+          width={4}
+          height={24}
           rounded="$10"
           bg="$color11"
           transition="mediumLessBouncy"
@@ -243,7 +243,7 @@ export default function ContentsMenu() {
               >
                 <Button.Text
                   color={isActive ? "$color11" : "$color10"}
-                  fontSize={level === 0 ? "$5" : "$4"}
+                  fontSize={level === 0 ? "$4" : "$3"}
                   fontWeight={isActive ? 700 : 500}
                 >
                   {item.label}
