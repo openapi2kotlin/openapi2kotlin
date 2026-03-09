@@ -30,7 +30,7 @@ export default function ConfigOptionsTable({
     <YStack gap="$4" theme="blue" mt="$2">
       <YStack display="flex" gap="$3" $md={{ display: "none" }}>
         {sections.map((section) => (
-          <YStack key={`mobile-${section.key}`} gap="$3">
+          <YStack key={`mobile-${section.key}`} id={section.anchorId} gap="$3">
             {section.title ? (
               <SectionHeader title={section.title} anchorId={section.anchorId} mobile />
             ) : null}
