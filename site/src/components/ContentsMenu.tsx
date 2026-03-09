@@ -9,6 +9,7 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
   { id: "installation", label: "Installation", level: 0 },
+  { id: "under-the-hood", label: "Under the Hood", level: 0 },
   { id: "api-reference", label: "API Reference", level: 0 },
   { id: "openapi2kotlin", label: "Openapi2kotlin", level: 1 },
   { id: "openapi2kotlin-model", label: "Model", level: 2 },

@@ -11,6 +11,7 @@ import ContentsMenu from "./components/ContentsMenu.tsx";
 import {HeroHeading} from "./components/HeroHeading.tsx";
 import {useMedia} from "@tamagui/core";
 import SegmentedControl from "./components/SegmentedControl.tsx";
+import PillLink from "./components/PillLink.tsx";
 import {VERSION_DOCS_BY_VERSION, VERSION_DOCS_LIST} from "./service/version-docs-registry";
 import {Link as RouterLink, useLocation, useNavigate, useParams} from "react-router-dom";
 
@@ -251,7 +252,7 @@ ${apiSnippet.trimEnd()}
             <YStack gap="$3" position="relative">
               <H2 id="installation">Installation</H2>
 
-              <Text fontSize="$4" color="$color11" opacity={0.85}>
+              <Text fontSize="$6" color="$color11" opacity={0.85} mb="$3">
                 Choose which client or server you’d like to generate, then copy the snippets below.
               </Text>
 
@@ -318,43 +319,42 @@ ${apiSnippet.trimEnd()}
 
                 <CodeBlock title="build.gradle.kts" code={gradleSnippet} />
 
-                <Text fontSize="$4" opacity={0.85} color="$color11">
+                <Text fontSize="$6" opacity={0.85} color="$color11">
                   The plugin is published to{" "}
-                  <Text asChild>
-                    <a
-                        href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ textDecoration: "none" }}
-                    >
-                      <YStack
-                          asChild
-                          display="inline-flex"
-                          items="center"
-                          gap="$2"
-                          px="$2"
-                          py="$1"
-                          rounded="$3"
-                          bg="$pink3"
-                          hoverStyle={{ bg: "$pink4" }}
-                          pressStyle={{ bg: "$pink5" }}
-                      >
-                        <XStack>
-                          <Text fontWeight="600" color="$color12" items="center"  fontFamily="$mono">
-                            Maven Central <ExternalLink size={14} />
-                          </Text>
-                        </XStack>
-                      </YStack>
-                    </a>
-                  </Text>
+                  <PillLink
+                    href="https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin"
+                    label="Maven Central"
+                    icon={<ExternalLink size={14} />}
+                  />
                   .
                 </Text>
               </YStack>
             </YStack>
 
 
+            <H2 id="under-the-hood" mt="$15" mb="$3">Under the Hood</H2>
+            <YStack gap="$3" mb="$8">
+              <Text fontSize="$6" color="$color11" opacity={0.85} lineHeight="$7">
+                This plugin was specifically engineered to handle complex polymorphism with{" "}
+                <Text fontFamily="$mono" fontWeight="700">oneOf</Text> ,{" "}
+                <Text fontFamily="$mono" fontWeight="700">allOf</Text> and{" "}
+                <Text fontFamily="$mono" fontWeight="700">discriminator</Text> from{" "}
+                <PillLink
+                  href="https://spec.openapis.org/oas/v3.2.0.html"
+                  label="OpenAPI 3.x"
+                  icon={<ExternalLink size={14} />}
+                />. Output lands in your build directory as marked sources: polished Kotlin, ready to be referenced directly from your business logic. The plugin is intended for production use and avoids generating throwaway boilerplate, starter templates, or other rubbish. <br/><br/>Under the hood, it follows hexagonal architecture, which makes it straightforward to add new clients or servers without ever touching the core business logic. Most generator decisions are configurable, though not publicly exposed in the API reference to keep things simple; If you need to tweak the output and no configuration property covers your use case, feel free to submit a {" "}
+                <PillLink
+                    href="https://github.com/openapi2kotlin/openapi2kotlin/issues"
+                    label="request"
+                    icon={<ExternalLink size={14} />}
+                />
+                .
+              </Text>
+            </YStack>
+
             <H2 id="api-reference" mt="$12" mb="$3">API Reference</H2>
-            <Text fontSize="$4" color="$color11" opacity={0.85} mb="$8">
+            <Text fontSize="$6" color="$color11" mb="$8">
               Configuration options are grouped by scope so you can quickly find root, model, client, and server settings.
             </Text>
             <ConfigOptionsTable rows={docs.configRows} />
