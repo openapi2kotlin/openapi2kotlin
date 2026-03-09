@@ -1,6 +1,7 @@
 import {Text, Tooltip, XStack, YStack} from "tamagui";
 import type {ConfigRow} from "../model/version-docs";
 import SectionCopyLinkButton from "./SectionCopyLinkButton";
+import { useMedia } from "@tamagui/core";
 
 type Props = {
   title?: string;
@@ -25,12 +26,14 @@ export default function ConfigOptionsTable({
   rows,
 }: Props) {
   const sections = toSections(rows);
+  const media = useMedia();
+  const isMobile = media.maxMd;
 
   return (
     <YStack gap="$4" theme="blue" mt="$2">
       <YStack display="flex" gap="$3" $md={{ display: "none" }}>
         {sections.map((section) => (
-          <YStack key={`mobile-${section.key}`} id={section.anchorId} gap="$3">
+          <YStack key={`mobile-${section.key}`} id={isMobile ? section.anchorId : undefined} gap="$3">
             {section.title ? (
               <SectionHeader title={section.title} anchorId={section.anchorId} mobile />
             ) : null}
@@ -47,7 +50,7 @@ export default function ConfigOptionsTable({
         gap="$9"
       >
         {sections.map((section) => (
-          <YStack key={`desktop-${section.key}`} id={section.anchorId} gap="$2">
+          <YStack key={`desktop-${section.key}`} id={!isMobile ? section.anchorId : undefined} gap="$2">
             {section.title ? (
               <SectionHeader title={section.title} anchorId={section.anchorId} />
             ) : null}
