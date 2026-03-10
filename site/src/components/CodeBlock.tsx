@@ -1,4 +1,4 @@
-import {useMemo} from "react";
+import {type ClipboardEvent, useMemo} from "react";
 import {Text, Theme, XStack, YStack} from "tamagui";
 import CodeCopyButton from "./CodeCopyButton";
 
@@ -121,6 +121,41 @@ export default function CodeBlock({
     return Math.max(2, digits) * 10 + 18;
   }, [lines.length]);
 
+  const onCodeCopy = (event: ClipboardEvent<HTMLDivElement>) => {
+    if (!lineNumbers) return;
+
+    const selection = window.getSelection();
+    const root = event.currentTarget as unknown as Node;
+    if (!selection || selection.isCollapsed || !root) return;
+
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    if (
+      !anchorNode ||
+      !focusNode ||
+      !root.contains(anchorNode) ||
+      !root.contains(focusNode)
+    ) {
+      return;
+    }
+
+    const selectedText = selection.toString();
+    if (!selectedText) return;
+
+    const maxLineNumberDigits = String(lines.length).length;
+    const lineNumberPrefix = new RegExp(`^\\s*\\d{1,${maxLineNumberDigits}}\\s+`);
+
+    const withoutLineNumbers = selectedText
+      .split("\n")
+      .map((line) => line.replace(lineNumberPrefix, ""))
+      .join("\n");
+
+    if (withoutLineNumbers !== selectedText) {
+      event.preventDefault();
+      event.clipboardData.setData("text/plain", withoutLineNumbers);
+    }
+  };
+
   return (
       <Theme name="pink">
         <YStack
@@ -150,6 +185,7 @@ export default function CodeBlock({
           <YStack
               px="$3"
               py="$3"
+              onCopy={onCodeCopy}
               style={{
                 overflowX: "auto",
                 WebkitOverflowScrolling: "touch",
@@ -164,20 +200,31 @@ export default function CodeBlock({
                 return (
                     <XStack key={idx} gap="$3" items="flex-start">
                       {lineNumbers ? (
+                        <XStack
+                          style={{
+                            width: lineNoWidth,
+                            flexShrink: 0,
+                            pointerEvents: "none",
+                            userSelect: "none",
+                            WebkitUserSelect: "none",
+                            MozUserSelect: "none",
+                            msUserSelect: "none",
+                          }}
+                        >
                           <Text
-                              fontFamily="$mono"
-                              fontSize="$3"
-                              lineHeight="$4"
-                              opacity={0.45}
-                              style={{
-                                width: lineNoWidth,
-                                textAlign: "right",
-                                userSelect: "none",
-                                flexShrink: 0,
-                              }}
+                            fontFamily="$mono"
+                            fontSize="$3"
+                            lineHeight="$4"
+                            opacity={0.45}
+                            selectable={false}
+                            style={{
+                              width: "100%",
+                              textAlign: "right",
+                            }}
                           >
                             {lineNumber}
                           </Text>
+                        </XStack>
                       ) : null}
 
                       <Text
