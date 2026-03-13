@@ -51,6 +51,9 @@ dependencies {
      * Resolve configuration (and transitives) only for embedding into the fat jar.
      */
     embed(project(":configuration"))
+
+    testImplementation(gradleTestKit())
+    testImplementation(kotlin("test"))
 }
 
 /**
@@ -238,4 +241,8 @@ mavenPublishing {
  */
 tasks.withType<GenerateModuleMetadata>().configureEach {
     enabled = false
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

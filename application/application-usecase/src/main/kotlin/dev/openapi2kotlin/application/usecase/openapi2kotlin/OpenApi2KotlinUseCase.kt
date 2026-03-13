@@ -20,7 +20,7 @@ fun interface OpenApi2KotlinUseCase {
         val float2BigDecimal: Boolean,
         val integer2Long: Boolean,
         val jacksonJsonPropertyMapping: Boolean = true,
-        val jacksonDefaultDiscriminatorValue: Boolean = true,
+        val defaultDiscriminatorValue: Boolean = true,
         val jacksonStrictDiscriminatorSerialization: Boolean = true,
         val jacksonJsonValue: Boolean = true,
         val jacksonJsonCreator: Boolean = true,
@@ -44,17 +44,26 @@ fun interface OpenApi2KotlinUseCase {
     sealed interface ApiConfig {
         val packageName: String
         val basePathVar: String
+        val methodNameSingularized: Boolean
+        val methodNamePluralized: Boolean
+        val methodNameFromOperationId: Boolean
 
         sealed interface Client : ApiConfig
 
         data class ClientKtor(
             override val packageName: String,
             override val basePathVar: String,
+            override val methodNameSingularized: Boolean = true,
+            override val methodNamePluralized: Boolean = true,
+            override val methodNameFromOperationId: Boolean = false,
         ) : Client
 
         data class ClientRestClient(
             override val packageName: String,
             override val basePathVar: String,
+            override val methodNameSingularized: Boolean = true,
+            override val methodNamePluralized: Boolean = true,
+            override val methodNameFromOperationId: Boolean = false,
         ) : Client
 
         sealed interface Server : ApiConfig {
@@ -64,12 +73,18 @@ fun interface OpenApi2KotlinUseCase {
         data class ServerKtor(
             override val packageName: String,
             override val basePathVar: String,
+            override val methodNameSingularized: Boolean = true,
+            override val methodNamePluralized: Boolean = true,
+            override val methodNameFromOperationId: Boolean = false,
             override val swagger: Boolean,
         ) : Server
 
         data class ServerSpring(
             override val packageName: String,
             override val basePathVar: String,
+            override val methodNameSingularized: Boolean = true,
+            override val methodNamePluralized: Boolean = true,
+            override val methodNameFromOperationId: Boolean = false,
             override val swagger: Boolean,
         ) : Server
     }

@@ -45,18 +45,16 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
             if (model.modelShape !is ModelShapeDO.EnumClass) return@forEach
 
             if (cfg.jacksonJsonValue) {
-                model.enumValueAnnotations =
-                    model.enumValueAnnotations + ModelAnnotationDO(
-                        useSite = ModelAnnotationDO.UseSiteDO.GET,
-                        fqName = JSON_VALUE,
-                    )
+                model.enumValueAnnotations += ModelAnnotationDO(
+                    useSite = ModelAnnotationDO.UseSiteDO.GET,
+                    fqName = JSON_VALUE,
+                )
             }
 
             if (cfg.jacksonJsonCreator) {
-                model.enumFromValueAnnotations =
-                    model.enumFromValueAnnotations + ModelAnnotationDO(
-                        fqName = JSON_CREATOR,
-                    )
+                model.enumFromValueAnnotations += ModelAnnotationDO(
+                    fqName = JSON_CREATOR,
+                )
             }
         }
     }
@@ -86,23 +84,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
     }
 
     /* ---------------------------------------------------------------------
-     * 2) Default null values for optional nullable fields
-     * ------------------------------------------------------------------- */
-
-    forEach { model ->
-        model.fields = model.fields
-            .map { f ->
-                when {
-                    f.defaultValueCode != null -> f
-                    !f.required && f.type.nullable -> f.copy(defaultValueCode = "null")
-                    else -> f
-                }
-            }
-            .toMutableList()
-    }
-
-    /* ---------------------------------------------------------------------
-     * 3) Polymorphism metadata + annotations
+     * 2) Polymorphism metadata + annotations
      *
      * Principles:
      *  - For oneOf-wrapper sealed interfaces ("RefOrValue" unions):
@@ -175,7 +157,8 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
         // Otherwise: annotate the type itself (open-class base / allOf base / etc.)
         val isConcreteParent =
             parent.modelShape is ModelShapeDO.OpenClass ||
-                    parent.modelShape is ModelShapeDO.DataClass
+                    parent.modelShape is ModelShapeDO.DataClass ||
+                    parent.modelShape is ModelShapeDO.EmptyClass
 
         // Include the parent itself as a subtype only if:
         //  - discriminator mapping explicitly points to itself
@@ -241,7 +224,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
             )
         }
 
-        parent.annotations = parent.annotations + annotations
+        parent.annotations += annotations
     }
 
     /* ---------------------------------------------------------------------
@@ -297,46 +280,7 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
     }
 
     /* ---------------------------------------------------------------------
-     * 4) Default discriminator value on concrete instantiable types
-     *
-     * Ensures stable serialization without requiring callers to explicitly
-     * provide @type for instantiable instances (including intermediate allOf bases).
-     * ------------------------------------------------------------------- */
-
-    if (cfg.jacksonDefaultDiscriminatorValue) {
-        forEach { model ->
-            val isConcrete =
-                model.modelShape is ModelShapeDO.DataClass ||
-                        model.modelShape is ModelShapeDO.OpenClass
-
-            if (!isConcrete) return@forEach
-
-            val parentWithDisc = model.findNearestDiscriminatorParent(bySchemaName)
-            val discOriginal =
-                model.rawSchema.discriminatorPropertyName
-                    ?: parentWithDisc?.rawSchema?.discriminatorPropertyName
-                    ?: return@forEach
-
-            val discValue =
-                // 1) Prefer this schema's own discriminator mapping key (TMF-style)
-                model.selfDiscriminatorValueFromOwnMapping()
-                // 2) Otherwise, inherit from nearest discriminator parent mapping
-                    ?: parentWithDisc?.polymorphism
-                        ?.schemaNameToDiscriminatorValue
-                        ?.get(model.rawSchema.originalName)
-                    // 3) Last resort fallback
-                    ?: model.rawSchema.originalName
-
-            model.fields = model.fields.map { f ->
-                if (f.originalName == discOriginal && f.defaultValueCode == null)
-                    f.copy(defaultValueCode = "\"$discValue\"")
-                else f
-            }.toMutableList()
-        }
-    }
-
-    /* ---------------------------------------------------------------------
-     * 5) Make discriminator READ_ONLY on concrete non-polymorphic leaves
+     * 3) Make discriminator READ_ONLY on concrete non-polymorphic leaves
      *
      * Prevents accidental acceptance of incorrect @type values.
      * ------------------------------------------------------------------- */
@@ -344,7 +288,8 @@ internal fun List<ModelDO>.handleJacksonAnnotations(
     forEach { model ->
         val isConcrete =
             model.modelShape is ModelShapeDO.DataClass ||
-                    model.modelShape is ModelShapeDO.OpenClass
+                    model.modelShape is ModelShapeDO.OpenClass ||
+                    model.modelShape is ModelShapeDO.EmptyClass
 
         if (!isConcrete) return@forEach
         if (model.rawSchema.oneOfChildren.isNotEmpty()) return@forEach
@@ -428,27 +373,6 @@ private fun ModelDO.buildSchemaNameToDiscriminatorValue(
     }
 }
 
-/**
- * Walks up allOf parents to find the nearest schema declaring a discriminator.
- */
-private fun ModelDO.findNearestDiscriminatorParent(
-    bySchemaName: Map<String, ModelDO>,
-): ModelDO? {
-    val visited = mutableSetOf<String>()
-    val queue = ArrayDeque(rawSchema.allOfParents)
-
-    while (queue.isNotEmpty()) {
-        val parentName = queue.removeFirst()
-        if (!visited.add(parentName)) continue
-
-        val parent = bySchemaName[parentName] ?: continue
-        if (parent.rawSchema.discriminatorPropertyName != null) return parent
-
-        queue.addAll(parent.rawSchema.allOfParents)
-    }
-    return null
-}
-
 private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
     val exists =
         annotations.any {
@@ -458,24 +382,4 @@ private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
         }
 
     return if (exists) this else copy(annotations = annotations + a)
-}
-
-/**
- * If this model declares a discriminator mapping that points to itself,
- * return the discriminator VALUE (mapping key) that should be used in JSON "@type".
- *
- * Example:
- *   mapping:
- *     ProductOfferingPrice: '#/components/schemas/ProductOfferingPrice_FVO'
- * -> returns "ProductOfferingPrice"
- */
-private fun ModelDO.selfDiscriminatorValueFromOwnMapping(): String? {
-    val ownName = rawSchema.originalName
-    // discriminatorMapping: Map<discValue, ref>
-    return rawSchema.discriminatorMapping
-        .entries
-        .firstOrNull { (_, ref) ->
-            ref.substringAfterLast('/') == ownName
-        }
-        ?.key
 }

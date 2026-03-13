@@ -21,6 +21,7 @@ data class TrivialTypeDO(
         OFFSET_DATE_TIME,
         INSTANT,
         BYTE_ARRAY,
+        JSON_ELEMENT,
         ANY,
     }
 }

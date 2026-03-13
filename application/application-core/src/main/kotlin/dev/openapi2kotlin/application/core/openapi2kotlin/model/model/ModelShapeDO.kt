@@ -28,6 +28,17 @@ sealed interface ModelShapeDO {
         val implements: List<String>,
     ) : ModelShapeDO
 
+    data class EmptyClass(
+        /**
+         * Single parent class (by schema name), if any.
+         */
+        val extend: String?,
+        /**
+         * Interfaces (by schema name) this class implements.
+         */
+        val implements: List<String>,
+    ) : ModelShapeDO
+
     data class OpenClass(
         /**
          * Single parent class (by schema name), if any.

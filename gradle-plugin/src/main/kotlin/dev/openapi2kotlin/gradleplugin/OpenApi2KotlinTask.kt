@@ -4,10 +4,12 @@ import dev.openapi2kotlin.OpenApi2KotlinApp
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.work.DisableCachingByDefault
 import org.gradle.api.tasks.TaskAction
 import java.nio.file.Files
 import java.nio.file.Path
 
+@DisableCachingByDefault(because = "OpenAPI generation is not yet declared with stable incremental inputs and outputs.")
 abstract class OpenApi2KotlinTask : DefaultTask() {
 
     @TaskAction
@@ -55,7 +57,15 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
         return when {
             server != null -> {
-                val library = server.library ?: OpenApi2KotlinExtension.ServerLibrary.Ktor
+                val library = server.library
+                    ?: throw GradleException(
+                        "openapi2kotlin: server.library is required, e.g.\n" +
+                            "openapi2kotlin {\n" +
+                            "    server {\n" +
+                            "        library = Ktor\n" +
+                            "    }\n" +
+                            "}"
+                    )
 
                 val swagger = when (library) {
                     OpenApi2KotlinExtension.ServerLibrary.Ktor ->
@@ -70,6 +80,9 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         packageName = server.packageName,
                         basePathVar = server.basePathVar.trim().takeIf { it.isNotBlank() }
                             ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        methodNameSingularized = server.methodNameSingularized,
+                        methodNamePluralized = server.methodNamePluralized,
+                        methodNameFromOperationId = server.methodNameFromOperationId,
                         swagger = swagger,
                     )
 
@@ -77,25 +90,42 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                         packageName = server.packageName,
                         basePathVar = server.basePathVar.trim().takeIf { it.isNotBlank() }
                             ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        methodNameSingularized = server.methodNameSingularized,
+                        methodNamePluralized = server.methodNamePluralized,
+                        methodNameFromOperationId = server.methodNameFromOperationId,
                         swagger = swagger,
                     )
                 }
             }
 
             client != null -> {
-                val library = client.library ?: OpenApi2KotlinExtension.ClientLibrary.Ktor
+                val library = client.library
+                    ?: throw GradleException(
+                        "openapi2kotlin: client.library is required, e.g.\n" +
+                            "openapi2kotlin {\n" +
+                            "    client {\n" +
+                            "        library = Ktor\n" +
+                            "    }\n" +
+                            "}"
+                    )
 
                 when (library) {
                     OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor(
                         packageName = client.packageName,
                         basePathVar = client.basePathVar.trim().takeIf { it.isNotBlank() }
                             ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        methodNameSingularized = client.methodNameSingularized,
+                        methodNamePluralized = client.methodNamePluralized,
+                        methodNameFromOperationId = client.methodNameFromOperationId,
                     )
 
                     OpenApi2KotlinExtension.ClientLibrary.RestClient -> OpenApi2KotlinUseCase.ApiConfig.ClientRestClient(
                         packageName = client.packageName,
                         basePathVar = client.basePathVar.trim().takeIf { it.isNotBlank() }
                             ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        methodNameSingularized = client.methodNameSingularized,
+                        methodNamePluralized = client.methodNamePluralized,
+                        methodNameFromOperationId = client.methodNameFromOperationId,
                     )
                 }
             }

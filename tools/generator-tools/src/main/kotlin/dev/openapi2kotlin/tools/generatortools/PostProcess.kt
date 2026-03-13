@@ -13,6 +13,8 @@ fun File.postProcess() {
                     .replace("public ", "")
                     // KotlinPoet escapes this package segment; we prefer the normal form.
                     .replace(".`annotation`.", ".annotation.")
+                    // KotlinPoet emits invalid bare imports for aliased annotation symbols in the default package.
+                    .replace(Regex("""(?m)^import\s+[A-Z][A-Za-z0-9_]*\s*$\n?"""), "")
             )
         }
 }

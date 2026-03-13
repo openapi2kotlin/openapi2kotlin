@@ -18,6 +18,7 @@ private val BOOLEAN = ClassName("kotlin", "Boolean")
 private val ANY = ClassName("kotlin", "Any")
 private val BYTE_ARRAY = ClassName("kotlin", "ByteArray")
 private val LIST = ClassName("kotlin.collections", "List")
+private val JSON_ELEMENT = ClassName("kotlinx.serialization.json", "JsonElement")
 
 private val BIG_DECIMAL = ClassName("java.math", "BigDecimal")
 private val JAVA_LOCAL_DATE = ClassName("java.time", "LocalDate")
@@ -47,6 +48,7 @@ private fun TrivialTypeDO.Kind.typeName(): ClassName = when (this) {
     TrivialTypeDO.Kind.OFFSET_DATE_TIME -> JAVA_OFFSET_DATE_TIME
     TrivialTypeDO.Kind.INSTANT -> KOTLIN_TIME_INSTANT
     TrivialTypeDO.Kind.BYTE_ARRAY -> BYTE_ARRAY
+    TrivialTypeDO.Kind.JSON_ELEMENT -> JSON_ELEMENT
     TrivialTypeDO.Kind.ANY -> ANY
 }
 
@@ -56,7 +58,12 @@ fun FieldTypeDO.toTypeName(ctx: TypeNameContext): TypeName = when (this) {
 
     is RefTypeDO -> {
         val target = ctx.bySchemaName[schemaName]
-        ClassName(ctx.modelPackageName, target?.generatedName ?: schemaName)
+        val className = if (target != null) {
+            ClassName(target.packageName, target.generatedName)
+        } else {
+            ClassName(ctx.modelPackageName, schemaName.toFallbackSimpleName())
+        }
+        className
             .copy(nullable = nullable)
     }
 
@@ -64,3 +71,9 @@ fun FieldTypeDO.toTypeName(ctx: TypeNameContext): TypeName = when (this) {
         LIST.parameterizedBy(elementType.toTypeName(ctx))
             .copy(nullable = nullable)
 }
+
+private fun String.toFallbackSimpleName(): String =
+    substringAfterLast('.')
+        .replace(Regex("[^A-Za-z0-9]"), "")
+        .ifBlank { "Model" }
+        .let { if (it.first().isDigit()) "_$it" else it }

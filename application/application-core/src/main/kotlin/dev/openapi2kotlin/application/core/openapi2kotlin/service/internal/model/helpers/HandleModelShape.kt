@@ -113,7 +113,8 @@ internal fun List<ModelDO>.handleModelShape() {
             when (parent.modelShape) {
                 is ModelShapeDO.SealedInterface -> if (!parentInterfaces.contains(parentName)) parentInterfaces += parentName
                 is ModelShapeDO.OpenClass,
-                is ModelShapeDO.DataClass -> if (parentClass == null) parentClass = parentName
+                is ModelShapeDO.DataClass,
+                is ModelShapeDO.EmptyClass -> if (parentClass == null) parentClass = parentName
                 is ModelShapeDO.EnumClass,
                 is ModelShapeDO.TypeAlias,
                 is ModelShapeDO.Undecided -> {}
@@ -129,6 +130,9 @@ internal fun List<ModelDO>.handleModelShape() {
                 shape.copy(extends = parentInterfaces)
 
             is ModelShapeDO.DataClass ->
+                shape.copy(extend = parentClass, implements = parentInterfaces)
+
+            is ModelShapeDO.EmptyClass ->
                 shape.copy(extend = parentClass, implements = parentInterfaces)
 
             is ModelShapeDO.OpenClass ->

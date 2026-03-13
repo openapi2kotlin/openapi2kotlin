@@ -21,19 +21,19 @@ fun ApiContextDO.applySpringMvcAnnotations() {
             }
         }
 
-        api.annotations = api.annotations + apiAnnotations
+        api.annotations += apiAnnotations
 
         api.endpoints.forEach { ep ->
-            ep.annotations = ep.annotations + ep.springComposedMapping(
+            ep.annotations += ep.springComposedMapping(
                 basePath = if (hasBasePath) basePath else null
             )
 
             ep.params.forEach { p ->
-                p.annotations = p.annotations + p.springParamAnnotation()
+                p.annotations += p.springParamAnnotation()
             }
 
             ep.requestBody?.let { body ->
-                body.annotations = body.annotations + listOf(
+                body.annotations += listOf(
                     ann("org.springframework.web.bind.annotation.RequestBody"),
                     ann("jakarta.validation.Valid"),
                 )

@@ -11,7 +11,10 @@ private val log = KotlinLogging.logger {}
 internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUseCase.Config): List<ModelDO> {
     val models = schemas.map { ModelDO(
         rawSchema = it,
-        packageName = config.model.packageName,
+        packageName = resolveSchemaPackageName(
+            basePackage = config.model.packageName,
+            originalSchemaName = it.originalName,
+        ),
         generatedName = cleanSchemaNameHandler(it.originalName)
     ) }
 
@@ -26,6 +29,12 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
 
     log.info { "Handling fields" }
     models.handleFields(cfg = config.model)
+
+    log.info { "Handling default values" }
+    models.handleDefaultValues(cfg = config.model)
+
+    log.info { "Handling empty classes" }
+    models.handleEmptyClasses()
 
     log.info { "Handling Jackson annotations" }
     models.handleJacksonAnnotations(cfg = config.model)

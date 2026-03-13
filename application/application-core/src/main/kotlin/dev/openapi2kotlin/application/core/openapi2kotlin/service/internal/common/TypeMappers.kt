@@ -76,7 +76,10 @@ private fun RawSchemaDO.RawPrimitiveTypeDO.toFinalTrivialKind(
         }
 
     RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT ->
-        TrivialTypeDO.Kind.ANY
+        when (cfg.serialization) {
+            OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.JSON_ELEMENT
+            else -> TrivialTypeDO.Kind.ANY
+        }
 }
 
 internal fun renderDefault(
@@ -105,6 +108,7 @@ internal fun renderDefaultForFinalType(
         TrivialTypeDO.Kind.OFFSET_DATE_TIME -> "OffsetDateTime.parse(${quote(rawDefault)})"
         TrivialTypeDO.Kind.INSTANT -> "Instant.parse(${quote(rawDefault)})"
         TrivialTypeDO.Kind.BYTE_ARRAY -> rawDefault
+        TrivialTypeDO.Kind.JSON_ELEMENT -> rawDefault
         TrivialTypeDO.Kind.ANY -> rawDefault
     }
 

@@ -106,6 +106,7 @@ internal fun List<ModelDO>.handleFields(
     forEach { component ->
         val parentName = when (val shape = component.modelShape) {
             is ModelShapeDO.DataClass -> shape.extend
+            is ModelShapeDO.EmptyClass -> shape.extend
             is ModelShapeDO.OpenClass -> shape.extend
             else -> null
         } ?: return@forEach

@@ -163,16 +163,37 @@ open class OpenApi2KotlinExtension {
 
         /**
          * description: Target HTTP client library used by generated client API.
-         * default: Ktor
+         * required: true
          * values: Ktor, RestClient
          */
-        var library: ClientLibrary? = ClientLibrary.Ktor
+        var library: ClientLibrary? = null
 
         /**
          * description: Variable name used for generated base path.
          * default: "basePath"
          */
         var basePathVar: String = DEFAULT_BASE_PATH_VAR
+
+        /**
+         * description: Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.
+         * default: true
+         * values: true, false
+         */
+        var methodNameSingularized: Boolean = true
+
+        /**
+         * description: Pluralizes method names for collection endpoints, e.g. `listQuotes`.
+         * default: true
+         * values: true, false
+         */
+        var methodNamePluralized: Boolean = true
+
+        /**
+         * description: Derives method names from OpenAPI `operationId` instead of URL path.
+         * default: false
+         * values: true, false
+         */
+        var methodNameFromOperationId: Boolean = false
 
         fun setLibrary(value: String?) {
             library = value?.let { ClientLibrary.fromValue(it) }
@@ -195,10 +216,10 @@ open class OpenApi2KotlinExtension {
 
         /**
          * description: Target server framework used by generated server API.
-         * default: Ktor
+         * required: true
          * values: Ktor, Spring
          */
-        var library: ServerLibrary? = ServerLibrary.Ktor
+        var library: ServerLibrary? = null
 
         /**
          * description: Enables generated Swagger/OpenAPI annotations.
@@ -212,6 +233,27 @@ open class OpenApi2KotlinExtension {
          * default: "basePath"
          */
         var basePathVar: String = DEFAULT_BASE_PATH_VAR
+
+        /**
+         * description: Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.
+         * default: true
+         * values: true, false
+         */
+        var methodNameSingularized: Boolean = true
+
+        /**
+         * description: Pluralizes method names for collection endpoints, e.g. `listQuotes`.
+         * default: true
+         * values: true, false
+         */
+        var methodNamePluralized: Boolean = true
+
+        /**
+         * description: Derives method names from OpenAPI `operationId` instead of URL path.
+         * default: false
+         * values: true, false
+         */
+        var methodNameFromOperationId: Boolean = false
 
         fun setLibrary(value: String?) {
             library = value?.let { ServerLibrary.fromValue(it) }

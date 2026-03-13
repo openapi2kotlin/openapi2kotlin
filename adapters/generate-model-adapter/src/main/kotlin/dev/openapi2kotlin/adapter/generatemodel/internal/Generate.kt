@@ -49,6 +49,9 @@ fun generate(
             is ModelShapeDO.DataClass ->
                 buildDataClassFile(model, shape, byName, ctxByPackageName)
 
+            is ModelShapeDO.EmptyClass ->
+                buildEmptyClassFile(model, shape, byName, ctxByPackageName)
+
             is ModelShapeDO.OpenClass ->
                 buildOpenClassFile(model, shape, byName, ctxByPackageName)
 
@@ -224,6 +227,71 @@ private fun buildDataClassFile(
             propBuilder.addModifiers(KModifier.OVERRIDE)
         } else if (shouldOpenProps) {
             propBuilder.addModifiers(KModifier.OPEN)
+        }
+
+        typeBuilder.addProperty(propBuilder.build())
+    }
+
+    shape.extend?.let { parentName ->
+        val parent = byName[parentName]
+        val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
+        typeBuilder.superclass(typeName)
+
+        parent?.fields?.forEach { parentField ->
+            typeBuilder.addSuperclassConstructorParameter(parentField.generatedName)
+        }
+    }
+
+    shape.implements.forEach { ifaceName ->
+        val iface = byName[ifaceName]
+        val typeName = iface?.className() ?: ClassName(schema.packageName, ifaceName)
+        typeBuilder.addSuperinterface(typeName)
+    }
+
+    return FileSpec
+        .builder(schema.packageName, schema.generatedName)
+        .addType(typeBuilder.build())
+        .build()
+}
+
+/* ---------- EMPTY CLASS ---------- */
+
+private fun buildEmptyClassFile(
+    schema: ModelDO,
+    shape: ModelShapeDO.EmptyClass,
+    byName: Map<String, ModelDO>,
+    ctxByPackageName: Map<String, TypeNameContext>,
+): FileSpec {
+    val ctx = ctxByPackageName.getValue(schema.packageName)
+
+    val ctor = FunSpec.constructorBuilder().apply {
+        schema.fields.forEach { field ->
+            addParameter(field.toParamSpec(ctx))
+        }
+    }.build()
+
+    val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
+        .primaryConstructor(ctor)
+        .applyModelAnnotations(schema)
+
+    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+        typeBuilder.addKdoc("%L\n", doc.trim())
+    }
+
+    schema.fields.forEach { field ->
+        val propBuilder = PropertySpec.builder(
+            field.generatedName,
+            field.type.toTypeName(ctx),
+        ).initializer(field.generatedName)
+
+        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+            propBuilder.addKdoc("%L\n", doc.trim())
+        }
+
+        field.applyPropertyAnnotations(propBuilder)
+
+        if (field.overridden) {
+            propBuilder.addModifiers(KModifier.OVERRIDE)
         }
 
         typeBuilder.addProperty(propBuilder.build())
