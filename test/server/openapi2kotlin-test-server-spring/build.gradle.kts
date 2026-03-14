@@ -25,16 +25,6 @@ kotlin {
     jvmToolchain(repoJvmVersion)
 }
 
-sourceSets {
-    main {
-        kotlin.srcDir(layout.buildDirectory.dir("generated/src/main/kotlin"))
-    }
-}
-
-tasks.named("compileKotlin") {
-    dependsOn("openapi2kotlin")
-}
-
 tasks.test {
     useJUnitPlatform()
 }
