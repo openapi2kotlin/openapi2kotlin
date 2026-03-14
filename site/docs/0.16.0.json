@@ -1,6 +1,6 @@
 {
-  "version": "0.14.0",
-  "generatedAt": "2026-03-07T17:43:57.982409+00:00",
+  "version": "0.16.0",
+  "generatedAt": "2026-03-13T13:30:38.147636+00:00",
   "clientLibraries": [
     "Ktor",
     "RestClient"
@@ -14,14 +14,14 @@
   "configRows": [
     {
       "property": "inputSpec",
-      "description": "Path to OpenAPI YAML or JSON specification, e.g.\n```\n\"$projectDir/src/main/resources/openapi.yaml\"\n```",
+      "description": "Path to OpenAPI YAML or JSON specification, e.g. \"$projectDir/src/main/resources/openapi.yaml\".",
       "values": "",
       "default": "",
       "required": true
     },
     {
       "property": "outputDir",
-      "description": "Root directory for generated Kotlin sources, e.g.\n```\nlayout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path\n```",
+      "description": "Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path.",
       "values": "",
       "default": "",
       "required": true
@@ -86,14 +86,35 @@
       "property": "client.library",
       "description": "Target HTTP client library used by generated client API.",
       "values": "Ktor, RestClient",
-      "default": "Ktor",
-      "required": false
+      "default": "",
+      "required": true
     },
     {
       "property": "client.basePathVar",
-      "description": "Variable name used for generated base path.",
+      "description": "Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.\n```\nservers:\n  - url: '/{basePath}/'\n    variables:\n      basePath:\n        default: 'v5/'\n```",
       "values": "",
       "default": "\"basePath\"",
+      "required": false
+    },
+    {
+      "property": "client.methodNameSingularized",
+      "description": "Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
+    },
+    {
+      "property": "client.methodNamePluralized",
+      "description": "Pluralizes method names for collection endpoints, e.g. `listQuotes`.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
+    },
+    {
+      "property": "client.methodNameFromOperationId",
+      "description": "Derives method names from OpenAPI `operationId` instead of URL path.",
+      "values": "true, false",
+      "default": "false",
       "required": false
     },
     {
@@ -107,8 +128,8 @@
       "property": "server.library",
       "description": "Target server framework used by generated server API.",
       "values": "Ktor, Spring",
-      "default": "Ktor",
-      "required": false
+      "default": "",
+      "required": true
     },
     {
       "property": "server.swagger",
@@ -119,9 +140,30 @@
     },
     {
       "property": "server.basePathVar",
-      "description": "Variable name used for generated base path.",
+      "description": "Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.\n```\nservers:\n  - url: '/{basePath}/'\n    variables:\n      basePath:\n        default: 'v5/'\n```",
       "values": "",
       "default": "\"basePath\"",
+      "required": false
+    },
+    {
+      "property": "server.methodNameSingularized",
+      "description": "Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
+    },
+    {
+      "property": "server.methodNamePluralized",
+      "description": "Pluralizes method names for collection endpoints, e.g. `listQuotes`.",
+      "values": "true, false",
+      "default": "true",
+      "required": false
+    },
+    {
+      "property": "server.methodNameFromOperationId",
+      "description": "Derives method names from OpenAPI `operationId` instead of URL path.",
+      "values": "true, false",
+      "default": "false",
       "required": false
     }
   ],

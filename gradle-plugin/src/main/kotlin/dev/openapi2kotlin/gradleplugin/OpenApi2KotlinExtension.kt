@@ -169,7 +169,14 @@ open class OpenApi2KotlinExtension {
         var library: ClientLibrary? = null
 
         /**
-         * description: Variable name used for generated base path.
+         * description: Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
+         * ```
+         * servers:
+         *   - url: '/{basePath}/'
+         *     variables:
+         *       basePath:
+         *         default: 'v5/'
+         * ```
          * default: "basePath"
          */
         var basePathVar: String = DEFAULT_BASE_PATH_VAR
@@ -229,7 +236,14 @@ open class OpenApi2KotlinExtension {
         var swagger: Boolean? = null
 
         /**
-         * description: Variable name used for generated base path.
+         * description: Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
+         * ```
+         * servers:
+         *   - url: '/{basePath}/'
+         *     variables:
+         *       basePath:
+         *         default: 'v5/'
+         * ```
          * default: "basePath"
          */
         var basePathVar: String = DEFAULT_BASE_PATH_VAR

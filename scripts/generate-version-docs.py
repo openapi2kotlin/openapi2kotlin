@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import re
 from pathlib import Path
@@ -33,13 +34,26 @@ def extract_class_body(text: str, class_name: str) -> str:
 
 def parse_kdoc_meta(block: str) -> dict[str, str]:
     out: dict[str, str] = {}
+    current_key: str | None = None
     for raw in block.splitlines():
+        if raw.strip() == "*/":
+            continue
         line = raw.strip()
         if line.startswith("*"):
-            line = line[1:].strip()
+            line = line[1:]
+            if line.startswith(" "):
+                line = line[1:]
+        line = line.rstrip()
         m = re.match(r"^(description|default|values|required):\s*(.+)$", line)
         if m:
-            out[m.group(1)] = m.group(2).strip()
+            current_key = m.group(1)
+            out[current_key] = m.group(2).strip()
+            continue
+        if current_key == "description":
+            out[current_key] = out[current_key] + "\n" + line
+            continue
+        if current_key and line.strip():
+            out[current_key] = out[current_key] + "\n" + line
     return out
 
 
@@ -191,7 +205,93 @@ def generate(version: str) -> dict:
 
 
 def table_escape(v: str) -> str:
-    return v.replace("|", "\\|")
+    return v.replace("|", "\\|").replace("\n", "<br>")
+
+
+def split_description_blocks(text: str) -> list[dict[str, str]]:
+    normalized = text.strip()
+    fenced_match = re.match(r"^(.*?)(e\.g\.|i\.e\.)\s*```([\s\S]+?)```$", normalized, re.I)
+    if fenced_match:
+        before = fenced_match.group(1).strip().rstrip(",;:")
+        prefix = fenced_match.group(2).lower()
+        code = fenced_match.group(3).strip()
+        parts: list[dict[str, str]] = []
+        if before:
+            parts.append({"kind": "paragraph", "text": before})
+        if code:
+            parts.append({"kind": "example", "prefix": prefix, "text": code})
+        return parts
+
+    lines = text.strip().splitlines()
+    parts: list[dict[str, str]] = []
+    paragraph_lines: list[str] = []
+    example_lines: list[str] = []
+    example_prefix: str | None = None
+
+    def flush_paragraph() -> None:
+        nonlocal paragraph_lines
+        value = " ".join(line.strip() for line in paragraph_lines).strip()
+        if value:
+            parts.append({"kind": "paragraph", "text": value})
+        paragraph_lines = []
+
+    def flush_example() -> None:
+        nonlocal example_lines, example_prefix
+        value = "\n".join(example_lines).strip()
+        if example_prefix and value:
+            parts.append({"kind": "example", "prefix": example_prefix, "text": value})
+        example_lines = []
+        example_prefix = None
+
+    for raw_line in lines:
+        line = raw_line.rstrip()
+        marker = line.strip().lower()
+
+        if marker in {"e.g.", "i.e."}:
+            flush_paragraph()
+            flush_example()
+            example_prefix = marker
+            continue
+
+        if example_prefix is not None:
+            if not line.strip():
+                flush_example()
+                continue
+            if line.strip() == "```":
+                continue
+            example_lines.append(line)
+            continue
+
+        if not line.strip():
+            flush_paragraph()
+            continue
+
+        paragraph_lines.append(line)
+
+    flush_paragraph()
+    flush_example()
+    return parts
+
+
+def format_readme_description(text: str) -> str:
+    parts = split_description_blocks(text)
+    if not parts:
+        return "-"
+
+    rendered: list[str] = []
+    for part in parts:
+        if part["kind"] == "paragraph":
+            rendered.append(table_escape(part["text"]))
+        else:
+            formatted_lines: list[str] = []
+            for line in part["text"].splitlines():
+                leading_spaces = len(line) - len(line.lstrip(" "))
+                indent = "&nbsp;" * leading_spaces
+                content = html.escape(line.lstrip(" "))
+                formatted_lines.append(f"{indent}<code>{content}</code>" if content else "")
+            code_lines = "<br>".join(formatted_lines)
+            rendered.append(f"{part['prefix']}<br>{code_lines}")
+    return "<br><br>".join(rendered)
 
 
 def update_readme(rows: list[dict[str, str]]) -> None:
@@ -203,7 +303,7 @@ def update_readme(rows: list[dict[str, str]]) -> None:
         table_lines.append(
             "| `{}` | {} | {} | {} | {} |".format(
                 table_escape(r["property"]),
-                table_escape(r["description"] or "-"),
+                format_readme_description(r["description"] or "-"),
                 table_escape(r["values"] or "-"),
                 "true" if r.get("required") else "false",
                 table_escape(r["default"] or "-"),

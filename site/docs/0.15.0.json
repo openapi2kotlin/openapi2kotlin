@@ -14,14 +14,14 @@
   "configRows": [
     {
       "property": "inputSpec",
-      "description": "Path to OpenAPI YAML or JSON specification, e.g. \"$projectDir/src/main/resources/openapi.yaml\".",
+      "description": "Path to OpenAPI YAML or JSON specification, e.g.\n```\n\"$projectDir/src/main/resources/openapi.yaml\"\n```",
       "values": "",
       "default": "",
       "required": true
     },
     {
       "property": "outputDir",
-      "description": "Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path.",
+      "description": "Root directory for generated Kotlin sources, e.g.\n```\nlayout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path\n```",
       "values": "",
       "default": "",
       "required": true

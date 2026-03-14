@@ -300,7 +300,7 @@ function ExampleBlock({ text, mono = false }: { text: string; mono?: boolean }) 
   return (
     <YStack bg="$color1" borderWidth={1} borderColor="$color5" rounded="$4" px="$2" py="$1" maxW="100%">
       <Text fontFamily={mono ? "$mono" : "$body"} fontSize="$1" lineHeight="$4" whiteSpace="pre-wrap">
-        {text}
+        {stripInlineCodeMarkers(text)}
       </Text>
     </YStack>
   );
@@ -397,7 +397,7 @@ function DescriptionBlock({
         </Text>
       ) : null}
       <Text fontSize="$4" lineHeight="$5" opacity={0.9}>
-        {parts.description}
+        <InlineCodeText text={parts.description} />
       </Text>
       {parts.hint ? (
         <YStack gap="$1" maxW="100%">
@@ -421,6 +421,20 @@ function splitDescriptionExample(text: string): {
   hint?: never;
 } {
   const normalized = text.trim();
+  const fencedMatch = normalized.match(/\b(e\.g\.|i\.e\.)\s*```([\s\S]+?)```$/i);
+  if (fencedMatch && fencedMatch.index != null) {
+    const marker = fencedMatch[1].toLowerCase() === "i.e." ? "i.e." : "e.g.";
+    const before = normalized.slice(0, fencedMatch.index).trim().replace(/[,;:]$/, "");
+    const after = fencedMatch[2].trim();
+    if (before.length > 0 && after.length > 0) {
+      return {
+        description: before,
+        hintPrefix: marker,
+        hint: after,
+      };
+    }
+  }
+
   const match = normalized.match(/\b(e\.g\.|i\.e\.)\s*(.+)$/i);
   if (!match || match.index == null) {
     return { description: normalized };
@@ -437,4 +451,52 @@ function splitDescriptionExample(text: string): {
     hintPrefix: marker,
     hint: after,
   };
+}
+
+function InlineCodeText({ text }: { text: string }) {
+  const segments = splitInlineCodeSegments(text);
+  return (
+    <>
+      {segments.map((segment, index) =>
+        segment.kind === "code" ? (
+          <Text
+            key={`${segment.value}-${index}`}
+            fontFamily="$mono"
+            fontSize="$2"
+            bg="$color1"
+            borderWidth={1}
+            borderColor="$color5"
+            rounded="$4"
+            px="$2"
+            py="$1"
+            lineHeight="$4"
+            opacity={0.95}
+          >
+            {segment.value}
+          </Text>
+        ) : (
+          <Text key={`${segment.value}-${index}`}>
+            {segment.value}
+          </Text>
+        ),
+      )}
+    </>
+  );
+}
+
+function splitInlineCodeSegments(text: string): Array<{ kind: "text" | "code"; value: string }> {
+  if (!text.includes("`")) {
+    return [{ kind: "text", value: text }];
+  }
+
+  const parts = text.split(/(`[^`]+`)/g).filter((part) => part.length > 0);
+  return parts.map((part) =>
+    part.startsWith("`") && part.endsWith("`")
+      ? { kind: "code" as const, value: part.slice(1, -1) }
+      : { kind: "text" as const, value: part },
+  );
+}
+
+function stripInlineCodeMarkers(text: string): string {
+  return text.replace(/`([^`]+)`/g, "$1");
 }

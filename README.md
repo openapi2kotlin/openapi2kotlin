@@ -83,12 +83,18 @@ openapi2kotlin {
 | `model.float2BigDecimal` | Maps OpenAPI number/float to BigDecimal instead of Float. | true, false | false | false |
 | `model.integer2Long` | Maps OpenAPI integer to Long instead of Int. | true, false | false | true |
 | `client.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.client" |
-| `client.library` | Target HTTP client library used by generated client API. | Ktor, RestClient | false | Ktor |
-| `client.basePathVar` | Variable name used for generated base path. | - | false | "basePath" |
+| `client.library` | Target HTTP client library used by generated client API. | Ktor, RestClient | true | - |
+| `client.basePathVar` | Uses the first OpenAPI server variable matching `basePathVar` when it has a default value<br><br>e.g.<br><code>servers:</code><br>&nbsp;&nbsp;<code>- url: &#x27;/{basePath}/&#x27;</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>variables:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>basePath:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>default: &#x27;v5/&#x27;</code> | - | false | "basePath" |
+| `client.methodNameSingularized` | Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`. | true, false | false | true |
+| `client.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |
+| `client.methodNameFromOperationId` | Derives method names from OpenAPI `operationId` instead of URL path. | true, false | false | false |
 | `server.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.server" |
-| `server.library` | Target server framework used by generated server API. | Ktor, Spring | false | Ktor |
+| `server.library` | Target server framework used by generated server API. | Ktor, Spring | true | - |
 | `server.swagger` | Enables generated Swagger/OpenAPI annotations. | true, false | false | Ktor -> false, Spring -> true |
-| `server.basePathVar` | Variable name used for generated base path. | - | false | "basePath" |
+| `server.basePathVar` | Uses the first OpenAPI server variable matching `basePathVar` when it has a default value<br><br>e.g.<br><code>servers:</code><br>&nbsp;&nbsp;<code>- url: &#x27;/{basePath}/&#x27;</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>variables:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>basePath:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>default: &#x27;v5/&#x27;</code> | - | false | "basePath" |
+| `server.methodNameSingularized` | Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`. | true, false | false | true |
+| `server.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |
+| `server.methodNameFromOperationId` | Derives method names from OpenAPI `operationId` instead of URL path. | true, false | false | false |
 
 ### Requirements
 

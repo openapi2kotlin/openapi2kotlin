@@ -11,47 +11,65 @@ internal fun prepareBasePath(
     config: OpenApi2KotlinUseCase.Config,
 ): String {
     val basePathVarName = config.api!!.basePathVar.trim()
-    require(basePathVarName.isNotBlank()) { "api.basePathVar must not be blank" }
 
-    val server = rawServers
+    /* ---------------------------------------------------------------------
+     * 1) Prefer OpenAPI server variable resolution when basePathVar is set
+     * ------------------------------------------------------------------- */
+    if (basePathVarName.isNotBlank()) {
+        val server = rawServers
+            .asSequence()
+            .filter { !it.url.isNullOrBlank() }
+            .firstOrNull { s ->
+                s.vars.orEmpty().any { it.name == basePathVarName && it.defaultValue.isNotBlank() }
+            }
+
+        if (server == null) {
+            log.debug {
+                "No OpenAPI server variable named '$basePathVarName' with a default value was found; " +
+                    "basePath defaults to empty."
+            }
+            return ""
+        }
+
+        val urlTemplate = server.url.orEmpty().trim()
+        val basePathVarValue =
+            server.vars
+                .orEmpty()
+                .firstOrNull { it.name == basePathVarName }
+                ?.defaultValue
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                .orEmpty()
+
+        val substitutedUrl = urlTemplate.replace("{${basePathVarName}}", basePathVarValue)
+        return resolvePathOrEmpty(
+            urlTemplate = urlTemplate,
+            substitutedUrl = substitutedUrl,
+            basePathVarName = basePathVarName,
+        )
+    }
+
+    /* ---------------------------------------------------------------------
+     * 2) Fallback to first relative server URL when basePathVar is blank
+     * ------------------------------------------------------------------- */
+    val relativeServerUrl = rawServers
         .asSequence()
-        .filter { !it.url.isNullOrBlank() }
-        .firstOrNull { s ->
-            s.vars.orEmpty().any { it.name == basePathVarName && it.defaultValue.isNotBlank() }
-        }
-        ?: rawServers.firstOrNull { !it.url.isNullOrBlank() }
+        .mapNotNull { it.url?.trim()?.takeIf(String::isNotBlank) }
+        .firstOrNull { isRelativeUrlLike(it) }
 
-    if (server == null) {
-        log.debug { "No OpenAPI servers found; basePath defaults to empty." }
-        return ""
+    if (relativeServerUrl != null) {
+        return resolvePathOrEmpty(
+            urlTemplate = relativeServerUrl,
+            substitutedUrl = relativeServerUrl,
+            basePathVarName = "",
+        )
     }
 
-    val urlTemplate = server.url.orEmpty().trim()
-
-    val basePathVarValue =
-        server.vars
-            .orEmpty()
-            .firstOrNull { it.name == basePathVarName }
-            ?.defaultValue
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-
-    // Substitute basePath var first (works for both absolute and relative server URLs)
-    val substitutedUrl = urlTemplate.replace("{${basePathVarName}}", basePathVarValue.orEmpty())
-
-    val pathTemplate = extractPathFromUrlLike(substitutedUrl)
-    if (pathTemplate.isBlank() || pathTemplate == "/") return ""
-
-    val resolved = pathTemplate.normalizePath()
-
-    if (resolved.contains("{") && resolved.contains("}")) {
-        log.warn {
-            "basePath contains unresolved placeholders after applying '$basePathVarName'. " +
-                    "url='$urlTemplate', substitutedUrl='$substitutedUrl', resolved='$resolved'."
-        }
-    }
-
-    return resolved
+    /* ---------------------------------------------------------------------
+     * 3) Otherwise keep basePath empty and ignore it
+     * ------------------------------------------------------------------- */
+    log.debug { "No relative OpenAPI server URL found and basePathVar is blank; basePath defaults to empty." }
+    return ""
 }
 
 /**
@@ -73,6 +91,31 @@ private fun extractPathFromUrlLike(url: String): String {
     // host-like without scheme: "example.com/v2"
     val slashIdx = u.indexOf('/')
     return if (slashIdx >= 0) u.substring(slashIdx) else ""
+}
+
+private fun isRelativeUrlLike(url: String): Boolean {
+    val trimmed = url.trim()
+    return trimmed.startsWith("/")
+}
+
+private fun resolvePathOrEmpty(
+    urlTemplate: String,
+    substitutedUrl: String,
+    basePathVarName: String,
+): String {
+    val pathTemplate = extractPathFromUrlLike(substitutedUrl)
+    if (pathTemplate.isBlank() || pathTemplate == "/") return ""
+
+    val resolved = pathTemplate.normalizePath()
+
+    if (resolved.contains("{") && resolved.contains("}")) {
+        log.warn {
+            "basePath contains unresolved placeholders after applying '$basePathVarName'. " +
+                "url='$urlTemplate', substitutedUrl='$substitutedUrl', resolved='$resolved'."
+        }
+    }
+
+    return resolved
 }
 
 
