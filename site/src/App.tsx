@@ -374,6 +374,7 @@ ${apiSnippet.trimEnd()}
                     pointerEvents="auto"
                     style={{ position: "sticky" }}
                     t="27vh"
+                    pb="33vh"
                 >
                   <ContentsMenu />
                 </YStack>
