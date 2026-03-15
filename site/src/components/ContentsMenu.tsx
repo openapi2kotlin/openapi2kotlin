@@ -1,21 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, type TamaguiElement, Text, YStack } from "tamagui";
-
-type MenuItem = {
-  id: string;
-  label: string;
-  level?: 0 | 1 | 2;
-};
-
-const MENU_ITEMS: MenuItem[] = [
-  { id: "installation", label: "Installation", level: 0 },
-  { id: "under-the-hood", label: "Under the Hood", level: 0 },
-  { id: "api-reference", label: "API Reference", level: 0 },
-  { id: "openapi2kotlin", label: "Openapi2kotlin", level: 1 },
-  { id: "openapi2kotlin-model", label: "Model", level: 2 },
-  { id: "openapi2kotlin-client", label: "Client", level: 2 },
-  { id: "openapi2kotlin-server", label: "Server", level: 2 },
-];
+import { MENU_ITEMS } from "./contentsMenuItems";
 
 const NAV_OFFSET = 120;
 const ACTIVE_MARKER_OFFSET = NAV_OFFSET;
@@ -38,14 +23,22 @@ export default function ContentsMenu() {
         .map((item) => {
           const el = document.getElementById(item.id);
           if (!el) return null;
-          return { id: item.id, top: el.getBoundingClientRect().top };
+          const rect = el.getBoundingClientRect();
+          return { id: item.id, top: rect.top, bottom: rect.bottom };
         })
-        .filter((v): v is { id: string; top: number } => v !== null);
+        .filter((v): v is { id: string; top: number; bottom: number } => v !== null);
 
       if (candidates.length === 0) return;
 
-      const passed = candidates.filter((c) => c.top <= marker);
-      const nextId = passed.length > 0 ? passed[passed.length - 1].id : null;
+      const lastCandidate = candidates[candidates.length - 1];
+      const isPastTrackedContent = lastCandidate.bottom < marker;
+      const nextId = isPastTrackedContent
+        ? null
+        : (() => {
+            const passed = candidates.filter((c) => c.top <= marker);
+            return passed.length > 0 ? passed[passed.length - 1].id : null;
+          })();
+
       if (nextId === activeIdRef.current) return;
 
       activeIdRef.current = nextId;

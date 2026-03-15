@@ -1,13 +1,43 @@
 import {Anchor} from "tamagui";
+import { useNavigate } from "react-router-dom";
 
 export default function Logo() {
   const WIDTH = 700;
   const HEIGHT = 700;
   const ASPECT = HEIGHT / WIDTH;
   const SIZE = 32;
+  const navigate = useNavigate();
+
+  const onClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    navigate({ pathname: "/", search: "", hash: "" });
+
+    const bodyIsScrollable =
+      document.body.scrollHeight > document.body.clientHeight &&
+      getComputedStyle(document.body).overflowY !== "visible";
+    const scrollContainer: Window | HTMLElement =
+      bodyIsScrollable
+        ? document.body
+        : ((document.scrollingElement as HTMLElement | null) ?? window);
+
+    if (scrollContainer === window) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   return (
-      <Anchor href="/" display="inline-flex" aria-label="OpenAPI 2 Kotlin Home">
+      <Anchor
+        href="/"
+        display="inline-flex"
+        aria-label="OpenAPI 2 Kotlin"
+        cursor="pointer"
+        onClick={onClick}
+        textDecorationLine="none"
+        hoverStyle={{ opacity: 0.9 }}
+        pressStyle={{ opacity: 0.8 }}
+      >
         <svg
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             width={SIZE}

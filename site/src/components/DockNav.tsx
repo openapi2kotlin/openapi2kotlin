@@ -62,7 +62,7 @@ export default function DockNav({
               position="absolute"
               l="50%"
               style={{ transform: "translateX(-50%)" }}
-              pointerEvents="none"
+              pointerEvents="auto"
             >
               <Logo />
             </XStack>

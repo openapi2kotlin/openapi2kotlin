@@ -1,0 +1,186 @@
+import type { ReactNode } from "react";
+import { ExternalLink } from "lucide-react";
+import { Anchor, Text, XStack, YStack } from "tamagui";
+import Logo from "./Logo";
+import { MENU_ITEMS } from "./contentsMenuItems";
+
+const EXTERNAL_LINKS = [
+  {
+    label: "GitHub",
+    href: "https://github.com/openapi2kotlin/openapi2kotlin",
+  },
+  {
+    label: "Maven Central",
+    href: "https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin",
+  },
+];
+
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const bodyIsScrollable =
+    document.body.scrollHeight > document.body.clientHeight &&
+    getComputedStyle(document.body).overflowY !== "visible";
+  const scrollContainer: Window | HTMLElement =
+    bodyIsScrollable
+      ? document.body
+      : ((document.scrollingElement as HTMLElement | null) ?? window);
+  const scrollTop =
+    scrollContainer === window
+      ? window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+      : (scrollContainer as HTMLElement).scrollTop;
+  const top = el.getBoundingClientRect().top + scrollTop - 120;
+
+  if (scrollContainer === window) {
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  } else {
+    scrollContainer.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
+  window.history.replaceState(null, "", `#${id}`);
+}
+
+function FooterTitle({ children }: { children: ReactNode }) {
+  return (
+    <Text
+      fontFamily="$mono"
+      fontSize="$4"
+      color="$color11"
+      opacity={0.6}
+      letterSpacing={0.2}
+      textTransform="uppercase"
+    >
+      {children}
+    </Text>
+  );
+}
+
+export default function Footer({ stacked = false }: { stacked?: boolean }) {
+  return (
+    <YStack
+      mt="$12"
+      pt="$14"
+      pb="$6"
+      borderTopWidth={1}
+      borderTopColor="$color5"
+      gap="$7"
+      width="100%"
+    >
+      <YStack
+        justify="center"
+        items={stacked ? "center" : "flex-start"}
+        gap={stacked ? "$10" : "$8"}
+        flexDirection={stacked ? "column" : "row"}
+        width="100%"
+      >
+        <YStack gap="$3" minW={200} items={stacked ? "center" : "flex-start"}>
+          <Logo />
+          <Text
+            fontFamily="$mono"
+            fontSize="$3"
+            color="$color11"
+            opacity={0.55}
+          >
+            openapi2kotlin
+          </Text>
+        </YStack>
+
+        <YStack
+          justify="flex-start"
+          gap={stacked ? "$10" : "$6"}
+          flexDirection={stacked ? "column" : "row"}
+          flexWrap="nowrap"
+          width={stacked ? "100%" : "auto"}
+          items={stacked ? "center" : "flex-start"}
+        >
+          <YStack
+            gap="$4"
+            minW={stacked ? 0 : 220}
+            items={stacked ? "center" : "flex-start"}
+          >
+            <YStack
+              items="flex-start"
+              self={stacked ? "flex-start" : "auto"}
+            >
+              <FooterTitle>Overview</FooterTitle>
+            </YStack>
+            <YStack
+              gap="$2"
+              items="flex-start"
+              self={stacked ? "center" : "auto"}
+            >
+              {MENU_ITEMS.map((item) => (
+                <XStack key={item.id} self="flex-start">
+                  <Anchor
+                    href={`#${item.id}`}
+                    onPress={(event) => {
+                      event.preventDefault();
+                      scrollToSection(item.id);
+                    }}
+                    textDecorationLine="none"
+                    opacity={0.9}
+                    hoverStyle={{ opacity: 1 }}
+                    pressStyle={{ opacity: 0.75 }}
+                    py="$1"
+                    pl={item.level === 0 ? 0 : item.level === 1 ? "$3" : "$5"}
+                  >
+                    <Text
+                      fontFamily="$body"
+                      fontSize={item.level === 0 ? "$4" : "$3"}
+                      color="$color12"
+                    >
+                      {item.label}
+                    </Text>
+                  </Anchor>
+                </XStack>
+              ))}
+            </YStack>
+          </YStack>
+
+          <YStack
+            gap="$4"
+            minW={stacked ? 0 : 120}
+            items={stacked ? "center" : "flex-start"}
+          >
+            <YStack
+              items="flex-start"
+              self={stacked ? "flex-start" : "auto"}
+            >
+              <FooterTitle>Links</FooterTitle>
+            </YStack>
+            <YStack
+              gap="$3"
+              items="flex-start"
+              self={stacked ? "center" : "auto"}
+            >
+              {EXTERNAL_LINKS.map((item) => (
+                <XStack key={item.href} self="flex-start">
+                  <Anchor
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    textDecorationLine="none"
+                    opacity={0.9}
+                    hoverStyle={{ opacity: 1 }}
+                  >
+                    <XStack items="center" gap="$2">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$4"
+                      color="$color12"
+                    >
+                      {item.label}
+                    </Text>
+                    <ExternalLink size={14} />
+                    </XStack>
+                  </Anchor>
+                </XStack>
+              ))}
+            </YStack>
+          </YStack>
+        </YStack>
+      </YStack>
+    </YStack>
+  );
+}

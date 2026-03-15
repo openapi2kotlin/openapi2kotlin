@@ -12,6 +12,7 @@ import {HeroHeading} from "./components/HeroHeading.tsx";
 import {useMedia} from "@tamagui/core";
 import SegmentedControl from "./components/SegmentedControl.tsx";
 import PillLink from "./components/PillLink.tsx";
+import Footer from "./components/Footer.tsx";
 import {VERSION_DOCS_BY_VERSION, VERSION_DOCS_LIST} from "./service/version-docs-registry";
 import {Link as RouterLink, useLocation, useNavigate, useParams} from "react-router-dom";
 
@@ -379,6 +380,13 @@ ${apiSnippet.trimEnd()}
             ) : null}
           </YStack>
         </XStack>
+        <YStack
+          width="100%"
+          maxW={CONTENT_WIDTH}
+          mx="auto"
+        >
+          <Footer stacked={mediaMaxMd} />
+        </YStack>
       </YStack>
     </AmbientBackground>
   );
