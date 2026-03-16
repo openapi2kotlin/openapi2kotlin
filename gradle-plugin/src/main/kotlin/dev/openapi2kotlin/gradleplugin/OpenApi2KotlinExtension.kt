@@ -172,7 +172,7 @@ open class OpenApi2KotlinExtension {
          * description: Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
          * ```
          * servers:
-         *   - url: '/{basePath}/'
+         *   - url: '/{basePath}'
          *     variables:
          *       basePath:
          *         default: 'v5/'
@@ -239,7 +239,7 @@ open class OpenApi2KotlinExtension {
          * description: Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
          * ```
          * servers:
-         *   - url: '/{basePath}/'
+         *   - url: '/{basePath}'
          *     variables:
          *       basePath:
          *         default: 'v5/'

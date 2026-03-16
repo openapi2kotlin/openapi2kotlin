@@ -91,7 +91,7 @@
     },
     {
       "property": "client.basePathVar",
-      "description": "Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.\n```\nservers:\n  - url: '/{basePath}/'\n    variables:\n      basePath:\n        default: 'v5/'\n```",
+      "description": "Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.\n```\nservers:\n  - url: '/{basePath}'\n    variables:\n      basePath:\n        default: 'v5/'\n```",
       "values": "",
       "default": "\"basePath\"",
       "required": false
@@ -140,7 +140,7 @@
     },
     {
       "property": "server.basePathVar",
-      "description": "Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.\n```\nservers:\n  - url: '/{basePath}/'\n    variables:\n      basePath:\n        default: 'v5/'\n```",
+      "description": "Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.\n```\nservers:\n  - url: '/{basePath}'\n    variables:\n      basePath:\n        default: 'v5/'\n```",
       "values": "",
       "default": "\"basePath\"",
       "required": false
