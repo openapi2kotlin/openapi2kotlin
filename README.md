@@ -70,6 +70,10 @@ openapi2kotlin {
 }
 ```
 
+## API Reference
+
+For the complete, versioned documentation, see [openapi2kotlin.dev API Reference](https://openapi2kotlin.dev/#api-reference).
+
 ### Configuration options
 
 | Property | Description | Values | Required | Default |
