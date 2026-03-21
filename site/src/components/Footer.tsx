@@ -93,7 +93,7 @@ export default function Footer({
       width="100%"
     >
       <YStack
-        justify="flex-start"
+        justify={stacked ? "flex-start" : "space-around"}
         items={stacked ? "center" : "flex-start"}
         gap={stacked ? "$10" : "$12"}
         flexDirection={stacked ? "column" : "row"}

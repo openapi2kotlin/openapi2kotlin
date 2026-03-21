@@ -127,7 +127,22 @@ export default function App() {
 
   const navigateToLatestVersion = () => {
     navigate({ pathname: "/", search: "", hash: "" });
-    window.requestAnimationFrame(scrollPageToTop);
+
+    const bodyIsScrollable =
+      document.body.scrollHeight > document.body.clientHeight &&
+      getComputedStyle(document.body).overflowY !== "visible";
+    const scrollContainer: Window | HTMLElement =
+      bodyIsScrollable
+        ? document.body
+        : ((document.scrollingElement as HTMLElement | null) ?? window);
+
+    window.requestAnimationFrame(() => {
+      if (scrollContainer === window) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
   };
 
   return (
