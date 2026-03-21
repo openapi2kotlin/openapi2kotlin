@@ -1,6 +1,6 @@
 {
   "version": "0.17.0",
-  "generatedAt": "2026-03-21T12:24:50.957248+00:00",
+  "generatedAt": "2026-03-21T14:24:35.336091+00:00",
   "clientLibraries": [
     "Ktor",
     "Http4k",
