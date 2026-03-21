@@ -56,7 +56,32 @@ function FooterTitle({ children }: { children: ReactNode }) {
   );
 }
 
-export default function Footer({ stacked = false }: { stacked?: boolean }) {
+function formatGeneratedAt(generatedAt: string) {
+  const date = new Date(generatedAt);
+  if (Number.isNaN(date.getTime())) return generatedAt;
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+export default function Footer({
+  stacked = false,
+  selectedVersion,
+  selectedVersionGeneratedAt,
+  latestVersion,
+  onSelectLatestVersion,
+}: {
+  stacked?: boolean
+  selectedVersion: string
+  selectedVersionGeneratedAt: string
+  latestVersion: string
+  onSelectLatestVersion: () => void
+}) {
+  const footerAlign = "flex-start";
+
   return (
     <YStack
       mt="$12"
@@ -68,7 +93,7 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
       width="100%"
     >
       <YStack
-        justify="space-between"
+        justify="flex-start"
         items={stacked ? "center" : "flex-start"}
         gap={stacked ? "$10" : "$12"}
         flexDirection={stacked ? "column" : "row"}
@@ -84,11 +109,27 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
           >
             openapi2kotlin
           </Text>
+          <Text
+            fontFamily="$mono"
+            fontSize="$2"
+            color="$color11"
+            opacity={0.55}
+          >
+            {formatGeneratedAt(selectedVersionGeneratedAt)}
+          </Text>
+          <Text
+            fontFamily="$mono"
+            fontSize="$2"
+            color="$color11"
+            opacity={0.55}
+          >
+            v{selectedVersion}
+          </Text>
         </YStack>
 
         <YStack
           justify="flex-start"
-          gap={stacked ? "$10" : "$6"}
+          gap="$10"
           flexDirection={stacked ? "column" : "row"}
           flexWrap="nowrap"
           width={stacked ? "100%" : "auto"}
@@ -96,20 +137,12 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
         >
           <YStack
             gap="$4"
-            minW={stacked ? 0 : 150}
-            items={stacked ? "center" : "flex-start"}
+            items={footerAlign}
           >
-            <YStack
-              items="flex-start"
-              self={stacked ? "flex-start" : "auto"}
-            >
+            <YStack items="flex-start">
               <FooterTitle>Overview</FooterTitle>
             </YStack>
-            <YStack
-              gap="$2"
-              items="flex-start"
-              self={stacked ? "center" : "auto"}
-            >
+            <YStack gap="$2" items="flex-start">
               {MENU_ITEMS.map((item) => (
                 <XStack key={item.id} self="flex-start">
                   <Anchor
@@ -139,21 +172,45 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
           </YStack>
 
           <YStack
-            gap="$4"
-            minW={stacked ? 0 : 150}
-            items={stacked ? "center" : "flex-start"}
+              gap="$4"
+              items={footerAlign}
           >
-            <YStack
-              items="flex-start"
-              self={stacked ? "flex-start" : "auto"}
-            >
+            <YStack items="flex-start">
+              <FooterTitle>Latest Version</FooterTitle>
+            </YStack>
+            <YStack gap="$1" items="flex-start">
+              <XStack self="flex-start">
+                <Anchor
+                    href={`/`}
+                    onPress={(event) => {
+                      event.preventDefault();
+                      onSelectLatestVersion();
+                    }}
+                    textDecorationLine="none"
+                    opacity={0.9}
+                    hoverStyle={{ opacity: 1 }}
+                    pressStyle={{ opacity: 0.75 }}
+                >
+                  <Text
+                      fontFamily="$body"
+                      fontSize="$4"
+                      color="$color12"
+                  >
+                    {latestVersion}
+                  </Text>
+                </Anchor>
+              </XStack>
+            </YStack>
+          </YStack>
+
+          <YStack
+            gap="$4"
+            items={footerAlign}
+          >
+            <YStack items="flex-start">
               <FooterTitle>Links</FooterTitle>
             </YStack>
-            <YStack
-              gap="$2"
-              items="flex-start"
-              self={stacked ? "center" : "auto"}
-            >
+            <YStack gap="$2" items="flex-start">
               {EXTERNAL_LINKS.map((item) => (
                 <XStack key={item.href} self="flex-start" py="$1">
                   <Anchor
@@ -177,45 +234,6 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
                   </Anchor>
                 </XStack>
               ))}
-            </YStack>
-          </YStack>
-
-          <YStack
-              gap="$4"
-              minW={stacked ? 0 : 150}
-              items={stacked ? "center" : "flex-start"}
-          >
-            <YStack
-                items="flex-start"
-                self={stacked ? "flex-start" : "auto"}
-            >
-              <FooterTitle>Latest Version</FooterTitle>
-            </YStack>
-            <YStack
-                gap="$1"
-                items="flex-start"
-                self={stacked ? "center" : "auto"}
-            >
-                <XStack self="flex-start">
-                  <Anchor
-                      href={`/`}
-                      onPress={(event) => {
-                        event.preventDefault();
-                      }}
-                      textDecorationLine="none"
-                      opacity={0.9}
-                      hoverStyle={{ opacity: 1 }}
-                      pressStyle={{ opacity: 0.75 }}
-                  >
-                    <Text
-                        fontFamily="$body"
-                        fontSize="$4"
-                        color="$color12"
-                    >
-                      0.17.0
-                    </Text>
-                  </Anchor>
-                </XStack>
             </YStack>
           </YStack>
         </YStack>

@@ -73,7 +73,7 @@ function libraryIcon(library: string) {
     case "Ktor":
       return { iconSrc: "/ktor.svg", iconAlt: "Ktor logo", iconSize: 16 };
     case "Http4k":
-      return { iconSrc: "/http4k.svg", iconAlt: "http4k logo", iconSize: 18 };
+      return { iconSrc: "/http4k.png", iconAlt: "http4k logo", iconSize: 18 };
     case "Spring":
       return { iconSrc: "/spring.svg", iconAlt: "Spring logo", iconSize: 18 };
     case "RestClient":
@@ -125,6 +125,11 @@ export default function App() {
     }
   };
 
+  const navigateToLatestVersion = () => {
+    navigate({ pathname: "/", search: "", hash: "" });
+    window.requestAnimationFrame(scrollPageToTop);
+  };
+
   return (
     <AppContent
       key={docs.version}
@@ -132,6 +137,7 @@ export default function App() {
       selectedVersion={selectedVersion}
       latestVersion={latestVersion}
       onSelectVersion={navigateToVersion}
+      onSelectLatestVersion={navigateToLatestVersion}
       mediaMaxXs={media.maxXs}
       mediaMaxMd={media.maxMd}
     />
@@ -143,6 +149,7 @@ function AppContent({
   selectedVersion,
   latestVersion,
   onSelectVersion,
+  onSelectLatestVersion,
   mediaMaxXs,
   mediaMaxMd,
 }: {
@@ -150,6 +157,7 @@ function AppContent({
   selectedVersion: string;
   latestVersion: string;
   onSelectVersion: (nextVersion: string) => void;
+  onSelectLatestVersion: () => void;
   mediaMaxXs: boolean;
   mediaMaxMd: boolean;
 }) {
@@ -399,7 +407,13 @@ ${apiSnippet.trimEnd()}
           maxW={CONTENT_WIDTH}
           mx="auto"
         >
-          <Footer stacked={mediaMaxMd} />
+          <Footer
+            stacked={mediaMaxMd}
+            selectedVersion={docs.version}
+            selectedVersionGeneratedAt={docs.generatedAt}
+            latestVersion={latestVersion}
+            onSelectLatestVersion={onSelectLatestVersion}
+          />
         </YStack>
       </YStack>
     </AmbientBackground>
