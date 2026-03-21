@@ -5,6 +5,7 @@ import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyAnnotation
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.toParamSpec
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
@@ -14,6 +15,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
 
 private val log = KotlinLogging.logger {}
+private const val KOTLINX_SERIALIZABLE = "kotlinx.serialization.Serializable"
+private val KOTLINX_TRANSIENT = ClassName("kotlinx.serialization", "Transient")
 
 /**
  * Final pass – generate Kotlin files.
@@ -193,17 +196,22 @@ private fun buildDataClassFile(
     ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
     val ctx = ctxByPackageName.getValue(schema.packageName)
+    val renderOverriddenInCtorOnly = schema.shouldRenderOverriddenFieldsInConstructorOnly(shape.extend)
+    val useDataModifier = !renderOverriddenInCtorOnly
 
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx))
+            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
         }
     }.build()
 
     val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
-        .addModifiers(KModifier.DATA)
         .primaryConstructor(ctor)
         .applyModelAnnotations(schema)
+
+    if (useDataModifier) {
+        typeBuilder.addModifiers(KModifier.DATA)
+    }
 
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
         typeBuilder.addKdoc("%L\n", doc.trim())
@@ -212,10 +220,43 @@ private fun buildDataClassFile(
     val shouldOpenProps = schema.allOfChildren.isNotEmpty()
 
     schema.fields.forEach { field ->
+        val storageName = field.storageName(renderOverriddenInCtorOnly)
+
+        if (renderOverriddenInCtorOnly && field.overridden) {
+            typeBuilder.addProperty(
+                PropertySpec.builder(
+                    storageName,
+                    field.type.toTypeName(ctx),
+                ).initializer(storageName)
+                    .addModifiers(KModifier.PRIVATE)
+                    .apply {
+                        field.applyPropertyAnnotations(this)
+                    }
+                    .build()
+            )
+
+            val overrideProperty = PropertySpec.builder(
+                field.generatedName,
+                field.type.toTypeName(ctx),
+            ).getter(
+                FunSpec.getterBuilder()
+                    .addCode("return %N\n", storageName)
+                    .build()
+            ).addModifiers(KModifier.OVERRIDE)
+                .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
+
+            field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+                overrideProperty.addKdoc("%L\n", doc.trim())
+            }
+
+            typeBuilder.addProperty(overrideProperty.build())
+            return@forEach
+        }
+
         val propBuilder = PropertySpec.builder(
-            field.generatedName,
+            storageName,
             field.type.toTypeName(ctx),
-        ).initializer(field.generatedName)
+        ).initializer(storageName)
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
             propBuilder.addKdoc("%L\n", doc.trim())
@@ -238,7 +279,11 @@ private fun buildDataClassFile(
         typeBuilder.superclass(typeName)
 
         parent?.fields?.forEach { parentField ->
-            typeBuilder.addSuperclassConstructorParameter(parentField.generatedName)
+            val childField = schema.fields.firstOrNull { it.generatedName == parentField.generatedName }
+            typeBuilder.addSuperclassConstructorParameter(
+                "%N",
+                childField?.storageName(renderOverriddenInCtorOnly) ?: parentField.generatedName,
+            )
         }
     }
 
@@ -263,10 +308,11 @@ private fun buildEmptyClassFile(
     ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
     val ctx = ctxByPackageName.getValue(schema.packageName)
+    val renderOverriddenInCtorOnly = schema.shouldRenderOverriddenFieldsInConstructorOnly(shape.extend)
 
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx))
+            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
         }
     }.build()
 
@@ -279,10 +325,43 @@ private fun buildEmptyClassFile(
     }
 
     schema.fields.forEach { field ->
+        val storageName = field.storageName(renderOverriddenInCtorOnly)
+
+        if (renderOverriddenInCtorOnly && field.overridden) {
+            typeBuilder.addProperty(
+                PropertySpec.builder(
+                    storageName,
+                    field.type.toTypeName(ctx),
+                ).initializer(storageName)
+                    .addModifiers(KModifier.PRIVATE)
+                    .apply {
+                        field.applyPropertyAnnotations(this)
+                    }
+                    .build()
+            )
+
+            val overrideProperty = PropertySpec.builder(
+                field.generatedName,
+                field.type.toTypeName(ctx),
+            ).getter(
+                FunSpec.getterBuilder()
+                    .addCode("return %N\n", storageName)
+                    .build()
+            ).addModifiers(KModifier.OVERRIDE)
+                .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
+
+            field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+                overrideProperty.addKdoc("%L\n", doc.trim())
+            }
+
+            typeBuilder.addProperty(overrideProperty.build())
+            return@forEach
+        }
+
         val propBuilder = PropertySpec.builder(
-            field.generatedName,
+            storageName,
             field.type.toTypeName(ctx),
-        ).initializer(field.generatedName)
+        ).initializer(storageName)
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
             propBuilder.addKdoc("%L\n", doc.trim())
@@ -303,7 +382,11 @@ private fun buildEmptyClassFile(
         typeBuilder.superclass(typeName)
 
         parent?.fields?.forEach { parentField ->
-            typeBuilder.addSuperclassConstructorParameter(parentField.generatedName)
+            val childField = schema.fields.firstOrNull { it.generatedName == parentField.generatedName }
+            typeBuilder.addSuperclassConstructorParameter(
+                "%N",
+                childField?.storageName(renderOverriddenInCtorOnly) ?: parentField.generatedName,
+            )
         }
     }
 
@@ -328,10 +411,11 @@ private fun buildOpenClassFile(
     ctxByPackageName: Map<String, TypeNameContext>,
 ): FileSpec {
     val ctx = ctxByPackageName.getValue(schema.packageName)
+    val renderOverriddenInCtorOnly = schema.shouldRenderOverriddenFieldsInConstructorOnly(shape.extend)
 
     val ctor = FunSpec.constructorBuilder().apply {
         schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx))
+            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
         }
     }.build()
 
@@ -349,10 +433,43 @@ private fun buildOpenClassFile(
     val shouldOpenProps = true
 
     schema.fields.forEach { field ->
+        val storageName = field.storageName(renderOverriddenInCtorOnly)
+
+        if (renderOverriddenInCtorOnly && field.overridden) {
+            typeBuilder.addProperty(
+                PropertySpec.builder(
+                    storageName,
+                    field.type.toTypeName(ctx),
+                ).initializer(storageName)
+                    .addModifiers(KModifier.PRIVATE)
+                    .apply {
+                        field.applyPropertyAnnotations(this)
+                    }
+                    .build()
+            )
+
+            val overrideProperty = PropertySpec.builder(
+                field.generatedName,
+                field.type.toTypeName(ctx),
+            ).getter(
+                FunSpec.getterBuilder()
+                    .addCode("return %N\n", storageName)
+                    .build()
+            ).addModifiers(KModifier.OVERRIDE)
+                .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
+
+            field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
+                overrideProperty.addKdoc("%L\n", doc.trim())
+            }
+
+            typeBuilder.addProperty(overrideProperty.build())
+            return@forEach
+        }
+
         val propBuilder = PropertySpec.builder(
-            field.generatedName,
+            storageName,
             field.type.toTypeName(ctx),
-        ).initializer(field.generatedName)
+        ).initializer(storageName)
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
             propBuilder.addKdoc("%L\n", doc.trim())
@@ -375,7 +492,11 @@ private fun buildOpenClassFile(
         typeBuilder.superclass(typeName)
 
         parent?.fields?.forEach { parentField ->
-            typeBuilder.addSuperclassConstructorParameter(parentField.generatedName)
+            val childField = schema.fields.firstOrNull { it.generatedName == parentField.generatedName }
+            typeBuilder.addSuperclassConstructorParameter(
+                "%N",
+                childField?.storageName(renderOverriddenInCtorOnly) ?: parentField.generatedName,
+            )
         }
     }
 
@@ -414,3 +535,14 @@ private fun buildTypeAliasFile(
 
 private fun ModelDO.className(): ClassName =
     ClassName(packageName, generatedName)
+
+private fun FieldDO.storageName(
+    renderOverriddenInCtorOnly: Boolean,
+): String = if (renderOverriddenInCtorOnly && overridden) "${generatedName}_" else generatedName
+
+private fun ModelDO.shouldRenderOverriddenFieldsInConstructorOnly(
+    extend: String?,
+): Boolean =
+    extend != null &&
+        fields.any { it.overridden } &&
+        annotations.any { it.fqName == KOTLINX_SERIALIZABLE }

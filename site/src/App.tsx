@@ -68,6 +68,21 @@ function scrollToHash(hash: string) {
   return true;
 }
 
+function libraryIcon(library: string) {
+  switch (library) {
+    case "Ktor":
+      return { iconSrc: "/ktor.svg", iconAlt: "Ktor logo", iconSize: 16 };
+    case "Http4k":
+      return { iconSrc: "/http4k.svg", iconAlt: "http4k logo", iconSize: 18 };
+    case "Spring":
+      return { iconSrc: "/spring.svg", iconAlt: "Spring logo", iconSize: 18 };
+    case "RestClient":
+      return { iconSrc: "/spring.svg", iconAlt: "RestClient logo", iconSize: 18 };
+    default:
+      return undefined;
+  }
+}
+
 export default function App() {
   const media = useMedia();
   const navigate = useNavigate();
@@ -292,24 +307,22 @@ ${apiSnippet.trimEnd()}
                         <SegmentedControl
                             value={effectiveClientLibrary}
                             onChange={setClientLibrary}
+                            hideLabelsOnMobile
                             options={docs.clientLibraries.map((library) => ({
+                              ...libraryIcon(library),
                               value: library,
                               label: library,
-                              iconSrc: library === "Ktor" ? "/ktor.svg" : "/spring.svg",
-                              iconAlt: `${library} logo`,
-                              iconSize: library === "Ktor" ? 16 : 18,
                             }))}
                         />
                     ) : (
                         <SegmentedControl
                             value={effectiveServerLibrary}
                             onChange={setServerLibrary}
+                            hideLabelsOnMobile
                             options={docs.serverLibraries.map((library) => ({
+                              ...libraryIcon(library),
                               value: library,
                               label: library,
-                              iconSrc: library === "Ktor" ? "/ktor.svg" : "/spring.svg",
-                              iconAlt: `${library} logo`,
-                              iconSize: library === "Ktor" ? 16 : 18,
                             }))}
                         />
                     )}

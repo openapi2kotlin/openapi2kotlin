@@ -71,6 +71,9 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     OpenApi2KotlinExtension.ServerLibrary.Ktor ->
                         server.swagger ?: false
 
+                    OpenApi2KotlinExtension.ServerLibrary.Http4k ->
+                        server.swagger ?: false
+
                     OpenApi2KotlinExtension.ServerLibrary.Spring ->
                         server.swagger ?: true
                 }
@@ -78,8 +81,16 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                 when (library) {
                     OpenApi2KotlinExtension.ServerLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ServerKtor(
                         packageName = server.packageName,
-                        basePathVar = server.basePathVar.trim().takeIf { it.isNotBlank() }
-                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        basePathVar = server.basePathVar.trim(),
+                        methodNameSingularized = server.methodNameSingularized,
+                        methodNamePluralized = server.methodNamePluralized,
+                        methodNameFromOperationId = server.methodNameFromOperationId,
+                        swagger = swagger,
+                    )
+
+                    OpenApi2KotlinExtension.ServerLibrary.Http4k -> OpenApi2KotlinUseCase.ApiConfig.ServerHttp4k(
+                        packageName = server.packageName,
+                        basePathVar = server.basePathVar.trim(),
                         methodNameSingularized = server.methodNameSingularized,
                         methodNamePluralized = server.methodNamePluralized,
                         methodNameFromOperationId = server.methodNameFromOperationId,
@@ -88,8 +99,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
                     OpenApi2KotlinExtension.ServerLibrary.Spring -> OpenApi2KotlinUseCase.ApiConfig.ServerSpring(
                         packageName = server.packageName,
-                        basePathVar = server.basePathVar.trim().takeIf { it.isNotBlank() }
-                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        basePathVar = server.basePathVar.trim(),
                         methodNameSingularized = server.methodNameSingularized,
                         methodNamePluralized = server.methodNamePluralized,
                         methodNameFromOperationId = server.methodNameFromOperationId,
@@ -112,8 +122,15 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                 when (library) {
                     OpenApi2KotlinExtension.ClientLibrary.Ktor -> OpenApi2KotlinUseCase.ApiConfig.ClientKtor(
                         packageName = client.packageName,
-                        basePathVar = client.basePathVar.trim().takeIf { it.isNotBlank() }
-                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        basePathVar = client.basePathVar.trim(),
+                        methodNameSingularized = client.methodNameSingularized,
+                        methodNamePluralized = client.methodNamePluralized,
+                        methodNameFromOperationId = client.methodNameFromOperationId,
+                    )
+
+                    OpenApi2KotlinExtension.ClientLibrary.Http4k -> OpenApi2KotlinUseCase.ApiConfig.ClientHttp4k(
+                        packageName = client.packageName,
+                        basePathVar = client.basePathVar.trim(),
                         methodNameSingularized = client.methodNameSingularized,
                         methodNamePluralized = client.methodNamePluralized,
                         methodNameFromOperationId = client.methodNameFromOperationId,
@@ -121,8 +138,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
 
                     OpenApi2KotlinExtension.ClientLibrary.RestClient -> OpenApi2KotlinUseCase.ApiConfig.ClientRestClient(
                         packageName = client.packageName,
-                        basePathVar = client.basePathVar.trim().takeIf { it.isNotBlank() }
-                            ?: OpenApi2KotlinExtension.DEFAULT_BASE_PATH_VAR,
+                        basePathVar = client.basePathVar.trim(),
                         methodNameSingularized = client.methodNameSingularized,
                         methodNamePluralized = client.methodNamePluralized,
                         methodNameFromOperationId = client.methodNameFromOperationId,

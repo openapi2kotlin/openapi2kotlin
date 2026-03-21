@@ -82,20 +82,20 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 | `outputDir` | Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path. | - | true | - |
 | `enabled` | Enables or disables code generation for the current Gradle run. | true, false | false | true |
 | `model.packageName` | Package name for generated model classes. | - | false | "dev.openapi2kotlin.model" |
-| `model.serialization` | Serialization annotation family for generated model classes. | KotlinX, Jackson | false | Ktor -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson |
+| `model.serialization` | Serialization annotation family for generated model classes. | KotlinX, Jackson | false | Ktor -> KotlinX, Http4k -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson |
 | `model.validation` | Validation annotations namespace used in generated models. | None, Jakarta, JavaX | false | None |
 | `model.double2BigDecimal` | Maps OpenAPI number/double to BigDecimal instead of Double. | true, false | false | false |
 | `model.float2BigDecimal` | Maps OpenAPI number/float to BigDecimal instead of Float. | true, false | false | false |
 | `model.integer2Long` | Maps OpenAPI integer to Long instead of Int. | true, false | false | true |
 | `client.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.client" |
-| `client.library` | Target HTTP client library used by generated client API. | Ktor, RestClient | true | - |
+| `client.library` | Target HTTP client library used by generated client API. | Ktor, Http4k, RestClient | true | - |
 | `client.basePathVar` | Uses the first OpenAPI server variable matching `basePathVar` when it has a default value<br><br>e.g.<br><code>servers:</code><br>&nbsp;&nbsp;<code>- url: &#x27;/{basePath}&#x27;</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>variables:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>basePath:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>default: &#x27;v5/&#x27;</code> | - | false | "basePath" |
 | `client.methodNameSingularized` | Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`. | true, false | false | true |
 | `client.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |
 | `client.methodNameFromOperationId` | Derives method names from OpenAPI `operationId` instead of URL path. | true, false | false | false |
 | `server.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.server" |
-| `server.library` | Target server framework used by generated server API. | Ktor, Spring | true | - |
-| `server.swagger` | Enables generated Swagger/OpenAPI annotations. | true, false | false | Ktor -> false, Spring -> true |
+| `server.library` | Target server framework used by generated server API. | Ktor, Http4k, Spring | true | - |
+| `server.swagger` | Enables generated Swagger/OpenAPI annotations. | true, false | false | Ktor -> false, Http4k -> false, Spring -> true |
 | `server.basePathVar` | Uses the first OpenAPI server variable matching `basePathVar` when it has a default value<br><br>e.g.<br><code>servers:</code><br>&nbsp;&nbsp;<code>- url: &#x27;/{basePath}&#x27;</code><br>&nbsp;&nbsp;&nbsp;&nbsp;<code>variables:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>basePath:</code><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>default: &#x27;v5/&#x27;</code> | - | false | "basePath" |
 | `server.methodNameSingularized` | Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`. | true, false | false | true |
 | `server.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |

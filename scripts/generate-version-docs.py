@@ -193,10 +193,12 @@ def generate(version: str) -> dict:
         "snippets": {
             "client": {
                 "Ktor": """    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = Ktor\n    }""",
+                "Http4k": """    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = Http4k\n    }""",
                 "RestClient": """    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = RestClient\n    }""",
             },
             "server": {
                 "Ktor": """    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Ktor\n    }""",
+                "Http4k": """    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Http4k\n    }""",
                 "Spring": """    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Spring\n    }""",
             },
         },

@@ -68,9 +68,9 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
       width="100%"
     >
       <YStack
-        justify="center"
+        justify="space-between"
         items={stacked ? "center" : "flex-start"}
-        gap={stacked ? "$10" : "$8"}
+        gap={stacked ? "$10" : "$12"}
         flexDirection={stacked ? "column" : "row"}
         width="100%"
       >
@@ -96,7 +96,7 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
         >
           <YStack
             gap="$4"
-            minW={stacked ? 0 : 220}
+            minW={stacked ? 0 : 150}
             items={stacked ? "center" : "flex-start"}
           >
             <YStack
@@ -140,7 +140,7 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
 
           <YStack
             gap="$4"
-            minW={stacked ? 0 : 120}
+            minW={stacked ? 0 : 150}
             items={stacked ? "center" : "flex-start"}
           >
             <YStack
@@ -150,12 +150,12 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
               <FooterTitle>Links</FooterTitle>
             </YStack>
             <YStack
-              gap="$3"
+              gap="$2"
               items="flex-start"
               self={stacked ? "center" : "auto"}
             >
               {EXTERNAL_LINKS.map((item) => (
-                <XStack key={item.href} self="flex-start">
+                <XStack key={item.href} self="flex-start" py="$1">
                   <Anchor
                     href={item.href}
                     target="_blank"
@@ -177,6 +177,45 @@ export default function Footer({ stacked = false }: { stacked?: boolean }) {
                   </Anchor>
                 </XStack>
               ))}
+            </YStack>
+          </YStack>
+
+          <YStack
+              gap="$4"
+              minW={stacked ? 0 : 150}
+              items={stacked ? "center" : "flex-start"}
+          >
+            <YStack
+                items="flex-start"
+                self={stacked ? "flex-start" : "auto"}
+            >
+              <FooterTitle>Latest Version</FooterTitle>
+            </YStack>
+            <YStack
+                gap="$1"
+                items="flex-start"
+                self={stacked ? "center" : "auto"}
+            >
+                <XStack self="flex-start">
+                  <Anchor
+                      href={`/`}
+                      onPress={(event) => {
+                        event.preventDefault();
+                      }}
+                      textDecorationLine="none"
+                      opacity={0.9}
+                      hoverStyle={{ opacity: 1 }}
+                      pressStyle={{ opacity: 0.75 }}
+                  >
+                    <Text
+                        fontFamily="$body"
+                        fontSize="$4"
+                        color="$color12"
+                    >
+                      0.17.0
+                    </Text>
+                  </Anchor>
+                </XStack>
             </YStack>
           </YStack>
         </YStack>

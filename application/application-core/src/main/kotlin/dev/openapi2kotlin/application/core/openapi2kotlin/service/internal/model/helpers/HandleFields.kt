@@ -57,6 +57,11 @@ internal fun List<ModelDO>.handleFields(
             val effectiveRequired = parentRequired || info.required
 
             val overridden = parentInfo != null
+            val effectiveType =
+                when {
+                    parentInfo != null && !parentInfo.type.canBeOverriddenBy(info.type) -> parentInfo.type
+                    else -> info.type
+                }
 
             // overridden field: if own doc missing, inherit doc from parent
             val effectiveKdoc =
@@ -70,7 +75,7 @@ internal fun List<ModelDO>.handleFields(
                 originalName = propName,
                 generatedName = propName.toKotlinName(),
                 overridden = overridden,
-                type = info.type.withNullability(nullable = !effectiveRequired),
+                type = effectiveType.withNullability(nullable = !effectiveRequired),
                 required = effectiveRequired,
                 defaultValueCode = info.defaultValueCode,
                 kdoc = effectiveKdoc,
@@ -124,6 +129,22 @@ internal fun List<ModelDO>.handleFields(
             field.copy(type = finalType, required = finalRequired)
         }.toMutableList()
     }
+}
+
+private fun FieldTypeDO.canBeOverriddenBy(
+    child: FieldTypeDO,
+): Boolean = when (this) {
+    is TrivialTypeDO -> when {
+        kind == TrivialTypeDO.Kind.ANY -> true
+        child !is TrivialTypeDO -> false
+        else -> kind == child.kind
+    }
+
+    is RefTypeDO ->
+        child is RefTypeDO && schemaName == child.schemaName
+
+    is ListTypeDO ->
+        child is ListTypeDO && elementType.canBeOverriddenBy(child.elementType)
 }
 
 private data class PropInfo(

@@ -8,8 +8,11 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShape
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
-internal fun List<ModelDO>.handleModelShape() {
+internal fun List<ModelDO>.handleModelShape(
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
+) {
     val byName = associateBy { it.rawSchema.originalName }
 
     // Discriminator mappings reference concrete subtypes even when they are not used in paths or properties.
@@ -55,6 +58,9 @@ internal fun List<ModelDO>.handleModelShape() {
         val hasOneOf = component.rawSchema.oneOfChildren.isNotEmpty()
 
         val isAllOfBase = component.allOfChildren.isNotEmpty()
+        val useInterfaceForAllOfBase =
+            cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX &&
+                isAllOfBase
 
         // Leaf schemas often have discriminator mapping only to themselves. That must NOT force OpenClass.
         val hasDiscriminator = component.rawSchema.discriminatorPropertyName != null
@@ -73,6 +79,9 @@ internal fun List<ModelDO>.handleModelShape() {
                     !isConcreteAllOfBase
 
         component.modelShape = when {
+            useInterfaceForAllOfBase ->
+                ModelShapeDO.SealedInterface(extends = emptyList())
+
             // concrete base => must be instantiable
             isConcreteAllOfBase ->
                 ModelShapeDO.OpenClass(extend = null, implements = emptyList())

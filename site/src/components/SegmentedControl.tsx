@@ -1,9 +1,12 @@
+import type { ReactNode } from "react";
 import {useMemo, useRef, useState} from "react";
-import {Button, Text, XStack, YStack} from "tamagui";
+import {Button, Image, Text, XStack, YStack} from "tamagui";
+import { useMedia } from "@tamagui/core";
 
 export type SegmentedOption<T extends string> = {
   value: T;
   label: string;
+  icon?: ReactNode;
   iconSrc?: string;
   iconAlt?: string;
   iconSize?: number;
@@ -13,17 +16,21 @@ export default function SegmentedControl<T extends string>({
                                                              options,
                                                              value,
                                                              onChange,
+                                                             hideLabelsOnMobile = false,
                                                            }: {
   options: SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  hideLabelsOnMobile?: boolean;
 }) {
+  const media = useMedia();
   const [hoveredValue, setHoveredValue] = useState<T | null>(null);
   const [hoverRenderIndex, setHoverRenderIndex] = useState(0);
   const [hoverCanAnimateTransform, setHoverCanAnimateTransform] = useState(true);
   const hoverActivateRaf = useRef<number | null>(null);
 
   const segmentCount = Math.max(1, options.length);
+  const showIconsOnly = hideLabelsOnMobile && media.maxMd;
   const insetPx = 4;
   const gapPx = 4;
 
@@ -122,19 +129,31 @@ export default function SegmentedControl<T extends string>({
                     hoverStyle={{bg: "transparent"}}
                     pressStyle={{scale: 0.98}}
                 >
-                  <XStack items="center" justify="center" gap="$2">
-                    {option.iconSrc ? (
-                      <img
+                  <XStack
+                    items="center"
+                    justify="center"
+                    gap={showIconsOnly ? 0 : "$2"}
+                    style={{ minWidth: 0 }}
+                  >
+                    {option.icon ? (
+                      <XStack style={{ flexShrink: 0 }}>
+                        {option.icon}
+                      </XStack>
+                    ) : option.iconSrc ? (
+                      <Image
                         src={option.iconSrc}
                         alt={option.iconAlt ?? `${option.label} logo`}
-                        width={option.iconSize ?? 16}
-                        height={option.iconSize ?? 16}
-                        style={{ display: "block", objectFit: "contain", flexShrink: 0 }}
+                        width={option.iconSize ?? 18}
+                        height={option.iconSize ?? 18}
+                        resizeMode="contain"
+                        style={{ flexShrink: 0 }}
                       />
                     ) : null}
-                    <Text fontSize="$4" fontWeight="700" color="$color12" style={{textAlign: "center"}}>
-                      {option.label}
-                    </Text>
+                    {!showIconsOnly ? (
+                      <Text fontSize="$4" fontWeight="700" color="$color12" style={{textAlign: "center"}}>
+                        {option.label}
+                      </Text>
+                    ) : null}
                   </XStack>
                 </Button>
             ))}

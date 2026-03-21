@@ -25,7 +25,7 @@ internal fun prepareModels(schemas: List<RawSchemaDO>, config: OpenApi2KotlinUse
     models.handleParentOneOf()
 
     log.info { "Deciding shapes" }
-    models.handleModelShape()
+    models.handleModelShape(config.model)
 
     log.info { "Handling fields" }
     models.handleFields(cfg = config.model)

@@ -7,8 +7,10 @@ dependencies {
     implementation(project(":application:application-core"))
     implementation(project(":adapters:parse-spec-adapter"))
     implementation(project(":adapters:generate-server-ktor-adapter"))
+    implementation(project(":adapters:generate-server-http4k-adapter"))
     implementation(project(":adapters:generate-server-spring-adapter"))
     implementation(project(":adapters:generate-model-adapter"))
     implementation(project(":adapters:generate-client-ktor-adapter"))
+    implementation(project(":adapters:generate-client-http4k-adapter"))
     implementation(project(":adapters:generate-client-restclient-adapter"))
 }

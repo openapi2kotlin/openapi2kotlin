@@ -104,7 +104,7 @@ open class OpenApi2KotlinExtension {
 
         /**
          * description: Serialization annotation family for generated model classes.
-         * default: Ktor -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
+         * default: Ktor -> KotlinX, Http4k -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
          * values: KotlinX, Jackson
          */
         var serialization: Serialization? = null
@@ -164,7 +164,7 @@ open class OpenApi2KotlinExtension {
         /**
          * description: Target HTTP client library used by generated client API.
          * required: true
-         * values: Ktor, RestClient
+         * values: Ktor, Http4k, RestClient
          */
         var library: ClientLibrary? = null
 
@@ -209,6 +209,9 @@ open class OpenApi2KotlinExtension {
         val Ktor: ClientLibrary
             get() = ClientLibrary.Ktor
 
+        val Http4k: ClientLibrary
+            get() = ClientLibrary.Http4k
+
         val RestClient: ClientLibrary
             get() = ClientLibrary.RestClient
     }
@@ -224,13 +227,13 @@ open class OpenApi2KotlinExtension {
         /**
          * description: Target server framework used by generated server API.
          * required: true
-         * values: Ktor, Spring
+         * values: Ktor, Http4k, Spring
          */
         var library: ServerLibrary? = null
 
         /**
          * description: Enables generated Swagger/OpenAPI annotations.
-         * default: Ktor -> false, Spring -> true
+         * default: Ktor -> false, Http4k -> false, Spring -> true
          * values: true, false
          */
         var swagger: Boolean? = null
@@ -276,6 +279,9 @@ open class OpenApi2KotlinExtension {
         val Ktor: ServerLibrary
             get() = ServerLibrary.Ktor
 
+        val Http4k: ServerLibrary
+            get() = ServerLibrary.Http4k
+
         val Spring: ServerLibrary
             get() = ServerLibrary.Spring
     }
@@ -306,6 +312,7 @@ open class OpenApi2KotlinExtension {
         val value: String,
     ) {
         Ktor("Ktor"),
+        Http4k("Http4k"),
         RestClient("RestClient"),
         ;
 
@@ -323,6 +330,7 @@ open class OpenApi2KotlinExtension {
         val value: String,
     ) {
         Ktor("Ktor"),
+        Http4k("Http4k"),
         Spring("Spring"),
         ;
 

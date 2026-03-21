@@ -58,6 +58,14 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameFromOperationId: Boolean = false,
         ) : Client
 
+        data class ClientHttp4k(
+            override val packageName: String,
+            override val basePathVar: String,
+            override val methodNameSingularized: Boolean = true,
+            override val methodNamePluralized: Boolean = true,
+            override val methodNameFromOperationId: Boolean = false,
+        ) : Client
+
         data class ClientRestClient(
             override val packageName: String,
             override val basePathVar: String,
@@ -71,6 +79,15 @@ fun interface OpenApi2KotlinUseCase {
         }
 
         data class ServerKtor(
+            override val packageName: String,
+            override val basePathVar: String,
+            override val methodNameSingularized: Boolean = true,
+            override val methodNamePluralized: Boolean = true,
+            override val methodNameFromOperationId: Boolean = false,
+            override val swagger: Boolean,
+        ) : Server
+
+        data class ServerHttp4k(
             override val packageName: String,
             override val basePathVar: String,
             override val methodNameSingularized: Boolean = true,

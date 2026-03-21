@@ -1,9 +1,11 @@
 package dev.openapi2kotlin
 
 import dev.openapi2kotlin.adapter.generateclient.ktor.GenerateClientKtorAdapter
+import dev.openapi2kotlin.adapter.generateclient.http4k.GenerateClientHttp4kAdapter
 import dev.openapi2kotlin.adapter.generateclient.restclient.GenerateClientRestClientAdapter
 import dev.openapi2kotlin.adapter.generatemodel.GenerateModelAdapter
 import dev.openapi2kotlin.adapter.generateserver.ktor.GenerateServerKtorAdapter
+import dev.openapi2kotlin.adapter.generateserver.http4k.GenerateServerHttp4kAdapter
 import dev.openapi2kotlin.adapter.generateserver.spring.GenerateServerSpringAdapter
 import dev.openapi2kotlin.adapter.parser.ParseSpecAdapter
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
@@ -30,9 +32,11 @@ object OpenApi2KotlinApp {
             null -> NoopGenerateApiAdapter
 
             is OpenApi2KotlinUseCase.ApiConfig.ClientKtor -> generateClientKtorPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ClientHttp4k -> generateClientHttp4kPort()
             is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient -> generateClientRestClientPort()
 
             is OpenApi2KotlinUseCase.ApiConfig.ServerKtor -> generateServerKtorPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ServerHttp4k -> generateServerHttp4kPort()
             is OpenApi2KotlinUseCase.ApiConfig.ServerSpring -> generateServerSpringPort()
         }
 
@@ -48,8 +52,14 @@ object OpenApi2KotlinApp {
     private fun generateServerSpringPort(): GenerateApiPort =
         GenerateServerSpringAdapter()
 
+    private fun generateServerHttp4kPort(): GenerateApiPort =
+        GenerateServerHttp4kAdapter()
+
     private fun generateClientKtorPort(): GenerateApiPort =
         GenerateClientKtorAdapter()
+
+    private fun generateClientHttp4kPort(): GenerateApiPort =
+        GenerateClientHttp4kAdapter()
 
     private fun generateClientRestClientPort(): GenerateApiPort =
         GenerateClientRestClientAdapter()

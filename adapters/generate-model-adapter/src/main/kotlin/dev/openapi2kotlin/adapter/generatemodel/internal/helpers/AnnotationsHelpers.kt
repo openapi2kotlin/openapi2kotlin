@@ -150,9 +150,10 @@ internal fun FunSpec.Builder.applyAnnotations(annotations: List<ModelAnnotationD
 
 internal fun FieldDO.toParamSpec(
     ctx: TypeNameContext,
+    renderOverriddenInCtorOnly: Boolean = false,
 ): ParameterSpec {
     val b = ParameterSpec.builder(
-        generatedName,
+        if (renderOverriddenInCtorOnly && overridden) "${generatedName}_" else generatedName,
         type.toTypeName(ctx),
     )
 
