@@ -29,7 +29,8 @@
 
 <br/>
 <h1 >openapi2kotlin</h1>
-Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `oneOf` and `allOf`.
+
+Gradle plugin for generating Kotlin sources from an OpenAPI specification, engineered to handle complex polymorphism including `oneOf`, `allOf` and `discriminator`.
 
 <br/>
 
