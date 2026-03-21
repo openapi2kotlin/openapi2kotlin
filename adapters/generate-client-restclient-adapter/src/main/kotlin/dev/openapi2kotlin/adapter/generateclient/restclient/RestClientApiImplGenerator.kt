@@ -12,6 +12,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
@@ -118,7 +119,7 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             builder.addParameter(ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build())
         }
 
-        builder.addCode(buildRequestSpecCode(ep))
+        builder.addCode(buildRequestSpecCode(ep, ctx))
         return builder.build()
     }
 
@@ -132,9 +133,10 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
 
         if (RestClientApiPolicy.hasBody(ep)) {
             builder.addCode(
-                "return %L.body(%L)\n",
+                "return requireNotNull(%L.body(%L)) { %S }\n",
                 requestCall(ep),
                 typeReferenceCode(ep, ctx),
+                "Expected response body for ${ep.generatedName}",
             )
         } else {
             builder.addCode("%L.toBodilessEntity()\n", requestCall(ep))
@@ -222,7 +224,10 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             append(")")
         }
 
-    private fun buildRequestSpecCode(ep: ApiEndpointDO): CodeBlock {
+    private fun buildRequestSpecCode(
+        ep: ApiEndpointDO,
+        ctx: TypeNameContext,
+    ): CodeBlock {
         val builder = CodeBlock.builder()
         val methodRef = when (ep.rawOperation.httpMethod) {
             RawPathDO.HttpMethodDO.GET -> "GET"
@@ -239,17 +244,31 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.QUERY }.forEach { param ->
             when (param.type) {
                 is ListTypeDO -> {
-                    if (param.rawParam.required) {
-                        builder.addStatement("%L.forEach { builder.queryParam(%S, it.toString()) }", param.generatedName, param.rawParam.name)
+                    val listType = param.type as ListTypeDO
+                    val itemCode = if (listType.elementType is TrivialTypeDO &&
+                        (listType.elementType as TrivialTypeDO).kind == TrivialTypeDO.Kind.STRING
+                    ) {
+                        "it"
                     } else {
-                        builder.addStatement("%L?.forEach { builder.queryParam(%S, it.toString()) }", param.generatedName, param.rawParam.name)
+                        "it.toString()"
+                    }
+                    if (param.rawParam.required) {
+                        builder.addStatement("%L.forEach { builder.queryParam(%S, $itemCode) }", param.generatedName, param.rawParam.name)
+                    } else {
+                        builder.addStatement("%L?.forEach { builder.queryParam(%S, $itemCode) }", param.generatedName, param.rawParam.name)
                     }
                 }
                 else -> {
+                    val trivialType = param.type as? TrivialTypeDO
+                    val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                        "it"
+                    } else {
+                        "it.toString()"
+                    }
                     if (param.rawParam.required) {
                         builder.addStatement("builder.queryParam(%S, %L.toString())", param.rawParam.name, param.generatedName)
                     } else {
-                        builder.addStatement("%L?.let { builder.queryParam(%S, it.toString()) }", param.generatedName, param.rawParam.name)
+                        builder.addStatement("%L?.let { builder.queryParam(%S, $valueCode) }", param.generatedName, param.rawParam.name)
                     }
                 }
             }
@@ -271,10 +290,16 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             builder.add("request.headers { headers ->\n")
             builder.indent()
             headerParams.forEach { param ->
+                val trivialType = param.type as? TrivialTypeDO
+                val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                    "it"
+                } else {
+                    "it.toString()"
+                }
                 if (param.rawParam.required) {
                     builder.addStatement("headers.add(%S, %L.toString())", param.rawParam.name, param.generatedName)
                 } else {
-                    builder.addStatement("%L?.let { headers.add(%S, it.toString()) }", param.generatedName, param.rawParam.name)
+                    builder.addStatement("%L?.let { headers.add(%S, $valueCode) }", param.generatedName, param.rawParam.name)
                 }
             }
             builder.unindent()
@@ -282,7 +307,12 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         }
 
         ep.requestBody?.let { body ->
-            builder.addStatement("request.body(%L)", body.generatedName)
+            val bodyType = body.type.toTypeName(ctx)
+            if (bodyType.isNullable) {
+                builder.addStatement("%L?.let(request::body)", body.generatedName)
+            } else {
+                builder.addStatement("request.body(%L)", body.generatedName)
+            }
         }
 
         builder.addStatement("return request.retrieve()")

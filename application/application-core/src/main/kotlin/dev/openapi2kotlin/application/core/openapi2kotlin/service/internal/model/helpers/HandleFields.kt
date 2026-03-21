@@ -62,7 +62,7 @@ internal fun List<ModelDO>.handleFields(
             val effectiveKdoc =
                 when {
                     !info.kdoc.isNullOrBlank() -> info.kdoc
-                    overridden -> parentInfo?.kdoc
+                    parentInfo != null -> parentInfo.kdoc
                     else -> null
                 }
 

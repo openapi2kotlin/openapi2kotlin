@@ -12,6 +12,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.apigenerator.ApiPolicy
@@ -146,7 +147,12 @@ internal class ApiImplGenerator : GenerateApiPort {
             }
 
             if (pathParam != null) {
-                addStatement("%M(%L.toString())", M_appendPathSegments, pathParam.generatedName)
+                val trivialType = pathParam.type as? TrivialTypeDO
+                if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                    addStatement("%M(%L)", M_appendPathSegments, pathParam.generatedName)
+                } else {
+                    addStatement("%M(%L.toString())", M_appendPathSegments, pathParam.generatedName)
+                }
             } else {
                 addStatement("%M(%S)", M_appendPathSegments, segment)
             }
@@ -162,13 +168,31 @@ internal class ApiImplGenerator : GenerateApiPort {
             .forEach { param ->
                 when (param.type) {
                     is ListTypeDO -> {
-                        addStatement("%L?.forEach { %M(%S, it.toString()) }", param.generatedName, M_parameter, param.rawParam.name)
+                        val listType = param.type as ListTypeDO
+                        val itemCode = if (listType.elementType is TrivialTypeDO &&
+                            (listType.elementType as TrivialTypeDO).kind == TrivialTypeDO.Kind.STRING
+                        ) {
+                            "it"
+                        } else {
+                            "it.toString()"
+                        }
+                        addStatement("%L?.forEach { %M(%S, $itemCode) }", param.generatedName, M_parameter, param.rawParam.name)
                     }
                     else -> {
-                        if (param.rawParam.required) {
-                            addStatement("%M(%S, %L.toString())", M_parameter, param.rawParam.name, param.generatedName)
+                        val trivialType = param.type as? TrivialTypeDO
+                        val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                            "it"
                         } else {
-                            addStatement("%L?.let { %M(%S, it.toString()) }", param.generatedName, M_parameter, param.rawParam.name)
+                            "it.toString()"
+                        }
+                        if (param.rawParam.required) {
+                            if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                                addStatement("%M(%S, %L)", M_parameter, param.rawParam.name, param.generatedName)
+                            } else {
+                                addStatement("%M(%S, %L.toString())", M_parameter, param.rawParam.name, param.generatedName)
+                            }
+                        } else {
+                            addStatement("%L?.let { %M(%S, $valueCode) }", param.generatedName, M_parameter, param.rawParam.name)
                         }
                     }
                 }
@@ -180,10 +204,20 @@ internal class ApiImplGenerator : GenerateApiPort {
         ep.params
             .filter { it.rawParam.location == RawPathDO.ParamLocationDO.HEADER }
             .forEach { param ->
-                if (param.rawParam.required) {
-                    addStatement("headers.append(%S, %L.toString())", param.rawParam.name, param.generatedName)
+                val trivialType = param.type as? TrivialTypeDO
+                val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                    "it"
                 } else {
-                    addStatement("%L?.let { headers.append(%S, it.toString()) }", param.generatedName, param.rawParam.name)
+                    "it.toString()"
+                }
+                if (param.rawParam.required) {
+                    if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                        addStatement("headers.append(%S, %L)", param.rawParam.name, param.generatedName)
+                    } else {
+                        addStatement("headers.append(%S, %L.toString())", param.rawParam.name, param.generatedName)
+                    }
+                } else {
+                    addStatement("%L?.let { headers.append(%S, $valueCode) }", param.generatedName, param.rawParam.name)
                 }
             }
         return this

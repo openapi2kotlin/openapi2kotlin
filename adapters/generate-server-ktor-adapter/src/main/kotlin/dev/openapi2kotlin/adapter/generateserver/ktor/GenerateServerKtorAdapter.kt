@@ -1,8 +1,8 @@
 package dev.openapi2kotlin.adapter.generateserver.ktor
 
+import dev.openapi2kotlin.adapter.generateserver.ktor.internal.generateRoutes
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.apigenerator.ApiGenerator
-import generateRoutes
 
 
 class GenerateServerKtorAdapter : GenerateApiPort {

@@ -1,3 +1,5 @@
+package dev.openapi2kotlin.adapter.generateserver.ktor.internal
+
 import com.squareup.kotlinpoet.*
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
@@ -18,6 +20,7 @@ private val M_put = MemberName("io.ktor.server.routing", "put")
 private val M_patch = MemberName("io.ktor.server.routing", "patch")
 private val M_delete = MemberName("io.ktor.server.routing", "delete")
 private val M_receive = MemberName("io.ktor.server.request", "receive")
+private val M_receiveNullable = MemberName("io.ktor.server.request", "receiveNullable")
 private val M_respond = MemberName("io.ktor.server.response", "respond")
 
 internal fun generateRoutes(
@@ -152,14 +155,7 @@ private fun CodeBlock.Builder.addKtorHandler(
     ep.params.forEach { p ->
         when (p.rawParam.location) {
             RawPathDO.ParamLocationDO.PATH -> {
-                addStatement(
-                    "val %L = call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
-                    p.generatedName,
-                    p.rawParam.name,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
+                addStatement("val %L = %L", p.generatedName, pathReadExpr(p, label))
             }
 
             RawPathDO.ParamLocationDO.QUERY -> {
@@ -174,7 +170,16 @@ private fun CodeBlock.Builder.addKtorHandler(
 
     ep.requestBody?.let { body ->
         val bodyType = body.type.toTypeName(ctx)
-        addStatement("val %L = call.%M<%T>()", body.generatedName, M_receive, bodyType)
+        if (bodyType.isNullable) {
+            addStatement(
+                "val %L = call.%M<%T>()",
+                body.generatedName,
+                M_receiveNullable,
+                bodyType.copy(nullable = false),
+            )
+        } else {
+            addStatement("val %L = call.%M<%T>()", body.generatedName, M_receive, bodyType)
+        }
     }
 
     val args = buildString {
@@ -223,18 +228,117 @@ private fun CodeBlock.Builder.addKtorHandler(
     addStatement("}")
 }
 
-private fun queryReadExpr(p: ApiParamDO): CodeBlock {
+private fun pathReadExpr(
+    p: ApiParamDO,
+    label: String,
+): CodeBlock {
     val key = p.rawParam.name
     return when (p.type) {
         is TrivialTypeDO -> {
             val t = p.type as TrivialTypeDO
             when (t.kind) {
-                TrivialTypeDO.Kind.STRING -> CodeBlock.of("call.request.queryParameters[%S]", key)
-                TrivialTypeDO.Kind.LONG -> CodeBlock.of("call.request.queryParameters[%S]?.toLong()", key)
-                TrivialTypeDO.Kind.INT -> CodeBlock.of("call.request.queryParameters[%S]?.toInt()", key)
+                TrivialTypeDO.Kind.STRING -> CodeBlock.of(
+                    "call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
+                    key,
+                    label,
+                    M_respond,
+                    HTTP_STATUS_T,
+                )
+                TrivialTypeDO.Kind.LONG -> CodeBlock.of(
+                    "call.parameters[%S]?.toLongOrNull() ?: return@%L call.%M(%T.BadRequest)",
+                    key,
+                    label,
+                    M_respond,
+                    HTTP_STATUS_T,
+                )
+                TrivialTypeDO.Kind.INT -> CodeBlock.of(
+                    "call.parameters[%S]?.toIntOrNull() ?: return@%L call.%M(%T.BadRequest)",
+                    key,
+                    label,
+                    M_respond,
+                    HTTP_STATUS_T,
+                )
                 TrivialTypeDO.Kind.FLOAT,
-                TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("call.request.queryParameters[%S]?.toDouble()", key)
-                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("call.request.queryParameters[%S]?.toBoolean()", key)
+                TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of(
+                    "call.parameters[%S]?.toDoubleOrNull() ?: return@%L call.%M(%T.BadRequest)",
+                    key,
+                    label,
+                    M_respond,
+                    HTTP_STATUS_T,
+                )
+                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of(
+                    "call.parameters[%S]?.toBooleanStrictOrNull() ?: return@%L call.%M(%T.BadRequest)",
+                    key,
+                    label,
+                    M_respond,
+                    HTTP_STATUS_T,
+                )
+                else -> CodeBlock.of(
+                    "call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
+                    key,
+                    label,
+                    M_respond,
+                    HTTP_STATUS_T,
+                )
+            }
+        }
+        else -> CodeBlock.of(
+            "call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
+            key,
+            label,
+            M_respond,
+            HTTP_STATUS_T,
+        )
+    }
+}
+
+private fun queryReadExpr(p: ApiParamDO): CodeBlock {
+    val key = p.rawParam.name
+    return when (p.type) {
+        is dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO -> {
+            val listType = p.type as dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
+            when (val element = listType.elementType) {
+                is TrivialTypeDO -> {
+                    when (element.kind) {
+                        TrivialTypeDO.Kind.STRING -> CodeBlock.of(
+                            "call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }",
+                            key,
+                        )
+                        TrivialTypeDO.Kind.LONG -> CodeBlock.of(
+                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toLongOrNull)?.takeIf { it.isNotEmpty() }",
+                            key,
+                        )
+                        TrivialTypeDO.Kind.INT -> CodeBlock.of(
+                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toIntOrNull)?.takeIf { it.isNotEmpty() }",
+                            key,
+                        )
+                        TrivialTypeDO.Kind.FLOAT,
+                        TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of(
+                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toDoubleOrNull)?.takeIf { it.isNotEmpty() }",
+                            key,
+                        )
+                        TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of(
+                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toBooleanStrictOrNull)?.takeIf { it.isNotEmpty() }",
+                            key,
+                        )
+                        else -> CodeBlock.of(
+                            "call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }",
+                            key,
+                        )
+                    }
+                }
+                else -> CodeBlock.of("call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }", key)
+            }
+        }
+        is TrivialTypeDO -> {
+            val t = p.type as TrivialTypeDO
+            when (t.kind) {
+                TrivialTypeDO.Kind.STRING -> CodeBlock.of("call.request.queryParameters[%S]", key)
+                TrivialTypeDO.Kind.LONG -> CodeBlock.of("call.request.queryParameters[%S]?.toLongOrNull()", key)
+                TrivialTypeDO.Kind.INT -> CodeBlock.of("call.request.queryParameters[%S]?.toIntOrNull()", key)
+                TrivialTypeDO.Kind.FLOAT,
+                TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("call.request.queryParameters[%S]?.toDoubleOrNull()", key)
+                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("call.request.queryParameters[%S]?.toBooleanStrictOrNull()", key)
                 else -> CodeBlock.of("call.request.queryParameters[%S]", key)
             }
         }

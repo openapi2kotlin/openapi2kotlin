@@ -1,0 +1,27 @@
+[versions]
+kotlin = "2.3.0"
+spring = "6.2.7"
+jackson = "2.20.0"
+wiremock = "3.13.1"
+
+[libraries]
+spring-web = { module = "org.springframework:spring-web", version.ref = "spring" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
+
+[bundles]
+restclient = [
+    "spring-web",
+    "jackson-kotlin",
+    "jackson-jsr310",
+]
+test = [
+    "kotlin-test-junit5",
+    "wiremock",
+]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+openapi2kotlin = { id = "dev.openapi2kotlin" }
