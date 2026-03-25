@@ -26,16 +26,17 @@ class CategoryClientTest {
     fun setUp() {
         server = WireMockServer(0)
         server.start()
-        client = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                jackson {
-                    findAndRegisterModules()
+        client =
+            HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    jackson {
+                        findAndRegisterModules()
+                    }
+                }
+                defaultRequest {
+                    url("${server.baseUrl()}/tmf-api/productCatalogManagement/v5/")
                 }
             }
-            defaultRequest {
-                url("${server.baseUrl()}/tmf-api/productCatalogManagement/v5/")
-            }
-        }
         api = CategoryApiImpl(client)
     }
 
@@ -46,22 +47,22 @@ class CategoryClientTest {
     }
 
     @Test
-    fun `listCategories calls category collection endpoint`() = runBlocking {
-        server.stubFor(
-            get(urlPathEqualTo("/tmf-api/productCatalogManagement/v5/category"))
-                .withQueryParam("limit", equalTo("5"))
-                .willReturn(
-                    aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("[{\"@type\":\"Category\",\"id\":\"cat-1\",\"name\":\"Hardware\"}]")
-                )
-        )
+    fun `listCategories calls category collection endpoint`() =
+        runBlocking {
+            server.stubFor(
+                get(urlPathEqualTo("/tmf-api/productCatalogManagement/v5/category"))
+                    .withQueryParam("limit", equalTo("5"))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("[{\"@type\":\"Category\",\"id\":\"cat-1\",\"name\":\"Hardware\"}]"),
+                    ),
+            )
 
-        val result = api.listCategories(fields = null, offset = null, limit = 5, sort = null)
+            val result = api.listCategories(fields = null, offset = null, limit = 5, sort = null)
 
-        assertEquals(1, result.size)
-        assertEquals("cat-1", result.single().id)
-        assertEquals("Hardware", result.single().name)
-    }
-
+            assertEquals(1, result.size)
+            assertEquals("cat-1", result.single().id)
+            assertEquals("Hardware", result.single().name)
+        }
 }

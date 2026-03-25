@@ -7,10 +7,11 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.port.ParseSpecPort
 import io.swagger.v3.parser.OpenAPIV3Parser
 import java.nio.file.Path
 
-class ParseSpecAdapter: ParseSpecPort {
+class ParseSpecAdapter : ParseSpecPort {
     override fun parseSpec(specPath: Path): ParseSpecPort.RawOpenApiDO {
-        val openApi = OpenAPIV3Parser()
-            .read(specPath.toAbsolutePath().toString())
+        val openApi =
+            OpenAPIV3Parser()
+                .read(specPath.toAbsolutePath().toString())
 
         return ParseSpecPort.RawOpenApiDO(
             rawSchemas = openApi.toRawSchemas(),

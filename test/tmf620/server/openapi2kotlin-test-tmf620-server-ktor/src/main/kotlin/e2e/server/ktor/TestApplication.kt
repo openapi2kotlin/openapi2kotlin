@@ -31,29 +31,40 @@ class TestCategoryApi : CategoryApi {
         sort: String?,
     ): List<Category> = listOf(sampleCategory())
 
-    override suspend fun createCategory(fields: String?, body: CategoryFVO): Category = sampleCategory()
+    override suspend fun createCategory(
+        fields: String?,
+        body: CategoryFVO,
+    ): Category = sampleCategory()
 
-    override suspend fun retrieveCategory(id: String, fields: String?): Category = sampleCategory(id)
+    override suspend fun retrieveCategory(
+        id: String,
+        fields: String?,
+    ): Category = sampleCategory(id)
 
-    override suspend fun patchCategory(id: String, fields: String?, body: CategoryMVO): Category = sampleCategory(id)
+    override suspend fun patchCategory(
+        id: String,
+        fields: String?,
+        body: CategoryMVO,
+    ): Category = sampleCategory(id)
 
     override suspend fun deleteCategory(id: String) = Unit
 }
 
-private fun sampleCategory(id: String = "cat-1"): Category = Category(
-    atType = "Category",
-    atBaseType = null,
-    atSchemaLocation = null,
-    href = null,
-    id = id,
-    description = null,
-    isRoot = null,
-    parent = null,
-    productOffering = null,
-    subCategory = null,
-    validFor = null,
-    version = null,
-    lastUpdate = null,
-    lifecycleStatus = null,
-    name = "Demo category",
-)
+private fun sampleCategory(id: String = "cat-1"): Category =
+    Category(
+        atType = "Category",
+        atBaseType = null,
+        atSchemaLocation = null,
+        href = null,
+        id = id,
+        description = null,
+        isRoot = null,
+        parent = null,
+        productOffering = null,
+        subCategory = null,
+        validFor = null,
+        version = null,
+        lastUpdate = null,
+        lifecycleStatus = null,
+        name = "Demo category",
+    )

@@ -47,10 +47,11 @@ class UserApiTest {
 
     @Test
     fun `createCreateWithList posts array payload and maps response dto`() {
-        val requestBody = listOf(
-            user(2, "bob", "Bob", "Doe", "bob@example.com"),
-            user(3, "carol", "Carol", "Doe", "carol@example.com"),
-        )
+        val requestBody =
+            listOf(
+                user(2, "bob", "Bob", "Doe", "bob@example.com"),
+                user(3, "carol", "Carol", "Doe", "carol@example.com"),
+            )
         val responseBody = requestBody.first()
 
         server.stubFor(

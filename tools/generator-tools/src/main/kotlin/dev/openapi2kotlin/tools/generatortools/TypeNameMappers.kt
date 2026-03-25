@@ -25,51 +25,51 @@ private val JAVA_LOCAL_DATE = ClassName("java.time", "LocalDate")
 private val JAVA_OFFSET_DATE_TIME = ClassName("java.time", "OffsetDateTime")
 private val KOTLINX_LOCAL_DATE = ClassName("kotlinx.datetime", "LocalDate")
 private val KOTLIN_TIME_INSTANT = ClassName("kotlin.time", "Instant")
+private val TRIVIAL_KIND_TYPE_NAMES =
+    mapOf(
+        TrivialTypeDO.Kind.STRING to STRING,
+        TrivialTypeDO.Kind.INT to INT,
+        TrivialTypeDO.Kind.LONG to LONG,
+        TrivialTypeDO.Kind.FLOAT to FLOAT,
+        TrivialTypeDO.Kind.DOUBLE to DOUBLE,
+        TrivialTypeDO.Kind.BIG_DECIMAL to BIG_DECIMAL,
+        TrivialTypeDO.Kind.BOOLEAN to BOOLEAN,
+        TrivialTypeDO.Kind.JAVA_LOCAL_DATE to JAVA_LOCAL_DATE,
+        TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE to KOTLINX_LOCAL_DATE,
+        TrivialTypeDO.Kind.OFFSET_DATE_TIME to JAVA_OFFSET_DATE_TIME,
+        TrivialTypeDO.Kind.INSTANT to KOTLIN_TIME_INSTANT,
+        TrivialTypeDO.Kind.BYTE_ARRAY to BYTE_ARRAY,
+        TrivialTypeDO.Kind.JSON_ELEMENT to JSON_ELEMENT,
+        TrivialTypeDO.Kind.ANY to ANY,
+    )
 
 data class TypeNameContext(
     /**
      * Package where referenced model types live (e.g. config.model.packageName).
      */
     val modelPackageName: String,
-
     val bySchemaName: Map<String, ModelDO> = emptyMap(),
 )
 
-private fun TrivialTypeDO.Kind.typeName(): ClassName = when (this) {
-    TrivialTypeDO.Kind.STRING -> STRING
-    TrivialTypeDO.Kind.INT -> INT
-    TrivialTypeDO.Kind.LONG -> LONG
-    TrivialTypeDO.Kind.FLOAT -> FLOAT
-    TrivialTypeDO.Kind.DOUBLE -> DOUBLE
-    TrivialTypeDO.Kind.BIG_DECIMAL -> BIG_DECIMAL
-    TrivialTypeDO.Kind.BOOLEAN -> BOOLEAN
-    TrivialTypeDO.Kind.JAVA_LOCAL_DATE -> JAVA_LOCAL_DATE
-    TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE -> KOTLINX_LOCAL_DATE
-    TrivialTypeDO.Kind.OFFSET_DATE_TIME -> JAVA_OFFSET_DATE_TIME
-    TrivialTypeDO.Kind.INSTANT -> KOTLIN_TIME_INSTANT
-    TrivialTypeDO.Kind.BYTE_ARRAY -> BYTE_ARRAY
-    TrivialTypeDO.Kind.JSON_ELEMENT -> JSON_ELEMENT
-    TrivialTypeDO.Kind.ANY -> ANY
-}
+private fun TrivialTypeDO.Kind.typeName(): ClassName = checkNotNull(TRIVIAL_KIND_TYPE_NAMES[this])
 
-fun FieldTypeDO.toTypeName(ctx: TypeNameContext): TypeName = when (this) {
-    is TrivialTypeDO ->
-        kind.typeName().copy(nullable = nullable)
+fun FieldTypeDO.toTypeName(ctx: TypeNameContext): TypeName =
+    when (this) {
+        is TrivialTypeDO -> kind.typeName().copy(nullable = nullable)
+        is RefTypeDO -> resolveRefTypeName(ctx)
+        is ListTypeDO -> LIST.parameterizedBy(elementType.toTypeName(ctx)).copy(nullable = nullable)
+    }
 
-    is RefTypeDO -> {
-        val target = ctx.bySchemaName[schemaName]
-        val className = if (target != null) {
+private fun RefTypeDO.resolveRefTypeName(ctx: TypeNameContext): TypeName {
+    val target = ctx.bySchemaName[schemaName]
+    val className =
+        if (target != null) {
             ClassName(target.packageName, target.generatedName)
         } else {
             ClassName(ctx.modelPackageName, schemaName.toFallbackSimpleName())
         }
-        className
-            .copy(nullable = nullable)
-    }
 
-    is ListTypeDO ->
-        LIST.parameterizedBy(elementType.toTypeName(ctx))
-            .copy(nullable = nullable)
+    return className.copy(nullable = nullable)
 }
 
 private fun String.toFallbackSimpleName(): String =

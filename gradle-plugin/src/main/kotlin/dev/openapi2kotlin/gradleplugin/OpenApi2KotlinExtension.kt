@@ -17,7 +17,8 @@ open class OpenApi2KotlinExtension {
     var inputSpec: String? = null
 
     /**
-     * description: Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
+     * description: Root directory for generated Kotlin sources, e.g.
+     * layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
      * required: true
      */
     var outputDir: String? = null
@@ -53,14 +54,15 @@ open class OpenApi2KotlinExtension {
     }
 
     internal fun toUseCaseModelConfig(apiConfig: OpenApi2KotlinUseCase.ApiConfig?): OpenApi2KotlinUseCase.ModelConfig {
-        val effectiveSerialization = model.serialization?.toUseCaseSerialization()
-            ?: when (apiConfig) {
-                is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient,
-                is OpenApi2KotlinUseCase.ApiConfig.ServerSpring,
-                -> OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON
+        val effectiveSerialization =
+            model.serialization?.toUseCaseSerialization()
+                ?: when (apiConfig) {
+                    is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient,
+                    is OpenApi2KotlinUseCase.ApiConfig.ServerSpring,
+                    -> OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON
 
-                else -> OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX
-            }
+                    else -> OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX
+                }
 
         val effectiveValidation = model.validation?.toUseCaseValidation()
 
@@ -74,7 +76,7 @@ open class OpenApi2KotlinExtension {
         )
     }
 
-    private fun throwClientServerExclusivityError(): Nothing {
+    private fun throwClientServerExclusivityError(): Nothing =
         throw GradleException(
             "openapi2kotlin: client{} and server{} cannot coexist.\n" +
                 "This generator is intentionally single-target.\n" +
@@ -90,12 +92,11 @@ open class OpenApi2KotlinExtension {
                 "or:\n\n" +
                 "openapi2kotlin {\n" +
                 "    server { ... }\n" +
-                "}"
+                "}",
         )
-    }
 
     /** Model generation options. */
-    open class ModelConfigExtension {
+    open class ModelConfigExtension : ModelDslKeywords() {
         /**
          * description: Package name for generated model classes.
          * default: "dev.openapi2kotlin.model"
@@ -136,25 +137,10 @@ open class OpenApi2KotlinExtension {
          * values: true, false
          */
         var integer2Long: Boolean = DEFAULT_INTEGER_2_LONG
-
-        val Jackson: Serialization
-            get() = Serialization.Jackson
-
-        val KotlinX: Serialization
-            get() = Serialization.KotlinX
-
-        val Jakarta: Validation
-            get() = Validation.Jakarta
-
-        val JavaX: Validation
-            get() = Validation.JavaX
-
-        val None: Validation
-            get() = Validation.None
     }
 
     /** Client generation options. */
-    open class ClientExtension {
+    open class ClientExtension : ClientDslKeywords() {
         /**
          * description: Base package for generated API classes.
          * default: "dev.openapi2kotlin.client"
@@ -205,19 +191,10 @@ open class OpenApi2KotlinExtension {
         fun setLibrary(value: String?) {
             library = value?.let { ClientLibrary.fromValue(it) }
         }
-
-        val Ktor: ClientLibrary
-            get() = ClientLibrary.Ktor
-
-        val Http4k: ClientLibrary
-            get() = ClientLibrary.Http4k
-
-        val RestClient: ClientLibrary
-            get() = ClientLibrary.RestClient
     }
 
     /** Server generation options. */
-    open class ServerExtension {
+    open class ServerExtension : ServerDslKeywords() {
         /**
          * description: Base package for generated API classes.
          * default: "dev.openapi2kotlin.server"
@@ -275,37 +252,32 @@ open class OpenApi2KotlinExtension {
         fun setLibrary(value: String?) {
             library = value?.let { ServerLibrary.fromValue(it) }
         }
-
-        val Ktor: ServerLibrary
-            get() = ServerLibrary.Ktor
-
-        val Http4k: ServerLibrary
-            get() = ServerLibrary.Http4k
-
-        val Spring: ServerLibrary
-            get() = ServerLibrary.Spring
     }
 
     enum class Serialization {
         Jackson,
-        KotlinX;
+        KotlinX,
+        ;
 
-        internal fun toUseCaseSerialization(): OpenApi2KotlinUseCase.ModelConfig.Serialization = when (this) {
-            Jackson -> OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON
-            KotlinX -> OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX
-        }
+        internal fun toUseCaseSerialization(): OpenApi2KotlinUseCase.ModelConfig.Serialization =
+            when (this) {
+                Jackson -> OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON
+                KotlinX -> OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX
+            }
     }
 
     enum class Validation {
         None,
         Jakarta,
-        JavaX;
+        JavaX,
+        ;
 
-        internal fun toUseCaseValidation(): OpenApi2KotlinUseCase.ModelConfig.Validation? = when (this) {
-            None -> null
-            Jakarta -> OpenApi2KotlinUseCase.ModelConfig.Validation.JAKARTA
-            JavaX -> OpenApi2KotlinUseCase.ModelConfig.Validation.JAVAX
-        }
+        internal fun toUseCaseValidation(): OpenApi2KotlinUseCase.ModelConfig.Validation? =
+            when (this) {
+                None -> null
+                Jakarta -> OpenApi2KotlinUseCase.ModelConfig.Validation.JAKARTA
+                JavaX -> OpenApi2KotlinUseCase.ModelConfig.Validation.JAVAX
+            }
     }
 
     enum class ClientLibrary(
@@ -321,7 +293,7 @@ open class OpenApi2KotlinExtension {
                 ClientLibrary.entries.firstOrNull {
                     it.value.equals(value, ignoreCase = true)
                 } ?: throw IllegalArgumentException(
-                    "Unexpected ClientLibrary value: '$value'"
+                    "Unexpected ClientLibrary value: '$value'",
                 )
         }
     }
@@ -339,7 +311,7 @@ open class OpenApi2KotlinExtension {
                 ServerLibrary.entries.firstOrNull {
                     it.value.equals(value, ignoreCase = true)
                 } ?: throw IllegalArgumentException(
-                    "Unexpected ServerLibrary value: '$value'"
+                    "Unexpected ServerLibrary value: '$value'",
                 )
         }
     }

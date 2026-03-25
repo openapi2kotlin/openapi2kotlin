@@ -7,80 +7,41 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTyp
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
-internal fun FieldTypeDO.withNullability(nullable: Boolean): FieldTypeDO = when (this) {
-    is TrivialTypeDO -> copy(nullable = nullable)
-    is RefTypeDO -> copy(nullable = nullable)
-    is ListTypeDO -> copy(nullable = nullable)
-}
+internal fun FieldTypeDO.withNullability(nullable: Boolean): FieldTypeDO =
+    when (this) {
+        is TrivialTypeDO -> copy(nullable = nullable)
+        is RefTypeDO -> copy(nullable = nullable)
+        is ListTypeDO -> copy(nullable = nullable)
+    }
 
-internal fun RawSchemaDO.RawFieldTypeDO.toFinalType(
-    cfg: OpenApi2KotlinUseCase.ModelConfig,
-): FieldTypeDO = when (this) {
-    is RawSchemaDO.RawRefTypeDO ->
-        RefTypeDO(schemaName = schemaName, nullable = nullable)
+internal fun RawSchemaDO.RawFieldTypeDO.toFinalType(cfg: OpenApi2KotlinUseCase.ModelConfig): FieldTypeDO =
+    when (this) {
+        is RawSchemaDO.RawRefTypeDO ->
+            RefTypeDO(schemaName = schemaName, nullable = nullable)
 
-    is RawSchemaDO.RawArrayTypeDO ->
-        ListTypeDO(
-            elementType = elementType.toFinalType(cfg),
-            nullable = nullable,
-        )
+        is RawSchemaDO.RawArrayTypeDO ->
+            ListTypeDO(
+                elementType = elementType.toFinalType(cfg),
+                nullable = nullable,
+            )
 
-    is RawSchemaDO.RawPrimitiveTypeDO ->
-        TrivialTypeDO(
-            kind = toFinalTrivialKind(cfg),
-            nullable = nullable,
-        )
-}
+        is RawSchemaDO.RawPrimitiveTypeDO ->
+            TrivialTypeDO(
+                kind = toFinalTrivialKind(cfg),
+                nullable = nullable,
+            )
+    }
 
 private fun RawSchemaDO.RawPrimitiveTypeDO.toFinalTrivialKind(
     cfg: OpenApi2KotlinUseCase.ModelConfig,
-): TrivialTypeDO.Kind = when (type) {
-    RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN ->
-        TrivialTypeDO.Kind.BOOLEAN
-
-    RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER -> {
-        val isInt64 = format.equals("int64", ignoreCase = true)
-        when {
-            isInt64 -> TrivialTypeDO.Kind.LONG
-            cfg.integer2Long -> TrivialTypeDO.Kind.LONG
-            else -> TrivialTypeDO.Kind.INT
-        }
+): TrivialTypeDO.Kind =
+    when (type) {
+        RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN -> TrivialTypeDO.Kind.BOOLEAN
+        RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER -> toIntegerKind(cfg)
+        RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER -> toNumberKind(cfg)
+        RawSchemaDO.RawPrimitiveTypeDO.Type.STRING -> toStringKind(cfg)
+        RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT -> toObjectKind(cfg)
     }
-
-    RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER -> {
-        val isFloat = format.equals("float", ignoreCase = true)
-        val isDouble = format == null || format.equals("double", ignoreCase = true)
-
-        when {
-            isFloat && cfg.float2BigDecimal -> TrivialTypeDO.Kind.BIG_DECIMAL
-            isDouble && cfg.double2BigDecimal -> TrivialTypeDO.Kind.BIG_DECIMAL
-            isFloat -> TrivialTypeDO.Kind.FLOAT
-            else -> TrivialTypeDO.Kind.DOUBLE
-        }
-    }
-
-    RawSchemaDO.RawPrimitiveTypeDO.Type.STRING ->
-        when (format?.lowercase()) {
-            "date" -> when {
-                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
-                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE
-                else -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
-            }
-            "date-time" -> when {
-                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
-                cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.INSTANT
-                else -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
-            }
-            "binary", "byte" -> TrivialTypeDO.Kind.BYTE_ARRAY
-            else -> TrivialTypeDO.Kind.STRING
-        }
-
-    RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT ->
-        when (cfg.serialization) {
-            OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.JSON_ELEMENT
-            else -> TrivialTypeDO.Kind.ANY
-        }
-}
 
 internal fun renderDefault(
     rawType: RawSchemaDO.RawFieldTypeDO,
@@ -91,50 +52,51 @@ internal fun renderDefault(
     return renderDefaultForFinalType(finalType, rawDefault)
 }
 
-internal fun renderDefaultForFinalType(
-    finalType: FieldTypeDO,
-    rawDefault: String,
-): String = when (finalType) {
-    is TrivialTypeDO -> when (finalType.kind) {
-        TrivialTypeDO.Kind.STRING -> quote(rawDefault)
-        TrivialTypeDO.Kind.INT -> rawDefault
-        TrivialTypeDO.Kind.LONG -> suffixIfMissing(rawDefault, "L")
-        TrivialTypeDO.Kind.FLOAT -> suffixIfMissing(rawDefault, "f")
-        TrivialTypeDO.Kind.DOUBLE -> rawDefault
-        TrivialTypeDO.Kind.BIG_DECIMAL -> "BigDecimal(${quote(rawDefault)})"
-        TrivialTypeDO.Kind.BOOLEAN -> rawDefault.lowercase()
-        TrivialTypeDO.Kind.JAVA_LOCAL_DATE -> "LocalDate.parse(${quote(rawDefault)})"
-        TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE -> "LocalDate.parse(${quote(rawDefault)})"
-        TrivialTypeDO.Kind.OFFSET_DATE_TIME -> "OffsetDateTime.parse(${quote(rawDefault)})"
-        TrivialTypeDO.Kind.INSTANT -> "Instant.parse(${quote(rawDefault)})"
-        TrivialTypeDO.Kind.BYTE_ARRAY -> rawDefault
-        TrivialTypeDO.Kind.JSON_ELEMENT -> rawDefault
-        TrivialTypeDO.Kind.ANY -> rawDefault
+private fun RawSchemaDO.RawPrimitiveTypeDO.toIntegerKind(cfg: OpenApi2KotlinUseCase.ModelConfig): TrivialTypeDO.Kind =
+    when {
+        format.equals("int64", ignoreCase = true) -> TrivialTypeDO.Kind.LONG
+        cfg.integer2Long -> TrivialTypeDO.Kind.LONG
+        else -> TrivialTypeDO.Kind.INT
     }
 
-    is RefTypeDO ->
-        rawDefault
+private fun RawSchemaDO.RawPrimitiveTypeDO.toNumberKind(cfg: OpenApi2KotlinUseCase.ModelConfig): TrivialTypeDO.Kind {
+    val isFloat = format.equals("float", ignoreCase = true)
+    val isDouble = format == null || format.equals("double", ignoreCase = true)
 
-    is ListTypeDO ->
-        rawDefault
-}
-
-private fun quote(s: String): String = buildString {
-    append('"')
-    for (ch in s) {
-        when (ch) {
-            '\\' -> append("\\\\")
-            '"' -> append("\\\"")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            else -> append(ch)
-        }
+    return when {
+        isFloat && cfg.float2BigDecimal -> TrivialTypeDO.Kind.BIG_DECIMAL
+        isDouble && cfg.double2BigDecimal -> TrivialTypeDO.Kind.BIG_DECIMAL
+        isFloat -> TrivialTypeDO.Kind.FLOAT
+        else -> TrivialTypeDO.Kind.DOUBLE
     }
-    append('"')
 }
 
-private fun suffixIfMissing(s: String, suffix: String): String {
-    val trimmed = s.trim()
-    return if (trimmed.endsWith(suffix, ignoreCase = true)) trimmed else trimmed + suffix
-}
+private fun RawSchemaDO.RawPrimitiveTypeDO.toStringKind(cfg: OpenApi2KotlinUseCase.ModelConfig): TrivialTypeDO.Kind =
+    when (format?.lowercase()) {
+        "date" -> cfg.dateKind()
+        "date-time" -> cfg.dateTimeKind()
+        "binary", "byte" -> TrivialTypeDO.Kind.BYTE_ARRAY
+        else -> TrivialTypeDO.Kind.STRING
+    }
+
+private fun RawSchemaDO.RawPrimitiveTypeDO.toObjectKind(cfg: OpenApi2KotlinUseCase.ModelConfig): TrivialTypeDO.Kind =
+    when (cfg.serialization) {
+        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> TrivialTypeDO.Kind.JSON_ELEMENT
+        else -> TrivialTypeDO.Kind.ANY
+    }
+
+private fun OpenApi2KotlinUseCase.ModelConfig.dateKind(): TrivialTypeDO.Kind =
+    when (serialization) {
+        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX ->
+            TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE
+
+        else -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
+    }
+
+private fun OpenApi2KotlinUseCase.ModelConfig.dateTimeKind(): TrivialTypeDO.Kind =
+    when (serialization) {
+        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX ->
+            TrivialTypeDO.Kind.INSTANT
+
+        else -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
+    }

@@ -20,7 +20,10 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
     paths.orEmpty().forEach { (path, pathItem) ->
         val groupKey = path.toGroupKey()
 
-        fun addOp(method: RawPathDO.HttpMethodDO, o: Operation?) {
+        fun addOp(
+            method: RawPathDO.HttpMethodDO,
+            o: Operation?,
+        ) {
             if (o == null) return
 
             val opTags: List<String> =
@@ -30,10 +33,11 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
             val tagsSet = groupKeyToTags.getOrPut(groupKey) { linkedSetOf(groupKey) }
             tagsSet.addAll(opTags)
 
-            val mergedParams = mergeParameters(
-                pathParams = pathItem.parameters.orEmpty(),
-                opParams = o.parameters.orEmpty(),
-            )
+            val mergedParams =
+                mergeParameters(
+                    pathParams = pathItem.parameters.orEmpty(),
+                    opParams = o.parameters.orEmpty(),
+                )
 
             val params: List<RawPathDO.ParamDO> =
                 mergedParams.mapNotNull { it.toParamDO() }
@@ -41,7 +45,7 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
             val requestBody: RawPathDO.RequestBodyDO? =
                 o.requestBody
                     ?.let { derefRequestBody(it) }
-                    ?.toRequestBodyDO(this)
+                    ?.toRequestBodyDO()
 
             val responses: List<RawPathDO.ResponseDO>? =
                 o.responses
@@ -49,16 +53,17 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
                     ?.mapNotNull { (code, resp) -> toResponseDO(code, resp) }
                     ?.sortedWith(compareBy<RawPathDO.ResponseDO> { it.statusCode })
 
-            val op = RawPathDO.OperationDO(
-                operationId = o.operationId,
-                httpMethod = method,
-                path = path,
-                summary = o.summary,
-                description = o.description,
-                parameters = params,
-                requestBody = requestBody,
-                responses = responses,
-            )
+            val op =
+                RawPathDO.OperationDO(
+                    operationId = o.operationId,
+                    httpMethod = method,
+                    path = path,
+                    summary = o.summary,
+                    description = o.description,
+                    parameters = params,
+                    requestBody = requestBody,
+                    responses = responses,
+                )
 
             groupKeyToOps.getOrPut(groupKey) { mutableListOf() }.add(op)
         }
@@ -74,11 +79,12 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
         .map { (groupKey, ops) ->
             RawPathDO(
                 tags = groupKeyToTags[groupKey]?.toList().orEmpty(),
-                operations = ops.sortedWith(
-                    compareBy<RawPathDO.OperationDO> { it.operationId ?: "" }
-                        .thenBy { it.httpMethod.name }
-                        .thenBy { it.path }
-                ),
+                operations =
+                    ops.sortedWith(
+                        compareBy<RawPathDO.OperationDO> { it.operationId ?: "" }
+                            .thenBy { it.httpMethod.name }
+                            .thenBy { it.path },
+                    ),
             )
         }
         .sortedWith(compareBy { it.tags.firstOrNull().orEmpty() }) // first tag is groupKey now
@@ -86,20 +92,22 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
 
 private fun String.toGroupKey(): String {
     val first = trim().trim('/').split('/').firstOrNull().orEmpty()
-    val clean = first
-        .replace("{", "")
-        .replace("}", "")
-        .trim()
+    val clean =
+        first
+            .replace("{", "")
+            .replace("}", "")
+            .trim()
     return clean.ifBlank { "default" }
 }
 
 private fun Parameter.toParamDO(): RawPathDO.ParamDO? {
-    val location = when (`in`) {
-        "path" -> RawPathDO.ParamLocationDO.PATH
-        "query" -> RawPathDO.ParamLocationDO.QUERY
-        "header" -> RawPathDO.ParamLocationDO.HEADER
-        else -> return null
-    }
+    val location =
+        when (`in`) {
+            "path" -> RawPathDO.ParamLocationDO.PATH
+            "query" -> RawPathDO.ParamLocationDO.QUERY
+            "header" -> RawPathDO.ParamLocationDO.HEADER
+            else -> return null
+        }
 
     val required = (this.required == true) || (`in` == "path")
     val type = schema.toRawFieldType(required = required)
@@ -112,7 +120,7 @@ private fun Parameter.toParamDO(): RawPathDO.ParamDO? {
     )
 }
 
-private fun OasRequestBody.toRequestBodyDO(openApi: OpenAPI): RawPathDO.RequestBodyDO? {
+private fun OasRequestBody.toRequestBodyDO(): RawPathDO.RequestBodyDO? {
     val mediaType = content?.get("application/json") ?: content?.values?.firstOrNull()
     val schema = mediaType?.schema ?: return null
 
@@ -124,12 +132,16 @@ private fun OasRequestBody.toRequestBodyDO(openApi: OpenAPI): RawPathDO.RequestB
     )
 }
 
-private fun OpenAPI.toResponseDO(code: String, raw: OasApiResponse): RawPathDO.ResponseDO? {
+private fun OpenAPI.toResponseDO(
+    code: String,
+    raw: OasApiResponse,
+): RawPathDO.ResponseDO? {
     val statusCode = code.toIntOrNull() ?: if (code == "default") DEFAULT_STATUS_CODE else return null
     val oasResponse = derefResponse(raw)
 
-    val schema = oasResponse.content?.get("application/json")?.schema
-        ?: oasResponse.content?.values?.firstOrNull()?.schema
+    val schema =
+        oasResponse.content?.get("application/json")?.schema
+            ?: oasResponse.content?.values?.firstOrNull()?.schema
 
     val type = schema?.toRawFieldType(required = true)
 
@@ -149,35 +161,28 @@ private fun Schema<*>?.toRawFieldType(required: Boolean): RawSchemaDO.RawFieldTy
     }
 
     val nullable = (nullable == true) || !required
+    val refName = `$ref`?.substringAfterLast('/')
 
-    if (this is ArraySchema) {
-        return RawSchemaDO.RawArrayTypeDO(
-            elementType = items.toRawFieldType(required = true),
-            nullable = nullable,
-        )
+    return when {
+        this is ArraySchema ->
+            RawSchemaDO.RawArrayTypeDO(
+                elementType = items.toRawFieldType(required = true),
+                nullable = nullable,
+            )
+
+        refName != null ->
+            RawSchemaDO.RawRefTypeDO(
+                schemaName = refName,
+                nullable = nullable,
+            )
+
+        else ->
+            RawSchemaDO.RawPrimitiveTypeDO(
+                type = type.toPrimitiveType(),
+                format = format,
+                nullable = nullable,
+            )
     }
-
-    `$ref`?.let { ref ->
-        return RawSchemaDO.RawRefTypeDO(
-            schemaName = ref.substringAfterLast('/'),
-            nullable = nullable,
-        )
-    }
-
-    val primitiveType = when (type) {
-        "string" -> RawSchemaDO.RawPrimitiveTypeDO.Type.STRING
-        "number" -> RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER
-        "integer" -> RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER
-        "boolean" -> RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN
-        "object" -> RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT
-        else -> RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT
-    }
-
-    return RawSchemaDO.RawPrimitiveTypeDO(
-        type = primitiveType,
-        format = format,
-        nullable = nullable,
-    )
 }
 
 private fun OpenAPI.derefResponse(response: OasApiResponse): OasApiResponse {
@@ -205,3 +210,13 @@ private fun mergeParameters(
 }
 
 private const val DEFAULT_STATUS_CODE: Int = -1
+
+private fun String?.toPrimitiveType(): RawSchemaDO.RawPrimitiveTypeDO.Type =
+    when (this) {
+        "string" -> RawSchemaDO.RawPrimitiveTypeDO.Type.STRING
+        "number" -> RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER
+        "integer" -> RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER
+        "boolean" -> RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN
+        "object" -> RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT
+        else -> RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT
+    }

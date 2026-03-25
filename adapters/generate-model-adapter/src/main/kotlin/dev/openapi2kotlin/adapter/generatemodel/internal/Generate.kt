@@ -1,11 +1,15 @@
 package dev.openapi2kotlin.adapter.generatemodel.internal
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeAliasSpec
+import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
-import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.toParamSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
@@ -16,7 +20,6 @@ import java.nio.file.Path
 
 private val log = KotlinLogging.logger {}
 private const val KOTLINX_SERIALIZABLE = "kotlinx.serialization.Serializable"
-private val KOTLINX_TRANSIENT = ClassName("kotlinx.serialization", "Transient")
 
 /**
  * Final pass – generate Kotlin files.
@@ -42,38 +45,39 @@ fun generate(
             }
 
     models.forEach { model ->
-        val fileSpec: FileSpec = when (val shape = model.modelShape) {
-            is ModelShapeDO.EnumClass ->
-                buildEnumFile(model, shape)
+        val fileSpec: FileSpec =
+            when (val shape = model.modelShape) {
+                is ModelShapeDO.EnumClass ->
+                    buildEnumFile(model, shape)
 
-            is ModelShapeDO.SealedInterface ->
-                buildSealedInterfaceFile(model, shape, byName, ctxByPackageName)
+                is ModelShapeDO.SealedInterface ->
+                    buildSealedInterfaceFile(model, shape, byName, ctxByPackageName)
 
-            is ModelShapeDO.DataClass ->
-                buildDataClassFile(model, shape, byName, ctxByPackageName)
+                is ModelShapeDO.DataClass ->
+                    buildDataClassFile(model, shape, byName, ctxByPackageName)
 
-            is ModelShapeDO.EmptyClass ->
-                buildEmptyClassFile(model, shape, byName, ctxByPackageName)
+                is ModelShapeDO.EmptyClass ->
+                    buildEmptyClassFile(model, shape, byName, ctxByPackageName)
 
-            is ModelShapeDO.OpenClass ->
-                buildOpenClassFile(model, shape, byName, ctxByPackageName)
+                is ModelShapeDO.OpenClass ->
+                    buildOpenClassFile(model, shape, byName, ctxByPackageName)
 
-            is ModelShapeDO.TypeAlias ->
-                buildTypeAliasFile(model, shape, ctxByPackageName)
+                is ModelShapeDO.TypeAlias ->
+                    buildTypeAliasFile(model, shape, ctxByPackageName)
 
-            is ModelShapeDO.Undecided -> {
-                log.warn { "Shape for ${model.generatedName} is still Undecided, generating simple data class." }
-                buildDataClassFile(
-                    model,
-                    ModelShapeDO.DataClass(
-                        extend = null,
-                        implements = emptyList(),
-                    ),
-                    byName,
-                    ctxByPackageName,
-                )
+                is ModelShapeDO.Undecided -> {
+                    log.warn { "Shape for ${model.generatedName} is still Undecided, generating simple data class." }
+                    buildDataClassFile(
+                        model,
+                        ModelShapeDO.DataClass(
+                            extend = null,
+                            implements = emptyList(),
+                        ),
+                        byName,
+                        ctxByPackageName,
+                    )
+                }
             }
-        }
 
         fileSpec.writeTo(outputDir)
     }
@@ -81,64 +85,70 @@ fun generate(
     outputDir.postProcess()
 }
 
-/* ---------- ENUM CLASS ---------- */
+// ---------- ENUM CLASS ----------
 
 private fun buildEnumFile(
     schema: ModelDO,
     shape: ModelShapeDO.EnumClass,
 ): FileSpec {
-    val typeBuilder = TypeSpec.enumBuilder(schema.generatedName)
-        .applyModelAnnotations(schema)
+    val typeBuilder =
+        TypeSpec.enumBuilder(schema.generatedName)
+            .applyModelAnnotations(schema)
 
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
         typeBuilder.addKdoc("%L\n", doc.trim())
     }
 
-    val ctor = FunSpec.constructorBuilder()
-        .addParameter("value", String::class)
-        .build()
+    val ctor =
+        FunSpec.constructorBuilder()
+            .addParameter("value", String::class)
+            .build()
     typeBuilder.primaryConstructor(ctor)
 
     typeBuilder.addProperty(
         PropertySpec.builder("value", String::class)
             .initializer("value")
             .applyAnnotations(schema.enumValueAnnotations)
-            .build()
+            .build(),
     )
 
     shape.values.forEach { ev ->
-        val enumConst = TypeSpec.anonymousClassBuilder()
-            .addSuperclassConstructorParameter("%S", ev.originalValue)
-            .build()
+        val enumConst =
+            TypeSpec.anonymousClassBuilder()
+                .addSuperclassConstructorParameter("%S", ev.originalValue)
+                .build()
 
         typeBuilder.addEnumConstant(ev.generatedValue, enumConst)
     }
 
-    val fromValueFun = FunSpec.builder("fromValue")
-        .returns(schema.className())
-        .addParameter("v", String::class)
-        .applyAnnotations(schema.enumFromValueAnnotations)
-        .addCode(
-            """
-            return entries.firstOrNull { it.value == v }
-                ?: throw IllegalArgumentException("Unexpected value for ${schema.generatedName}: '${'$'}v'")
-            """.trimIndent()
-        )
-        .build()
+    val fromValueFun =
+        FunSpec.builder("fromValue")
+            .returns(schema.className())
+            .addParameter("v", String::class)
+            .applyAnnotations(schema.enumFromValueAnnotations)
+            .addCode(
+                """
+                return entries.firstOrNull { it.value == v }
+                    ?: throw IllegalArgumentException("Unexpected value for ${schema.generatedName}: '${'$'}v'")
+                """.trimIndent(),
+            )
+            .build()
 
-    val companion = TypeSpec.companionObjectBuilder()
-        .addFunction(fromValueFun)
-        .build()
+    val companion =
+        TypeSpec.companionObjectBuilder()
+            .addFunction(fromValueFun)
+            .build()
 
     typeBuilder.addType(companion)
 
     return FileSpec
         .builder(schema.packageName, schema.generatedName)
+        .indent("    ")
         .addType(typeBuilder.build())
         .build()
 }
 
-/* ---------- SEALED INTERFACE ---------- */
+// ---------- SEALED INTERFACE ----------
 
 private fun buildSealedInterfaceFile(
     schema: ModelDO,
@@ -148,9 +158,10 @@ private fun buildSealedInterfaceFile(
 ): FileSpec {
     val ctx = ctxByPackageName.getValue(schema.packageName)
 
-    val typeBuilder = TypeSpec.interfaceBuilder(schema.generatedName)
-        .addModifiers(KModifier.SEALED)
-        .applyModelAnnotations(schema)
+    val typeBuilder =
+        TypeSpec.interfaceBuilder(schema.generatedName)
+            .addModifiers(KModifier.SEALED)
+            .applyModelAnnotations(schema)
 
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
         typeBuilder.addKdoc("%L\n", doc.trim())
@@ -163,10 +174,11 @@ private fun buildSealedInterfaceFile(
     }
 
     schema.fields.forEach { field ->
-        val propBuilder = PropertySpec.builder(
-            field.generatedName,
-            field.type.toTypeName(ctx),
-        )
+        val propBuilder =
+            PropertySpec.builder(
+                field.generatedName,
+                field.type.toTypeName(ctx),
+            )
 
         field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
             propBuilder.addKdoc("%L\n", doc.trim())
@@ -183,11 +195,12 @@ private fun buildSealedInterfaceFile(
 
     return FileSpec
         .builder(schema.packageName, schema.generatedName)
+        .indent("    ")
         .addType(typeBuilder.build())
         .build()
 }
 
-/* ---------- DATA CLASS ---------- */
+// ---------- DATA CLASS ----------
 
 private fun buildDataClassFile(
     schema: ModelDO,
@@ -199,107 +212,31 @@ private fun buildDataClassFile(
     val renderOverriddenInCtorOnly = schema.shouldRenderOverriddenFieldsInConstructorOnly(shape.extend)
     val useDataModifier = !renderOverriddenInCtorOnly
 
-    val ctor = FunSpec.constructorBuilder().apply {
-        schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
-        }
-    }.build()
+    val ctor = buildClassConstructor(schema, ctx, renderOverriddenInCtorOnly)
 
-    val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
-        .primaryConstructor(ctor)
-        .applyModelAnnotations(schema)
+    val typeBuilder =
+        TypeSpec.classBuilder(schema.generatedName)
+            .primaryConstructor(ctor)
+            .applyModelAnnotations(schema)
+            .addModelKdoc(schema)
 
     if (useDataModifier) {
         typeBuilder.addModifiers(KModifier.DATA)
     }
 
-    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-        typeBuilder.addKdoc("%L\n", doc.trim())
-    }
-
     val shouldOpenProps = schema.allOfChildren.isNotEmpty()
-
-    schema.fields.forEach { field ->
-        val storageName = field.storageName(renderOverriddenInCtorOnly)
-
-        if (renderOverriddenInCtorOnly && field.overridden) {
-            typeBuilder.addProperty(
-                PropertySpec.builder(
-                    storageName,
-                    field.type.toTypeName(ctx),
-                ).initializer(storageName)
-                    .addModifiers(KModifier.PRIVATE)
-                    .apply {
-                        field.applyPropertyAnnotations(this)
-                    }
-                    .build()
-            )
-
-            val overrideProperty = PropertySpec.builder(
-                field.generatedName,
-                field.type.toTypeName(ctx),
-            ).getter(
-                FunSpec.getterBuilder()
-                    .addCode("return %N\n", storageName)
-                    .build()
-            ).addModifiers(KModifier.OVERRIDE)
-                .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
-
-            field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-                overrideProperty.addKdoc("%L\n", doc.trim())
-            }
-
-            typeBuilder.addProperty(overrideProperty.build())
-            return@forEach
-        }
-
-        val propBuilder = PropertySpec.builder(
-            storageName,
-            field.type.toTypeName(ctx),
-        ).initializer(storageName)
-
-        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-            propBuilder.addKdoc("%L\n", doc.trim())
-        }
-
-        field.applyPropertyAnnotations(propBuilder)
-
-        if (field.overridden) {
-            propBuilder.addModifiers(KModifier.OVERRIDE)
-        } else if (shouldOpenProps) {
-            propBuilder.addModifiers(KModifier.OPEN)
-        }
-
-        typeBuilder.addProperty(propBuilder.build())
-    }
-
-    shape.extend?.let { parentName ->
-        val parent = byName[parentName]
-        val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
-        typeBuilder.superclass(typeName)
-
-        parent?.fields?.forEach { parentField ->
-            val childField = schema.fields.firstOrNull { it.generatedName == parentField.generatedName }
-            typeBuilder.addSuperclassConstructorParameter(
-                "%N",
-                childField?.storageName(renderOverriddenInCtorOnly) ?: parentField.generatedName,
-            )
-        }
-    }
-
-    shape.implements.forEach { ifaceName ->
-        val iface = byName[ifaceName]
-        val typeName = iface?.className() ?: ClassName(schema.packageName, ifaceName)
-        typeBuilder.addSuperinterface(typeName)
-    }
+    addSchemaProperties(typeBuilder, schema, ctx, renderOverriddenInCtorOnly, shouldOpenProps)
+    addParentInheritance(typeBuilder, schema, shape.extend, byName, renderOverriddenInCtorOnly)
+    addImplementedInterfaces(typeBuilder, schema, shape.implements, byName)
 
     return FileSpec
         .builder(schema.packageName, schema.generatedName)
+        .indent("    ")
         .addType(typeBuilder.build())
         .build()
 }
 
-/* ---------- EMPTY CLASS ---------- */
+// ---------- EMPTY CLASS ----------
 
 private fun buildEmptyClassFile(
     schema: ModelDO,
@@ -309,100 +246,32 @@ private fun buildEmptyClassFile(
 ): FileSpec {
     val ctx = ctxByPackageName.getValue(schema.packageName)
     val renderOverriddenInCtorOnly = schema.shouldRenderOverriddenFieldsInConstructorOnly(shape.extend)
+    val ctor = buildClassConstructor(schema, ctx, renderOverriddenInCtorOnly)
 
-    val ctor = FunSpec.constructorBuilder().apply {
-        schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
-        }
-    }.build()
+    val typeBuilder =
+        TypeSpec.classBuilder(schema.generatedName)
+            .primaryConstructor(ctor)
+            .applyModelAnnotations(schema)
+            .addModelKdoc(schema)
 
-    val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
-        .primaryConstructor(ctor)
-        .applyModelAnnotations(schema)
-
-    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-        typeBuilder.addKdoc("%L\n", doc.trim())
-    }
-
-    schema.fields.forEach { field ->
-        val storageName = field.storageName(renderOverriddenInCtorOnly)
-
-        if (renderOverriddenInCtorOnly && field.overridden) {
-            typeBuilder.addProperty(
-                PropertySpec.builder(
-                    storageName,
-                    field.type.toTypeName(ctx),
-                ).initializer(storageName)
-                    .addModifiers(KModifier.PRIVATE)
-                    .apply {
-                        field.applyPropertyAnnotations(this)
-                    }
-                    .build()
-            )
-
-            val overrideProperty = PropertySpec.builder(
-                field.generatedName,
-                field.type.toTypeName(ctx),
-            ).getter(
-                FunSpec.getterBuilder()
-                    .addCode("return %N\n", storageName)
-                    .build()
-            ).addModifiers(KModifier.OVERRIDE)
-                .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
-
-            field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-                overrideProperty.addKdoc("%L\n", doc.trim())
-            }
-
-            typeBuilder.addProperty(overrideProperty.build())
-            return@forEach
-        }
-
-        val propBuilder = PropertySpec.builder(
-            storageName,
-            field.type.toTypeName(ctx),
-        ).initializer(storageName)
-
-        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-            propBuilder.addKdoc("%L\n", doc.trim())
-        }
-
-        field.applyPropertyAnnotations(propBuilder)
-
-        if (field.overridden) {
-            propBuilder.addModifiers(KModifier.OVERRIDE)
-        }
-
-        typeBuilder.addProperty(propBuilder.build())
-    }
-
-    shape.extend?.let { parentName ->
-        val parent = byName[parentName]
-        val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
-        typeBuilder.superclass(typeName)
-
-        parent?.fields?.forEach { parentField ->
-            val childField = schema.fields.firstOrNull { it.generatedName == parentField.generatedName }
-            typeBuilder.addSuperclassConstructorParameter(
-                "%N",
-                childField?.storageName(renderOverriddenInCtorOnly) ?: parentField.generatedName,
-            )
-        }
-    }
-
-    shape.implements.forEach { ifaceName ->
-        val iface = byName[ifaceName]
-        val typeName = iface?.className() ?: ClassName(schema.packageName, ifaceName)
-        typeBuilder.addSuperinterface(typeName)
-    }
+    addSchemaProperties(
+        typeBuilder = typeBuilder,
+        schema = schema,
+        ctx = ctx,
+        renderOverriddenInCtorOnly = renderOverriddenInCtorOnly,
+        shouldOpenProps = false,
+    )
+    addParentInheritance(typeBuilder, schema, shape.extend, byName, renderOverriddenInCtorOnly)
+    addImplementedInterfaces(typeBuilder, schema, shape.implements, byName)
 
     return FileSpec
         .builder(schema.packageName, schema.generatedName)
+        .indent("    ")
         .addType(typeBuilder.build())
         .build()
 }
 
-/* ---------- OPEN CLASS ---------- */
+// ---------- OPEN CLASS ----------
 
 private fun buildOpenClassFile(
     schema: ModelDO,
@@ -412,107 +281,35 @@ private fun buildOpenClassFile(
 ): FileSpec {
     val ctx = ctxByPackageName.getValue(schema.packageName)
     val renderOverriddenInCtorOnly = schema.shouldRenderOverriddenFieldsInConstructorOnly(shape.extend)
+    val ctor = buildClassConstructor(schema, ctx, renderOverriddenInCtorOnly)
 
-    val ctor = FunSpec.constructorBuilder().apply {
-        schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
-        }
-    }.build()
-
-    val typeBuilder = TypeSpec.classBuilder(schema.generatedName)
-        .addModifiers(KModifier.OPEN)
-        .primaryConstructor(ctor)
-        .applyModelAnnotations(schema)
-
-    schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-        typeBuilder.addKdoc("%L\n", doc.trim())
-    }
+    val typeBuilder =
+        TypeSpec.classBuilder(schema.generatedName)
+            .addModifiers(KModifier.OPEN)
+            .primaryConstructor(ctor)
+            .applyModelAnnotations(schema)
+            .addModelKdoc(schema)
 
     // Open classes exist because they are used as bases.
     // Their properties must be open so children can override cleanly.
-    val shouldOpenProps = true
-
-    schema.fields.forEach { field ->
-        val storageName = field.storageName(renderOverriddenInCtorOnly)
-
-        if (renderOverriddenInCtorOnly && field.overridden) {
-            typeBuilder.addProperty(
-                PropertySpec.builder(
-                    storageName,
-                    field.type.toTypeName(ctx),
-                ).initializer(storageName)
-                    .addModifiers(KModifier.PRIVATE)
-                    .apply {
-                        field.applyPropertyAnnotations(this)
-                    }
-                    .build()
-            )
-
-            val overrideProperty = PropertySpec.builder(
-                field.generatedName,
-                field.type.toTypeName(ctx),
-            ).getter(
-                FunSpec.getterBuilder()
-                    .addCode("return %N\n", storageName)
-                    .build()
-            ).addModifiers(KModifier.OVERRIDE)
-                .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
-
-            field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-                overrideProperty.addKdoc("%L\n", doc.trim())
-            }
-
-            typeBuilder.addProperty(overrideProperty.build())
-            return@forEach
-        }
-
-        val propBuilder = PropertySpec.builder(
-            storageName,
-            field.type.toTypeName(ctx),
-        ).initializer(storageName)
-
-        field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
-            propBuilder.addKdoc("%L\n", doc.trim())
-        }
-
-        field.applyPropertyAnnotations(propBuilder)
-
-        if (field.overridden) {
-            propBuilder.addModifiers(KModifier.OVERRIDE)
-        } else if (shouldOpenProps) {
-            propBuilder.addModifiers(KModifier.OPEN)
-        }
-
-        typeBuilder.addProperty(propBuilder.build())
-    }
-
-    shape.extend?.let { parentName ->
-        val parent = byName[parentName]
-        val typeName = parent?.className() ?: ClassName(schema.packageName, parentName)
-        typeBuilder.superclass(typeName)
-
-        parent?.fields?.forEach { parentField ->
-            val childField = schema.fields.firstOrNull { it.generatedName == parentField.generatedName }
-            typeBuilder.addSuperclassConstructorParameter(
-                "%N",
-                childField?.storageName(renderOverriddenInCtorOnly) ?: parentField.generatedName,
-            )
-        }
-    }
-
-    shape.implements.forEach { ifaceName ->
-        val iface = byName[ifaceName]
-        val typeName = iface?.className() ?: ClassName(schema.packageName, ifaceName)
-        typeBuilder.addSuperinterface(typeName)
-    }
+    addSchemaProperties(
+        typeBuilder = typeBuilder,
+        schema = schema,
+        ctx = ctx,
+        renderOverriddenInCtorOnly = renderOverriddenInCtorOnly,
+        shouldOpenProps = true,
+    )
+    addParentInheritance(typeBuilder, schema, shape.extend, byName, renderOverriddenInCtorOnly)
+    addImplementedInterfaces(typeBuilder, schema, shape.implements, byName)
 
     return FileSpec
         .builder(schema.packageName, schema.generatedName)
+        .indent("    ")
         .addType(typeBuilder.build())
         .build()
 }
 
-/* ---------- TYPEALIAS ---------- */
+// ---------- TYPEALIAS ----------
 
 private fun buildTypeAliasFile(
     schema: ModelDO,
@@ -522,7 +319,9 @@ private fun buildTypeAliasFile(
     val ctx = ctxByPackageName.getValue(schema.packageName)
     val targetTypeName = shape.target.toTypeName(ctx)
 
-    val fileBuilder = FileSpec.builder(schema.packageName, schema.generatedName)
+    val fileBuilder =
+        FileSpec.builder(schema.packageName, schema.generatedName)
+            .indent("    ")
 
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
         fileBuilder.addFileComment(doc.trim())
@@ -533,16 +332,9 @@ private fun buildTypeAliasFile(
         .build()
 }
 
-private fun ModelDO.className(): ClassName =
-    ClassName(packageName, generatedName)
+internal fun ModelDO.className(): ClassName = ClassName(packageName, generatedName)
 
-private fun FieldDO.storageName(
-    renderOverriddenInCtorOnly: Boolean,
-): String = if (renderOverriddenInCtorOnly && overridden) "${generatedName}_" else generatedName
-
-private fun ModelDO.shouldRenderOverriddenFieldsInConstructorOnly(
-    extend: String?,
-): Boolean =
+private fun ModelDO.shouldRenderOverriddenFieldsInConstructorOnly(extend: String?): Boolean =
     extend != null &&
         fields.any { it.overridden } &&
         annotations.any { it.fqName == KOTLINX_SERIALIZABLE }

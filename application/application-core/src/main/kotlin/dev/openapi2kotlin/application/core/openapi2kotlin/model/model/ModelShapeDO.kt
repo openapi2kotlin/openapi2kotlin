@@ -4,7 +4,6 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.model.model
  * Shape that will be generated for the schema.
  */
 sealed interface ModelShapeDO {
-
     /**
      * Initial placeholder before we decide.
      */

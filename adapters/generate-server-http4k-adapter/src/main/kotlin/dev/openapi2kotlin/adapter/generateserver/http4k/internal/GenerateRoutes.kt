@@ -7,8 +7,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
@@ -16,21 +15,16 @@ import dev.openapi2kotlin.tools.generatortools.toTypeName
 import java.nio.file.Path
 
 private val ROUTING_HTTP_HANDLER_T = ClassName("org.http4k.routing", "RoutingHttpHandler")
-private val RESPONSE_T = ClassName("org.http4k.core", "Response")
-private val STATUS_T = ClassName("org.http4k.core", "Status")
 private val BODY_T = ClassName("org.http4k.core", "Body")
 
 internal fun generateHttp4kRoutes(
     apis: List<ApiDO>,
     serverPackageName: String,
-    modelPackageName: String,
     outputDirPath: Path,
-    models: List<ModelDO>,
+    ctx: TypeNameContext,
     basePath: String,
 ) {
     val outDir = outputDirPath.toFile()
-    val bySchemaName: Map<String, ModelDO> = models.associateBy { it.rawSchema.originalName }
-    val ctx = TypeNameContext(modelPackageName = modelPackageName, bySchemaName = bySchemaName)
 
     apis.forEach { api ->
         val apiStem = api.generatedName.removeSuffix("Api").ifBlank { api.generatedName }
@@ -38,6 +32,7 @@ internal fun generateHttp4kRoutes(
         val routesFunName = apiStem.replaceFirstChar { it.lowercaseChar() } + "Routes"
 
         FileSpec.builder(serverPackageName, routesFileName)
+            .indent("    ")
             .addImport("org.http4k.format.KotlinxSerialization", "auto")
             .addImport("org.http4k.routing", "bind", "path", "routes")
             .addTypeAliasIfNeeded()
@@ -88,45 +83,13 @@ private fun buildRouteEntry(
     ctx: TypeNameContext,
 ): CodeBlock {
     val builder = CodeBlock.builder()
-    val methodRef = when (ep.rawOperation.httpMethod) {
-        RawPathDO.HttpMethodDO.GET -> "GET"
-        RawPathDO.HttpMethodDO.POST -> "POST"
-        RawPathDO.HttpMethodDO.PUT -> "PUT"
-        RawPathDO.HttpMethodDO.PATCH -> "PATCH"
-        RawPathDO.HttpMethodDO.DELETE -> "DELETE"
-    }
+    val methodRef = httpMethodRef(ep)
     val routePath = joinPaths(basePath, ep.rawOperation.path)
     builder.add("%S bind org.http4k.core.Method.%L to { request ->\n", routePath, methodRef)
     builder.indent()
 
-    ep.params.forEach { param ->
-        when (param.rawParam.location) {
-            RawPathDO.ParamLocationDO.PATH -> builder.addStatement("val %L = %L", param.generatedName, pathReadExpr(param))
-            RawPathDO.ParamLocationDO.QUERY -> builder.addStatement("val %L = %L", param.generatedName, queryReadExpr(param))
-            RawPathDO.ParamLocationDO.HEADER -> builder.addStatement("val %L = %L", param.generatedName, headerReadExpr(param))
-        }
-    }
-
-    ep.requestBody?.let { body ->
-        val bodyType = body.type.toTypeName(ctx)
-        val isByteArray = (body.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.BYTE_ARRAY
-        when {
-            isByteArray && bodyType.isNullable -> builder.addStatement("val %L = request.bodyString().takeIf { it.isNotBlank() }?.encodeToByteArray()", body.generatedName)
-            isByteArray -> builder.addStatement("val %L = request.bodyString().encodeToByteArray()", body.generatedName)
-            bodyType.isNullable -> builder.addStatement(
-                "val %L = request.bodyString().takeIf { it.isNotBlank() }?.let { %T.auto<%T>().toLens()(request) }",
-                body.generatedName,
-                BODY_T,
-                bodyType.copy(nullable = false),
-            )
-            else -> builder.addStatement(
-                "val %L = %T.auto<%T>().toLens()(request)",
-                body.generatedName,
-                BODY_T,
-                bodyType,
-            )
-        }
-    }
+    addParamReads(builder, ep)
+    addRequestBodyRead(builder, ep, ctx)
 
     builder.addStatement("return@to api.%LWithHttpInfo(%L)", ep.generatedName, methodArgs(ep))
     builder.unindent()
@@ -140,61 +103,64 @@ private fun methodArgs(ep: ApiEndpointDO): String =
         ep.requestBody?.let { add(it.generatedName) }
     }.joinToString(", ")
 
-private fun joinPaths(basePath: String, endpointPath: String): String {
-    val base = basePath.trim().trim('/').takeIf { it.isNotBlank() }
-    val path = endpointPath.trim().trim('/').takeIf { it.isNotBlank() }
-    return when {
-        base == null && path == null -> "/"
-        base == null -> "/${path}"
-        path == null -> "/${base}"
-        else -> "/${base}/${path}"
-    }
-}
-
-private fun pathReadExpr(param: dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO): CodeBlock {
-    val key = param.rawParam.name
-    return when ((param.type as? TrivialTypeDO)?.kind) {
-        TrivialTypeDO.Kind.STRING, null -> CodeBlock.of("request.path(%S) ?: return@to %T(%T.BAD_REQUEST)", key, RESPONSE_T, STATUS_T)
-        TrivialTypeDO.Kind.LONG -> CodeBlock.of("request.path(%S)?.toLongOrNull() ?: return@to %T(%T.BAD_REQUEST)", key, RESPONSE_T, STATUS_T)
-        TrivialTypeDO.Kind.INT -> CodeBlock.of("request.path(%S)?.toIntOrNull() ?: return@to %T(%T.BAD_REQUEST)", key, RESPONSE_T, STATUS_T)
-        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("request.path(%S)?.toDoubleOrNull() ?: return@to %T(%T.BAD_REQUEST)", key, RESPONSE_T, STATUS_T)
-        TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("request.path(%S)?.toBooleanStrictOrNull() ?: return@to %T(%T.BAD_REQUEST)", key, RESPONSE_T, STATUS_T)
-        else -> CodeBlock.of("request.path(%S) ?: return@to %T(%T.BAD_REQUEST)", key, RESPONSE_T, STATUS_T)
-    }
-}
-
-private fun queryReadExpr(param: dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO): CodeBlock {
-    val key = param.rawParam.name
-    return when (param.type) {
-        is ListTypeDO -> {
-            val kind = ((param.type as ListTypeDO).elementType as? TrivialTypeDO)?.kind
-            when (kind) {
-                TrivialTypeDO.Kind.LONG -> CodeBlock.of("request.queries(%S).mapNotNull(String::toLongOrNull).takeIf { it.isNotEmpty() }", key)
-                TrivialTypeDO.Kind.INT -> CodeBlock.of("request.queries(%S).mapNotNull(String::toIntOrNull).takeIf { it.isNotEmpty() }", key)
-                TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("request.queries(%S).mapNotNull(String::toDoubleOrNull).takeIf { it.isNotEmpty() }", key)
-                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("request.queries(%S).mapNotNull(String::toBooleanStrictOrNull).takeIf { it.isNotEmpty() }", key)
-                else -> CodeBlock.of("request.queries(%S).filterNotNull().takeIf { it.isNotEmpty() }", key)
-            }
-        }
-        else -> when ((param.type as? TrivialTypeDO)?.kind) {
-            TrivialTypeDO.Kind.STRING, null -> CodeBlock.of("request.query(%S)", key)
-            TrivialTypeDO.Kind.LONG -> CodeBlock.of("request.query(%S)?.toLongOrNull()", key)
-            TrivialTypeDO.Kind.INT -> CodeBlock.of("request.query(%S)?.toIntOrNull()", key)
-            TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("request.query(%S)?.toDoubleOrNull()", key)
-            TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("request.query(%S)?.toBooleanStrictOrNull()", key)
-            else -> CodeBlock.of("request.query(%S)", key)
+private fun addParamReads(
+    builder: CodeBlock.Builder,
+    ep: ApiEndpointDO,
+) {
+    ep.params.forEach { param ->
+        when (param.rawParam.location) {
+            RawPathDO.ParamLocationDO.PATH -> addParamRead(builder, param, pathReadExpr(param))
+            RawPathDO.ParamLocationDO.QUERY -> addParamRead(builder, param, queryReadExpr(param))
+            RawPathDO.ParamLocationDO.HEADER -> addParamRead(builder, param, headerReadExpr(param))
         }
     }
 }
 
-private fun headerReadExpr(param: dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO): CodeBlock {
-    val key = param.rawParam.name
-    return when ((param.type as? TrivialTypeDO)?.kind) {
-        TrivialTypeDO.Kind.STRING, null -> CodeBlock.of("request.header(%S)", key)
-        TrivialTypeDO.Kind.LONG -> CodeBlock.of("request.header(%S)?.toLongOrNull()", key)
-        TrivialTypeDO.Kind.INT -> CodeBlock.of("request.header(%S)?.toIntOrNull()", key)
-        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("request.header(%S)?.toDoubleOrNull()", key)
-        TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("request.header(%S)?.toBooleanStrictOrNull()", key)
-        else -> CodeBlock.of("request.header(%S)", key)
+private fun addParamRead(
+    builder: CodeBlock.Builder,
+    param: ApiParamDO,
+    expr: CodeBlock,
+) {
+    builder.addStatement(
+        "val %L = %L",
+        param.generatedName,
+        expr,
+    )
+}
+
+private fun addRequestBodyRead(
+    builder: CodeBlock.Builder,
+    ep: ApiEndpointDO,
+    ctx: TypeNameContext,
+) {
+    ep.requestBody?.let { body ->
+        val bodyType = body.type.toTypeName(ctx)
+        val isByteArray = (body.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.BYTE_ARRAY
+        when {
+            isByteArray && bodyType.isNullable ->
+                builder.addStatement(
+                    "val %L = request.bodyString().takeIf { it.isNotBlank() }?.encodeToByteArray()",
+                    body.generatedName,
+                )
+            isByteArray ->
+                builder.addStatement(
+                    "val %L = request.bodyString().encodeToByteArray()",
+                    body.generatedName,
+                )
+            bodyType.isNullable ->
+                builder.addStatement(
+                    "val %L = request.bodyString().takeIf { it.isNotBlank() }?.let { %T.auto<%T>().toLens()(request) }",
+                    body.generatedName,
+                    BODY_T,
+                    bodyType.copy(nullable = false),
+                )
+            else ->
+                builder.addStatement(
+                    "val %L = %T.auto<%T>().toLens()(request)",
+                    body.generatedName,
+                    BODY_T,
+                    bodyType,
+                )
+        }
     }
 }

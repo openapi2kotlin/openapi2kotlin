@@ -12,30 +12,31 @@ class OpenApi2KotlinService(
     private val generateApiPort: GenerateApiPort,
     private val generateModelPort: GenerateModelPort,
 ) : OpenApi2KotlinUseCase {
-
     override fun openApi2kotlin(config: OpenApi2KotlinUseCase.Config) {
         val openApi = parseSpecPort.parseSpec(config.inputSpecPath)
 
-        val models = prepareModels(
-            schemas = openApi.rawSchemas,
-            config = config,
-        )
+        val models =
+            prepareModels(
+                schemas = openApi.rawSchemas,
+                config = config,
+            )
 
         generateModelPort.generateModel(
             GenerateModelPort.Command(
                 outputDirPath = config.outputDirPath,
                 models = models,
-            )
+            ),
         )
 
         val apiPackageName = config.api?.packageName ?: return
 
-        val apiContext = prepareApiContext(
-            rawPaths = openApi.rawPaths,
-            rawServers = openApi.rawServers,
-            models = models,
-            config = config,
-        )
+        val apiContext =
+            prepareApiContext(
+                rawPaths = openApi.rawPaths,
+                rawServers = openApi.rawServers,
+                models = models,
+                config = config,
+            )
 
         generateApiPort.generateApi(
             GenerateApiPort.Command(
@@ -44,7 +45,7 @@ class OpenApi2KotlinService(
                 modelPackageName = config.model.packageName,
                 outputDirPath = config.outputDirPath,
                 models = models,
-            )
+            ),
         )
     }
 }

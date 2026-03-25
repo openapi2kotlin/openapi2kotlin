@@ -23,11 +23,12 @@ class PetClientTest {
     fun setUp() {
         server = WireMockServer(0)
         server.start()
-        api = PetApiImpl(
-            RestClient.builder()
-                .baseUrl(server.baseUrl())
-                .build()
-        )
+        api =
+            PetApiImpl(
+                RestClient.builder()
+                    .baseUrl(server.baseUrl())
+                    .build(),
+            )
     }
 
     @AfterTest
@@ -43,8 +44,10 @@ class PetClientTest {
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]")
-                )
+                        .withBody(
+                            "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
+                        ),
+                ),
         )
 
         val result = api.listFindByStatus("available")
@@ -61,11 +64,14 @@ class PetClientTest {
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"pending\"}")
-                )
+                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"pending\"}"),
+                ),
         )
 
-        val result = api.createPet(Pet(id = 9, name = "Sparky", photoUrls = listOf("photo"), status = "pending"))
+        val result =
+            api.createPet(
+                Pet(id = 9, name = "Sparky", photoUrls = listOf("photo"), status = "pending"),
+            )
 
         assertEquals(9L, result.id)
         assertEquals("Sparky", result.name)

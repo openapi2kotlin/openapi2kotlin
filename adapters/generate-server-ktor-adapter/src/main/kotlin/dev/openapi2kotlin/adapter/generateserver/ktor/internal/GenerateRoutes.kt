@@ -1,27 +1,31 @@
 package dev.openapi2kotlin.adapter.generateserver.ktor.internal
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.MemberName
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
-import dev.openapi2kotlin.tools.generatortools.toTypeName
 import java.nio.file.Path
 
-private val ROUTE_T = ClassName("io.ktor.server.routing", "Route")
-private val HTTP_STATUS_T = ClassName("io.ktor.http", "HttpStatusCode")
-private val M_route = MemberName("io.ktor.server.routing", "route")
-private val M_get = MemberName("io.ktor.server.routing", "get")
-private val M_post = MemberName("io.ktor.server.routing", "post")
-private val M_put = MemberName("io.ktor.server.routing", "put")
-private val M_patch = MemberName("io.ktor.server.routing", "patch")
-private val M_delete = MemberName("io.ktor.server.routing", "delete")
-private val M_receive = MemberName("io.ktor.server.request", "receive")
-private val M_receiveNullable = MemberName("io.ktor.server.request", "receiveNullable")
-private val M_respond = MemberName("io.ktor.server.response", "respond")
+internal val ROUTE_T = ClassName("io.ktor.server.routing", "Route")
+internal val HTTP_STATUS_T = ClassName("io.ktor.http", "HttpStatusCode")
+internal val M_route = MemberName("io.ktor.server.routing", "route")
+internal val M_get = MemberName("io.ktor.server.routing", "get")
+internal val M_post = MemberName("io.ktor.server.routing", "post")
+internal val M_put = MemberName("io.ktor.server.routing", "put")
+internal val M_patch = MemberName("io.ktor.server.routing", "patch")
+internal val M_delete = MemberName("io.ktor.server.routing", "delete")
+internal val M_receive = MemberName("io.ktor.server.request", "receive")
+internal val M_receiveNullable = MemberName("io.ktor.server.request", "receiveNullable")
+internal val M_respond = MemberName("io.ktor.server.response", "respond")
+internal const val HTTP_STATUS_OK = 200
+internal const val HTTP_STATUS_CREATED = 201
+internal const val HTTP_STATUS_ACCEPTED = 202
+internal const val HTTP_STATUS_NO_CONTENT = 204
 
 internal fun generateRoutes(
     apis: List<ApiDO>,
@@ -43,6 +47,7 @@ internal fun generateRoutes(
         val routesFunName = apiStem.replaceFirstChar { it.lowercaseChar() } + "Routes"
 
         FileSpec.builder(serverPackageName, routesFileName)
+            .indent("    ")
             .addFunction(
                 generateRoutes(
                     api = api,
@@ -50,7 +55,7 @@ internal fun generateRoutes(
                     routesFunName = routesFunName,
                     serverPackageName = serverPackageName,
                     ctx = ctx,
-                )
+                ),
             )
             .build()
             .writeTo(outDir)
@@ -59,11 +64,12 @@ internal fun generateRoutes(
 
 private fun inferBasePath(api: ApiDO): String {
     // Best-effort: choose the shortest concrete path and take its first segment.
-    val shortest = api.rawPath.operations
-        .map { it.path.trim() }
-        .filter { it.isNotBlank() }
-        .minByOrNull { it.length }
-        ?: "/"
+    val shortest =
+        api.rawPath.operations
+            .map { it.path.trim() }
+            .filter { it.isNotBlank() }
+            .minByOrNull { it.length }
+            ?: "/"
 
     val seg = shortest.trim('/').split('/').firstOrNull().orEmpty()
     return "/" + seg
@@ -118,12 +124,15 @@ private fun generateRoutes(
                 }
                 .unindent()
                 .addStatement("}")
-                .build()
+                .build(),
         )
         .build()
 }
 
-private fun suffixUnderBase(base: String, full: String): String {
+private fun suffixUnderBase(
+    base: String,
+    full: String,
+): String {
     if (!full.startsWith(base)) return full
     val rem = full.removePrefix(base)
     return if (rem.isBlank()) "" else rem
@@ -133,68 +142,28 @@ private fun CodeBlock.Builder.addKtorHandler(
     ep: ApiEndpointDO,
     ctx: TypeNameContext,
 ) {
-    val methodMember = when (ep.rawOperation.httpMethod) {
-        RawPathDO.HttpMethodDO.GET -> M_get
-        RawPathDO.HttpMethodDO.POST -> M_post
-        RawPathDO.HttpMethodDO.PUT -> M_put
-        RawPathDO.HttpMethodDO.PATCH -> M_patch
-        RawPathDO.HttpMethodDO.DELETE -> M_delete
-    }
-
-    val label = when (ep.rawOperation.httpMethod) {
-        RawPathDO.HttpMethodDO.GET -> "get"
-        RawPathDO.HttpMethodDO.POST -> "post"
-        RawPathDO.HttpMethodDO.PUT -> "put"
-        RawPathDO.HttpMethodDO.PATCH -> "patch"
-        RawPathDO.HttpMethodDO.DELETE -> "delete"
-    }
+    val methodMember = routeMember(ep)
+    val label = routeLabel(ep)
 
     addStatement("%M {", methodMember)
     indent()
+    addParamReads(ep, label)
+    addRequestBodyRead(ep, ctx)
 
-    ep.params.forEach { p ->
-        when (p.rawParam.location) {
-            RawPathDO.ParamLocationDO.PATH -> {
-                addStatement("val %L = %L", p.generatedName, pathReadExpr(p, label))
+    val args =
+        buildString {
+            ep.params.forEachIndexed { idx, p ->
+                if (idx > 0) append(", ")
+                append(p.generatedName)
             }
-
-            RawPathDO.ParamLocationDO.QUERY -> {
-                addStatement("val %L = %L", p.generatedName, queryReadExpr(p))
-            }
-
-            RawPathDO.ParamLocationDO.HEADER -> {
-                addStatement("val %L = %L", p.generatedName, headerReadExpr(p))
+            ep.requestBody?.let {
+                if (ep.params.isNotEmpty()) append(", ")
+                append(it.generatedName)
             }
         }
-    }
 
-    ep.requestBody?.let { body ->
-        val bodyType = body.type.toTypeName(ctx)
-        if (bodyType.isNullable) {
-            addStatement(
-                "val %L = call.%M<%T>()",
-                body.generatedName,
-                M_receiveNullable,
-                bodyType.copy(nullable = false),
-            )
-        } else {
-            addStatement("val %L = call.%M<%T>()", body.generatedName, M_receive, bodyType)
-        }
-    }
-
-    val args = buildString {
-        ep.params.forEachIndexed { idx, p ->
-            if (idx > 0) append(", ")
-            append(p.generatedName)
-        }
-        ep.requestBody?.let {
-            if (ep.params.isNotEmpty()) append(", ")
-            append(it.generatedName)
-        }
-    }
-
-    val statusCode = ep.successResponse?.rawResponse?.statusCode ?: 200
-    val returnsBody = statusCode != 204 && ep.successResponse?.type != null
+    val statusCode = ep.successResponse?.rawResponse?.statusCode ?: HTTP_STATUS_OK
+    val returnsBody = statusCode != HTTP_STATUS_NO_CONTENT && ep.successResponse?.type != null
 
     if (returnsBody) {
         addStatement("val result = api.%L(%L)", ep.generatedName, args)
@@ -202,13 +171,7 @@ private fun CodeBlock.Builder.addKtorHandler(
         addStatement("api.%L(%L)", ep.generatedName, args)
     }
 
-    val statusMember = when (statusCode) {
-        200 -> "OK"
-        201 -> "Created"
-        202 -> "Accepted"
-        204 -> "NoContent"
-        else -> null
-    }
+    val statusMember = statusMemberName(statusCode)
 
     if (statusMember != null) {
         if (returnsBody) {
@@ -226,143 +189,4 @@ private fun CodeBlock.Builder.addKtorHandler(
 
     unindent()
     addStatement("}")
-}
-
-private fun pathReadExpr(
-    p: ApiParamDO,
-    label: String,
-): CodeBlock {
-    val key = p.rawParam.name
-    return when (p.type) {
-        is TrivialTypeDO -> {
-            val t = p.type as TrivialTypeDO
-            when (t.kind) {
-                TrivialTypeDO.Kind.STRING -> CodeBlock.of(
-                    "call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
-                    key,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
-                TrivialTypeDO.Kind.LONG -> CodeBlock.of(
-                    "call.parameters[%S]?.toLongOrNull() ?: return@%L call.%M(%T.BadRequest)",
-                    key,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
-                TrivialTypeDO.Kind.INT -> CodeBlock.of(
-                    "call.parameters[%S]?.toIntOrNull() ?: return@%L call.%M(%T.BadRequest)",
-                    key,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
-                TrivialTypeDO.Kind.FLOAT,
-                TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of(
-                    "call.parameters[%S]?.toDoubleOrNull() ?: return@%L call.%M(%T.BadRequest)",
-                    key,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
-                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of(
-                    "call.parameters[%S]?.toBooleanStrictOrNull() ?: return@%L call.%M(%T.BadRequest)",
-                    key,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
-                else -> CodeBlock.of(
-                    "call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
-                    key,
-                    label,
-                    M_respond,
-                    HTTP_STATUS_T,
-                )
-            }
-        }
-        else -> CodeBlock.of(
-            "call.parameters[%S] ?: return@%L call.%M(%T.BadRequest)",
-            key,
-            label,
-            M_respond,
-            HTTP_STATUS_T,
-        )
-    }
-}
-
-private fun queryReadExpr(p: ApiParamDO): CodeBlock {
-    val key = p.rawParam.name
-    return when (p.type) {
-        is dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO -> {
-            val listType = p.type as dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-            when (val element = listType.elementType) {
-                is TrivialTypeDO -> {
-                    when (element.kind) {
-                        TrivialTypeDO.Kind.STRING -> CodeBlock.of(
-                            "call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }",
-                            key,
-                        )
-                        TrivialTypeDO.Kind.LONG -> CodeBlock.of(
-                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toLongOrNull)?.takeIf { it.isNotEmpty() }",
-                            key,
-                        )
-                        TrivialTypeDO.Kind.INT -> CodeBlock.of(
-                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toIntOrNull)?.takeIf { it.isNotEmpty() }",
-                            key,
-                        )
-                        TrivialTypeDO.Kind.FLOAT,
-                        TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of(
-                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toDoubleOrNull)?.takeIf { it.isNotEmpty() }",
-                            key,
-                        )
-                        TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of(
-                            "call.request.queryParameters.getAll(%S)?.mapNotNull(String::toBooleanStrictOrNull)?.takeIf { it.isNotEmpty() }",
-                            key,
-                        )
-                        else -> CodeBlock.of(
-                            "call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }",
-                            key,
-                        )
-                    }
-                }
-                else -> CodeBlock.of("call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }", key)
-            }
-        }
-        is TrivialTypeDO -> {
-            val t = p.type as TrivialTypeDO
-            when (t.kind) {
-                TrivialTypeDO.Kind.STRING -> CodeBlock.of("call.request.queryParameters[%S]", key)
-                TrivialTypeDO.Kind.LONG -> CodeBlock.of("call.request.queryParameters[%S]?.toLongOrNull()", key)
-                TrivialTypeDO.Kind.INT -> CodeBlock.of("call.request.queryParameters[%S]?.toIntOrNull()", key)
-                TrivialTypeDO.Kind.FLOAT,
-                TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("call.request.queryParameters[%S]?.toDoubleOrNull()", key)
-                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("call.request.queryParameters[%S]?.toBooleanStrictOrNull()", key)
-                else -> CodeBlock.of("call.request.queryParameters[%S]", key)
-            }
-        }
-
-        else -> CodeBlock.of("call.request.queryParameters[%S]", key)
-    }
-}
-
-private fun headerReadExpr(p: ApiParamDO): CodeBlock {
-    val key = p.rawParam.name
-    return when (p.type) {
-        is TrivialTypeDO -> {
-            val t = p.type as TrivialTypeDO
-            when (t.kind) {
-                TrivialTypeDO.Kind.STRING -> CodeBlock.of("call.request.headers[%S]", key)
-                TrivialTypeDO.Kind.LONG -> CodeBlock.of("call.request.headers[%S]?.toLong()", key)
-                TrivialTypeDO.Kind.INT -> CodeBlock.of("call.request.headers[%S]?.toInt()", key)
-                TrivialTypeDO.Kind.FLOAT,
-                TrivialTypeDO.Kind.DOUBLE -> CodeBlock.of("call.request.headers[%S]?.toDouble()", key)
-                TrivialTypeDO.Kind.BOOLEAN -> CodeBlock.of("call.request.headers[%S]?.toBoolean()", key)
-                else -> CodeBlock.of("call.request.headers[%S]", key)
-            }
-        }
-
-        else -> CodeBlock.of("call.request.headers[%S]", key)
-    }
 }

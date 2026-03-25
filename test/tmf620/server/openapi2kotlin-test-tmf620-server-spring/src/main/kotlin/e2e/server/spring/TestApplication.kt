@@ -25,20 +25,27 @@ class TestCategoryApi : CategoryApi {
         sort: String?,
     ): ResponseEntity<List<Category>> = ResponseEntity.ok(listOf(sampleCategory()))
 
-    override fun createCategory(fields: String?, body: CategoryFVO): ResponseEntity<Category> =
-        ResponseEntity.ok(sampleCategory())
+    override fun createCategory(
+        fields: String?,
+        body: CategoryFVO,
+    ): ResponseEntity<Category> = ResponseEntity.ok(sampleCategory())
 
-    override fun retrieveCategory(id: String, fields: String?): ResponseEntity<Category> =
-        ResponseEntity.ok(sampleCategory(id))
+    override fun retrieveCategory(
+        id: String,
+        fields: String?,
+    ): ResponseEntity<Category> = ResponseEntity.ok(sampleCategory(id))
 
-    override fun patchCategory(id: String, fields: String?, body: CategoryMVO): ResponseEntity<Category> =
-        ResponseEntity.ok(sampleCategory(id))
+    override fun patchCategory(
+        id: String,
+        fields: String?,
+        body: CategoryMVO,
+    ): ResponseEntity<Category> = ResponseEntity.ok(sampleCategory(id))
 
-    override fun deleteCategory(id: String): ResponseEntity<Void> =
-        ResponseEntity.noContent().build()
+    override fun deleteCategory(id: String): ResponseEntity<Void> = ResponseEntity.noContent().build()
 }
 
-private fun sampleCategory(id: String = "cat-1"): Category = Category(
-    id = id,
-    name = "Demo category",
-)
+private fun sampleCategory(id: String = "cat-1"): Category =
+    Category(
+        id = id,
+        name = "Demo category",
+    )

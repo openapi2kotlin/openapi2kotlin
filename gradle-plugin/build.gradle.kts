@@ -224,7 +224,7 @@ mavenPublishing {
     // We provide our own sourcesJar/javadocJar tasks to avoid collisions with kotlin-dsl.
     configureBasedOnAppliedPlugins(
         sourcesJar = false,
-        javadocJar = false
+        javadocJar = false,
     )
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()

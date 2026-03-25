@@ -63,10 +63,11 @@ class PetApiTest {
 
     @Test
     fun `listFindByStatus requests status query and maps pets`() {
-        val responseBody = listOf(
-            pet(id = 1, name = "Doggie", status = "available"),
-            pet(id = 2, name = "Kitty", status = "available"),
-        )
+        val responseBody =
+            listOf(
+                pet(id = 1, name = "Doggie", status = "available"),
+                pet(id = 2, name = "Kitty", status = "available"),
+            )
 
         server.stubFor(
             get(urlPathEqualTo("/pet/findByStatus"))
@@ -135,11 +136,12 @@ class PetApiTest {
                 .willReturn(jsonResponse(responseBody)),
         )
 
-        val result = petApi.createPet(
-            petId = 6,
-            name = "Milo",
-            status = "sold",
-        )
+        val result =
+            petApi.createPet(
+                petId = 6,
+                name = "Milo",
+                status = "sold",
+            )
 
         assertJsonEquals(responseBody, result)
     }
@@ -154,11 +156,12 @@ class PetApiTest {
                 .willReturn(jsonResponse(responseBody)),
         )
 
-        val result = petApi.createUploadImage(
-            petId = 7,
-            additionalMetadata = "avatar",
-            body = "demo-image".encodeToByteArray(),
-        )
+        val result =
+            petApi.createUploadImage(
+                petId = 7,
+                additionalMetadata = "avatar",
+                body = "demo-image".encodeToByteArray(),
+            )
 
         assertJsonEquals(responseBody, result)
     }

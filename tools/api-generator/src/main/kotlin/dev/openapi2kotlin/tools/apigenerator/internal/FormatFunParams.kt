@@ -2,6 +2,64 @@ package dev.openapi2kotlin.tools.apigenerator.internal
 
 import java.io.File
 
+private const val KOTLIN_INDENT = "    "
+
+private data class FunLineParts(
+    val before: String,
+    val inside: String,
+    val after: String,
+)
+
+private class TopLevelScanner {
+    private var paren = 0
+    private var bracket = 0
+    private var angle = 0
+    private var inString = false
+    private var stringQuote = '"'
+    private var escape = false
+
+    fun process(ch: Char): Boolean {
+        if (inString) {
+            processStringChar(ch)
+            return false
+        }
+
+        when (ch) {
+            '"', '\'' -> {
+                inString = true
+                stringQuote = ch
+            }
+            '(' -> paren++
+            ')' -> decreaseIfNeeded { paren-- }
+            '[' -> bracket++
+            ']' -> decreaseIfNeeded { bracket-- }
+            '<' -> angle++
+            '>' -> decreaseIfNeeded { angle-- }
+        }
+
+        return isAtTopLevel()
+    }
+
+    private fun processStringChar(ch: Char) {
+        if (escape) {
+            escape = false
+            return
+        }
+
+        when (ch) {
+            '\\' -> escape = true
+            stringQuote -> inString = false
+        }
+    }
+
+    private fun isAtTopLevel(): Boolean = paren == 0 && bracket == 0 && angle == 0 && !inString
+
+    private inline fun decreaseIfNeeded(update: () -> Unit) {
+        if (isAtTopLevel()) return
+        update()
+    }
+}
+
 internal fun File.formatFunParams() {
     walkTopDown()
         .filter { it.isFile && it.extension == "kt" }
@@ -17,82 +75,68 @@ private fun String.rewriteSingleLineFunParamLists(): String {
     val out = ArrayList<String>(lines.size)
 
     for (line in lines) {
-        val funIdx = line.indexOf("fun ")
-        if (funIdx == -1) {
-            out += line
-            continue
-        }
-
-        val openIdx = line.indexOf('(', startIndex = funIdx)
-        val closeIdx = line.lastIndexOf(')')
-        if (openIdx == -1 || closeIdx == -1 || closeIdx < openIdx) {
-            out += line
-            continue
-        }
-
-        val before = line.substring(0, openIdx) // includes indentation + "fun name"
-        val inside = line.substring(openIdx + 1, closeIdx)
-        val after = line.substring(closeIdx + 1)
-
-        // Only rewrite if we have at least two top-level params (comma at top level)
-        if (!hasTopLevelComma(inside)) {
-            out += line
-            continue
-        }
-
-        val params = splitTopLevelCommas(inside)
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-
-        if (params.size <= 1) {
-            out += line
-            continue
-        }
-
-        val indent = before.takeWhile { it.isWhitespace() }
-        val paramIndent = indent + "  "
-
-        out += "$before("
-        params.forEach { p ->
-            out += "$paramIndent$p,"
-        }
-        out += "$indent)$after"
+        out += line.rewriteLineIfNeeded()
     }
 
     return out.joinToString("\n")
 }
 
-private fun hasTopLevelComma(s: String): Boolean {
-    var paren = 0
-    var bracket = 0
-    var angle = 0
+private fun String.rewriteLineIfNeeded(): List<String> {
+    val parts = parseFunLine() ?: return listOf(this)
+    val rewritten =
+        if (hasTopLevelComma(parts.inside)) {
+            val params =
+                splitTopLevelCommas(parts.inside)
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
 
-    var inString = false
-    var stringQuote = '"'
-    var escape = false
+            if (params.size <= 1) {
+                null
+            } else {
+                val indent = parts.before.takeWhile { it.isWhitespace() }
+                val paramIndent = indent + KOTLIN_INDENT
 
-    for (ch in s) {
-        if (inString) {
-            if (escape) {
-                escape = false
-                continue
+                buildList<String> {
+                    add("${parts.before}(")
+                    params.forEach { param ->
+                        add("$paramIndent$param,")
+                    }
+                    add("$indent)${parts.after}")
+                }
             }
-            when (ch) {
-                '\\' -> escape = true
-                stringQuote -> inString = false
-            }
-            continue
+        } else {
+            null
         }
 
-        when (ch) {
-            '"', '\'' -> { inString = true; stringQuote = ch }
-            '(' -> paren++
-            ')' -> if (paren > 0) paren--
-            '[' -> bracket++
-            ']' -> if (bracket > 0) bracket--
-            '<' -> angle++
-            '>' -> if (angle > 0) angle--
-            ',' -> if (paren == 0 && bracket == 0 && angle == 0) return true
+    return rewritten ?: listOf(this)
+}
+
+private fun String.parseFunLine(): FunLineParts? {
+    val funIdx = indexOf("fun ")
+    return if (funIdx == -1) {
+        null
+    } else {
+        val openIdx = indexOf('(', startIndex = funIdx)
+        val closeIdx = lastIndexOf(')')
+
+        if (openIdx == -1 || closeIdx == -1 || closeIdx < openIdx) {
+            null
+        } else {
+            FunLineParts(
+                before = substring(0, openIdx),
+                inside = substring(openIdx + 1, closeIdx),
+                after = substring(closeIdx + 1),
+            )
+        }
+    }
+}
+
+private fun hasTopLevelComma(s: String): Boolean {
+    val scanner = TopLevelScanner()
+    for (ch in s) {
+        val atTopLevel = scanner.process(ch)
+        if (ch == ',' && atTopLevel) {
+            return true
         }
     }
     return false
@@ -104,55 +148,15 @@ private fun hasTopLevelComma(s: String): Boolean {
 private fun splitTopLevelCommas(s: String): List<String> {
     val result = mutableListOf<String>()
     val buf = StringBuilder()
-
-    var paren = 0
-    var bracket = 0
-    var angle = 0
-
-    var inString = false
-    var stringQuote: Char = '"'
-    var escape = false
+    val scanner = TopLevelScanner()
 
     for (ch in s) {
-        if (inString) {
+        val atTopLevel = scanner.process(ch)
+        if (ch == ',' && atTopLevel) {
+            result += buf.toString()
+            buf.setLength(0)
+        } else {
             buf.append(ch)
-            if (escape) {
-                escape = false
-            } else {
-                when (ch) {
-                    '\\' -> escape = true
-                    stringQuote -> inString = false
-                }
-            }
-            continue
-        }
-
-        when (ch) {
-            '"', '\'' -> {
-                inString = true
-                stringQuote = ch
-                buf.append(ch)
-            }
-
-            '(' -> { paren++; buf.append(ch) }
-            ')' -> { if (paren > 0) paren--; buf.append(ch) }
-
-            '[' -> { bracket++; buf.append(ch) }
-            ']' -> { if (bracket > 0) bracket--; buf.append(ch) }
-
-            '<' -> { angle++; buf.append(ch) }
-            '>' -> { if (angle > 0) angle--; buf.append(ch) }
-
-            ',' -> {
-                if (paren == 0 && bracket == 0 && angle == 0) {
-                    result += buf.toString()
-                    buf.setLength(0)
-                } else {
-                    buf.append(ch)
-                }
-            }
-
-            else -> buf.append(ch)
         }
     }
 

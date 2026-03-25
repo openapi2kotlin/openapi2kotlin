@@ -17,13 +17,15 @@ internal class Http4kClientInterfaceGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
         val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
-        val ctx = TypeNameContext(
-            modelPackageName = command.modelPackageName,
-            bySchemaName = bySchemaName,
-        )
+        val ctx =
+            TypeNameContext(
+                modelPackageName = command.modelPackageName,
+                bySchemaName = bySchemaName,
+            )
 
         command.apiContext.apis.forEach { api ->
             FileSpec.builder(command.packageName, api.generatedName)
+                .indent("    ")
                 .addType(generateApiInterface(api, ctx))
                 .build()
                 .writeTo(outDir)
@@ -66,28 +68,30 @@ internal class Http4kClientInterfaceGenerator : GenerateApiPort {
         ctx: TypeNameContext,
         suffix: String = "",
     ): FunSpec.Builder {
-        val builder = FunSpec.builder(ep.generatedName + suffix)
-            .addModifiers(KModifier.ABSTRACT)
+        val builder =
+            FunSpec.builder(ep.generatedName + suffix)
+                .addModifiers(KModifier.ABSTRACT)
 
         ep.params.forEach { param ->
             builder.addParameter(
-                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build()
+                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build(),
             )
         }
 
         ep.requestBody?.let { body ->
             builder.addParameter(
-                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build()
+                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build(),
             )
         }
 
-        val kdoc = buildString {
-            ep.rawOperation.summary?.let { appendLine(it) }
-            ep.rawOperation.description?.let {
-                if (isNotEmpty()) appendLine()
-                appendLine(it)
+        val kdoc =
+            buildString {
+                ep.rawOperation.summary?.let { appendLine(it) }
+                ep.rawOperation.description?.let {
+                    if (isNotEmpty()) appendLine()
+                    appendLine(it)
+                }
             }
-        }
         if (kdoc.isNotBlank()) builder.addKdoc(kdoc)
 
         return builder

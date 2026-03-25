@@ -4,6 +4,8 @@ import e2e.petstore3.server.spring.generated.model.Order
 import e2e.petstore3.server.spring.generated.model.Pet
 import e2e.petstore3.server.spring.generated.server.PetApi
 import e2e.petstore3.server.spring.generated.server.StoreApi
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -11,8 +13,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestClient
 import kotlin.collections.listOf
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertTrue
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -24,14 +24,15 @@ class PetstoreServerTest {
 
     @Test
     fun `pet endpoint returns seeded pet`() {
-        val body = RestClient.builder()
-            .baseUrl("http://localhost:$port")
-            .build()
-            .get()
-            .uri("/pet/findByStatus?status=available")
-            .retrieve()
-            .body(String::class.java)
-            .orEmpty()
+        val body =
+            RestClient.builder()
+                .baseUrl("http://localhost:$port")
+                .build()
+                .get()
+                .uri("/pet/findByStatus?status=available")
+                .retrieve()
+                .body(String::class.java)
+                .orEmpty()
 
         assertTrue(body.contains("Doggie"))
         assertTrue(body.contains("available"))
@@ -39,14 +40,15 @@ class PetstoreServerTest {
 
     @Test
     fun `store inventory endpoint is reachable`() {
-        val body = RestClient.builder()
-            .baseUrl("http://localhost:$port")
-            .build()
-            .get()
-            .uri("/store/inventory")
-            .retrieve()
-            .body(String::class.java)
-            .orEmpty()
+        val body =
+            RestClient.builder()
+                .baseUrl("http://localhost:$port")
+                .build()
+                .get()
+                .uri("/store/inventory")
+                .retrieve()
+                .body(String::class.java)
+                .orEmpty()
 
         assertTrue(body.contains("available"))
         assertTrue(body.contains("3"))
@@ -64,11 +66,15 @@ class PetstoreServerTest {
     open class TestPetApi : PetApi {
         override fun createPet(body: Pet): ResponseEntity<Pet> = ResponseEntity.ok(body)
 
-        override fun deletePet(apiKey: String?, petId: Long): ResponseEntity<Void> = ResponseEntity.noContent().build()
+        override fun deletePet(
+            apiKey: String?,
+            petId: Long,
+        ): ResponseEntity<Void> = ResponseEntity.noContent().build()
 
-        override fun listFindByStatus(status: String?): ResponseEntity<List<Pet>> = ResponseEntity.ok(
-            listOf(Pet(id = 1, name = "Doggie", photoUrls = listOf("photo"), status = status ?: "available"))
-        )
+        override fun listFindByStatus(status: String?): ResponseEntity<List<Pet>> =
+            ResponseEntity.ok(
+                listOf(Pet(id = 1, name = "Doggie", photoUrls = listOf("photo"), status = status ?: "available")),
+            )
 
         override fun listFindByTags(tags: List<String>?): ResponseEntity<List<Pet>> = ResponseEntity.ok(emptyList())
 
@@ -77,14 +83,30 @@ class PetstoreServerTest {
 
         override fun updatePet(body: Pet): ResponseEntity<Pet> = ResponseEntity.ok(body)
 
-        override fun createPet(petId: Long, name: String?, status: String?): ResponseEntity<Pet> =
-            ResponseEntity.ok(Pet(id = petId, name = name ?: "Doggie", photoUrls = listOf("photo"), status = status))
+        override fun createPet(
+            petId: Long,
+            name: String?,
+            status: String?,
+        ): ResponseEntity<Pet> =
+            ResponseEntity.ok(
+                Pet(
+                    id = petId,
+                    name = name ?: "Doggie",
+                    photoUrls = listOf("photo"),
+                    status = status,
+                ),
+            )
 
         override fun createUploadImage(
             petId: Long,
             additionalMetadata: String?,
             body: ByteArray?,
-        ) = ResponseEntity.ok(e2e.petstore3.server.spring.generated.model.ApiResponse(code = 200, message = additionalMetadata))
+        ) = ResponseEntity.ok(
+            e2e.petstore3.server.spring.generated.model.ApiResponse(
+                code = 200,
+                message = additionalMetadata,
+            ),
+        )
     }
 
     open class TestStoreApi : StoreApi {

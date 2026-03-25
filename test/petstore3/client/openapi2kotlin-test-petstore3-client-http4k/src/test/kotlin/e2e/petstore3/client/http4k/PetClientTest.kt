@@ -8,14 +8,14 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.http4k.generated.client.PetApiImpl
 import e2e.petstore3.client.http4k.generated.model.Pet
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -46,8 +46,10 @@ class PetClientTest {
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", "application/json")
-                        .withBody("[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]")
-                )
+                        .withBody(
+                            "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
+                        ),
+                ),
         )
 
         val result = api.listFindByStatus("available")
@@ -66,8 +68,8 @@ class PetClientTest {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withHeader("X-Pet", "9")
-                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}")
-                )
+                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}"),
+                ),
         )
 
         val response = api.retrievePetWithHttpInfo(9)
@@ -83,15 +85,20 @@ class PetClientTest {
     fun `createPet posts request body`() {
         server.stubFor(
             post(urlPathEqualTo("/pet"))
-                .withRequestBody(equalTo("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"))
+                .withRequestBody(
+                    equalTo("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"),
+                )
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}")
-                )
+                        .withBody("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"),
+                ),
         )
 
-        val result = api.createPet(Pet(id = 7, name = "Nina", photoUrls = listOf("photo"), status = "available"))
+        val result =
+            api.createPet(
+                Pet(id = 7, name = "Nina", photoUrls = listOf("photo"), status = "available"),
+            )
 
         assertEquals(7L, result.id)
         assertEquals("Nina", result.name)

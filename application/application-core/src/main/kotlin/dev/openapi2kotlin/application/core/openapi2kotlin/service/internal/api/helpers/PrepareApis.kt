@@ -13,11 +13,12 @@ internal fun prepareApis(
     models: List<ModelDO>,
     config: OpenApi2KotlinUseCase.Config,
 ): List<ApiDO> {
-    val ctx = ApisContext(
-        modelsBySchemaName = models.associateBy { it.rawSchema.originalName },
-        modelCfg = config.model,
-        apiCfg = config.api,
-    )
+    val ctx =
+        ApisContext(
+            modelsBySchemaName = models.associateBy { it.rawSchema.originalName },
+            modelCfg = config.model,
+            apiCfg = config.api,
+        )
 
     val apis = rawPaths.toApis(ctx)
 

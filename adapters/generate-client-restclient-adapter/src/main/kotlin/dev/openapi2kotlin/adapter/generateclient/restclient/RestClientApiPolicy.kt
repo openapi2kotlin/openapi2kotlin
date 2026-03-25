@@ -13,10 +13,15 @@ internal object RestClientApiPolicy {
     private val RESPONSE_SPEC = ClassName("org.springframework.web.client.RestClient", "ResponseSpec")
     private val VOID = ClassName("java.lang", "Void")
 
-    fun bodyReturnType(ep: ApiEndpointDO, ctx: TypeNameContext): TypeName =
-        ep.successResponse?.type?.toTypeName(ctx) ?: UNIT
+    fun bodyReturnType(
+        ep: ApiEndpointDO,
+        ctx: TypeNameContext,
+    ): TypeName = ep.successResponse?.type?.toTypeName(ctx) ?: UNIT
 
-    fun httpInfoReturnType(ep: ApiEndpointDO, ctx: TypeNameContext): TypeName {
+    fun httpInfoReturnType(
+        ep: ApiEndpointDO,
+        ctx: TypeNameContext,
+    ): TypeName {
         val bodyType = ep.successResponse?.type?.toTypeName(ctx)
         val wrappedArg = bodyType ?: VOID
         return RESPONSE_ENTITY.parameterizedBy(wrappedArg)
@@ -24,6 +29,5 @@ internal object RestClientApiPolicy {
 
     fun responseSpecReturnType(): TypeName = RESPONSE_SPEC
 
-    fun hasBody(ep: ApiEndpointDO): Boolean =
-        ep.successResponse?.type != null
+    fun hasBody(ep: ApiEndpointDO): Boolean = ep.successResponse?.type != null
 }

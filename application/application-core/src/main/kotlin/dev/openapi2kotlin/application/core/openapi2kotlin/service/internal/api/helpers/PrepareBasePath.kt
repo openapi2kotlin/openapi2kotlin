@@ -11,65 +11,9 @@ internal fun prepareBasePath(
     config: OpenApi2KotlinUseCase.Config,
 ): String {
     val basePathVarName = config.api!!.basePathVar.trim()
-
-    /* ---------------------------------------------------------------------
-     * 1) Prefer OpenAPI server variable resolution when basePathVar is set
-     * ------------------------------------------------------------------- */
-    if (basePathVarName.isNotBlank()) {
-        val server = rawServers
-            .asSequence()
-            .filter { !it.url.isNullOrBlank() }
-            .firstOrNull { s ->
-                s.vars.orEmpty().any { it.name == basePathVarName && it.defaultValue.isNotBlank() }
-            }
-
-        if (server == null) {
-            log.debug {
-                "No OpenAPI server variable named '$basePathVarName' with a default value was found; " +
-                    "basePath defaults to empty."
-            }
-            return ""
-        }
-
-        val urlTemplate = server.url.orEmpty().trim()
-        val basePathVarValue =
-            server.vars
-                .orEmpty()
-                .firstOrNull { it.name == basePathVarName }
-                ?.defaultValue
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-                .orEmpty()
-
-        val substitutedUrl = urlTemplate.replace("{${basePathVarName}}", basePathVarValue)
-        return resolvePathOrEmpty(
-            urlTemplate = urlTemplate,
-            substitutedUrl = substitutedUrl,
-            basePathVarName = basePathVarName,
-        )
-    }
-
-    /* ---------------------------------------------------------------------
-     * 2) Fallback to first relative server URL when basePathVar is blank
-     * ------------------------------------------------------------------- */
-    val relativeServerUrl = rawServers
-        .asSequence()
-        .mapNotNull { it.url?.trim()?.takeIf(String::isNotBlank) }
-        .firstOrNull { isRelativeUrlLike(it) }
-
-    if (relativeServerUrl != null) {
-        return resolvePathOrEmpty(
-            urlTemplate = relativeServerUrl,
-            substitutedUrl = relativeServerUrl,
-            basePathVarName = "",
-        )
-    }
-
-    /* ---------------------------------------------------------------------
-     * 3) Otherwise keep basePath empty and ignore it
-     * ------------------------------------------------------------------- */
-    log.debug { "No relative OpenAPI server URL found and basePathVar is blank; basePath defaults to empty." }
-    return ""
+    return rawServers.resolveBasePathFromVariable(basePathVarName)
+        ?: rawServers.resolveBasePathFromRelativeUrl()
+        ?: emptyBasePath()
 }
 
 /**
@@ -79,18 +23,18 @@ internal fun prepareBasePath(
 private fun extractPathFromUrlLike(url: String): String {
     val u = url.trim()
     val schemeIdx = u.indexOf("://")
-    if (schemeIdx >= 0) {
-        val afterScheme = u.substring(schemeIdx + 3)
-        val slashIdx = afterScheme.indexOf('/')
-        return if (slashIdx >= 0) afterScheme.substring(slashIdx) else ""
+    return when {
+        schemeIdx >= 0 -> {
+            val afterScheme = u.substring(schemeIdx + SCHEME_SEPARATOR_LENGTH)
+            val slashIdx = afterScheme.indexOf('/')
+            slashIdx.substringOrEmpty(afterScheme)
+        }
+        u.startsWith("/") -> u
+        else -> {
+            val slashIdx = u.indexOf('/')
+            slashIdx.substringOrEmpty(u)
+        }
     }
-
-    // relative path-like
-    if (u.startsWith("/")) return u
-
-    // host-like without scheme: "example.com/v2"
-    val slashIdx = u.indexOf('/')
-    return if (slashIdx >= 0) u.substring(slashIdx) else ""
 }
 
 private fun isRelativeUrlLike(url: String): Boolean {
@@ -118,11 +62,70 @@ private fun resolvePathOrEmpty(
     return resolved
 }
 
-
 private fun String.normalizePath(): String {
     val trimmed = trim()
     val collapsed = trimmed.replace(Regex("/+"), "/")
     val noTrailing = if (collapsed.length > 1) collapsed.trimEnd('/') else collapsed
     if (noTrailing.isBlank()) return ""
     return if (noTrailing.startsWith("/")) noTrailing else "/$noTrailing"
+}
+
+private fun List<RawServerDO>.resolveBasePathFromVariable(basePathVarName: String): String? {
+    if (basePathVarName.isBlank()) return null
+
+    val server =
+        asSequence()
+            .filter { !it.url.isNullOrBlank() }
+            .firstOrNull { candidate ->
+                candidate.vars.orEmpty().any { it.name == basePathVarName && it.defaultValue.isNotBlank() }
+            }
+
+    return if (server == null) {
+        log.debug {
+            "No OpenAPI server variable named '$basePathVarName' with a default value was found; " +
+                "basePath defaults to empty."
+        }
+        ""
+    } else {
+        val urlTemplate = server.url.orEmpty().trim()
+        val basePathVarValue =
+            server.vars
+                .orEmpty()
+                .firstOrNull { it.name == basePathVarName }
+                ?.defaultValue
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                .orEmpty()
+        val substitutedUrl = urlTemplate.replace("{$basePathVarName}", basePathVarValue)
+
+        resolvePathOrEmpty(
+            urlTemplate = urlTemplate,
+            substitutedUrl = substitutedUrl,
+            basePathVarName = basePathVarName,
+        )
+    }
+}
+
+private fun List<RawServerDO>.resolveBasePathFromRelativeUrl(): String? {
+    val relativeServerUrl =
+        asSequence()
+            .mapNotNull { it.url?.trim()?.takeIf(String::isNotBlank) }
+            .firstOrNull { isRelativeUrlLike(it) }
+
+    return relativeServerUrl?.let {
+        resolvePathOrEmpty(
+            urlTemplate = it,
+            substitutedUrl = it,
+            basePathVarName = "",
+        )
+    }
+}
+
+private const val SCHEME_SEPARATOR_LENGTH = 3
+
+private fun Int.substringOrEmpty(source: String): String = if (this >= 0) source.substring(this) else ""
+
+private fun emptyBasePath(): String {
+    log.debug { "No relative OpenAPI server URL found and basePathVar is blank; basePath defaults to empty." }
+    return ""
 }

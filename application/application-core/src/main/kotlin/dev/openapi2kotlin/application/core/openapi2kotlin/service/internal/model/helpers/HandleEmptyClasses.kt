@@ -8,9 +8,10 @@ internal fun List<ModelDO>.handleEmptyClasses() {
         val shape = model.modelShape as? ModelShapeDO.DataClass ?: return@forEach
         if (model.fields.isNotEmpty()) return@forEach
 
-        model.modelShape = ModelShapeDO.EmptyClass(
-            extend = shape.extend,
-            implements = shape.implements,
-        )
+        model.modelShape =
+            ModelShapeDO.EmptyClass(
+                extend = shape.extend,
+                implements = shape.implements,
+            )
     }
 }

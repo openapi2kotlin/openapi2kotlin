@@ -1,17 +1,24 @@
 package dev.openapi2kotlin.adapter.generateserver.http4k
 
 import dev.openapi2kotlin.adapter.generateserver.http4k.internal.generateHttp4kRoutes
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
+import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 
 class GenerateServerHttp4kAdapter : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         Http4kServerInterfaceGenerator().generateApi(command)
+        val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
+        val typeNameContext =
+            TypeNameContext(
+                modelPackageName = command.modelPackageName,
+                bySchemaName = bySchemaName,
+            )
         generateHttp4kRoutes(
             apis = command.apiContext.apis,
             serverPackageName = command.packageName,
-            modelPackageName = command.modelPackageName,
             outputDirPath = command.outputDirPath,
-            models = command.models,
+            ctx = typeNameContext,
             basePath = command.apiContext.basePath,
         )
     }

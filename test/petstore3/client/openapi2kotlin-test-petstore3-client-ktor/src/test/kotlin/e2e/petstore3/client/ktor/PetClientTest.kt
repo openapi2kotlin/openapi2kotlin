@@ -27,14 +27,15 @@ class PetClientTest {
     fun setUp() {
         server = WireMockServer(0)
         server.start()
-        client = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+        client =
+            HttpClient(CIO) {
+                install(ContentNegotiation) {
+                    json(Json { ignoreUnknownKeys = true })
+                }
+                defaultRequest {
+                    url(server.baseUrl())
+                }
             }
-            defaultRequest {
-                url(server.baseUrl())
-            }
-        }
         api = PetApiImpl(client)
     }
 
@@ -45,38 +46,42 @@ class PetClientTest {
     }
 
     @Test
-    fun `listFindByStatus calls pluralized pet endpoint`() = runBlocking {
-        server.stubFor(
-            get(urlPathEqualTo("/pet/findByStatus"))
-                .withQueryParam("status", equalTo("available"))
-                .willReturn(
-                    aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]")
-                )
-        )
+    fun `listFindByStatus calls pluralized pet endpoint`() =
+        runBlocking {
+            server.stubFor(
+                get(urlPathEqualTo("/pet/findByStatus"))
+                    .withQueryParam("status", equalTo("available"))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(
+                                "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
+                            ),
+                    ),
+            )
 
-        val result = api.listFindByStatus("available")
+            val result = api.listFindByStatus("available")
 
-        assertEquals(1, result.size)
-        assertEquals(1L, result.single().id)
-        assertEquals("Doggie", result.single().name)
-    }
+            assertEquals(1, result.size)
+            assertEquals(1L, result.single().id)
+            assertEquals("Doggie", result.single().name)
+        }
 
     @Test
-    fun `retrievePet resolves singular path operation`() = runBlocking {
-        server.stubFor(
-            get(urlPathEqualTo("/pet/9"))
-                .willReturn(
-                    aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}")
-                )
-        )
+    fun `retrievePet resolves singular path operation`() =
+        runBlocking {
+            server.stubFor(
+                get(urlPathEqualTo("/pet/9"))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}"),
+                    ),
+            )
 
-        val result = api.retrievePet(9)
+            val result = api.retrievePet(9)
 
-        assertEquals(9L, result.id)
-        assertEquals("Sparky", result.name)
-    }
+            assertEquals(9L, result.id)
+            assertEquals("Sparky", result.name)
+        }
 }

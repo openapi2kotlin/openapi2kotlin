@@ -14,16 +14,18 @@ fun prepareApiContext(
     models: List<ModelDO>,
     config: OpenApi2KotlinUseCase.Config,
 ): ApiContextDO {
-    val apis = prepareApis(
-        rawPaths = rawPaths,
-        models = models,
-        config = config,
-    )
+    val apis =
+        prepareApis(
+            rawPaths = rawPaths,
+            models = models,
+            config = config,
+        )
 
-    val basePath = prepareBasePath(
-        rawServers = rawServers,
-        config = config,
-    )
+    val basePath =
+        prepareBasePath(
+            rawServers = rawServers,
+            config = config,
+        )
 
     return ApiContextDO(
         apis = apis,

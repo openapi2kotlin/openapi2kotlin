@@ -34,7 +34,8 @@ data class RawPathDO(
 
     data class ResponseDO(
         val statusCode: Int,
-        val type: RawSchemaDO.RawFieldTypeDO?, // null = no body (204, etc.)
+        // null = no body (204, etc.)
+        val type: RawSchemaDO.RawFieldTypeDO?,
     )
 
     enum class HttpMethodDO { GET, POST, PUT, PATCH, DELETE }

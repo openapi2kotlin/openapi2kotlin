@@ -10,27 +10,29 @@ import kotlin.test.assertTrue
 
 class CategoryServerTest {
     @Test
-    fun `listCategories responds with seeded category`() = testApplication {
-        application {
-            testModule()
+    fun `listCategories responds with seeded category`() =
+        testApplication {
+            application {
+                testModule()
+            }
+
+            val response = client.get("/category")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertTrue(response.bodyAsText().contains("cat-1"))
+            assertTrue(response.bodyAsText().contains("Demo category"))
         }
-
-        val response = client.get("/category")
-
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.bodyAsText().contains("cat-1"))
-        assertTrue(response.bodyAsText().contains("Demo category"))
-    }
 
     @Test
-    fun `retrieveCategory uses path id`() = testApplication {
-        application {
-            testModule()
+    fun `retrieveCategory uses path id`() =
+        testApplication {
+            application {
+                testModule()
+            }
+
+            val response = client.get("/category/custom-id")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertTrue(response.bodyAsText().contains("custom-id"))
         }
-
-        val response = client.get("/category/custom-id")
-
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(response.bodyAsText().contains("custom-id"))
-    }
 }

@@ -9,12 +9,17 @@ import dev.openapi2kotlin.tools.generatortools.toTypeName
 interface ApiPolicy {
     val suspendFunctions: Boolean
 
-    fun returnType(ep: ApiEndpointDO, ctx: TypeNameContext): TypeName
+    fun returnType(
+        ep: ApiEndpointDO,
+        ctx: TypeNameContext,
+    ): TypeName
 
     object Default : ApiPolicy {
         override val suspendFunctions: Boolean = true
 
-        override fun returnType(ep: ApiEndpointDO, ctx: TypeNameContext): TypeName =
-            ep.successResponse?.type?.toTypeName(ctx) ?: UNIT
+        override fun returnType(
+            ep: ApiEndpointDO,
+            ctx: TypeNameContext,
+        ): TypeName = ep.successResponse?.type?.toTypeName(ctx) ?: UNIT
     }
 }

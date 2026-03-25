@@ -35,7 +35,8 @@ fun interface OpenApi2KotlinUseCase {
             val value: String,
         ) {
             JAKARTA("jakarta"),
-            JAVAX("javax");
+            JAVAX("javax"),
+            ;
 
             override fun toString(): String = value
         }

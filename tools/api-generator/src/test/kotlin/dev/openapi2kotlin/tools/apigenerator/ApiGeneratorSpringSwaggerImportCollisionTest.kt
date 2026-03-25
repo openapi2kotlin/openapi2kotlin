@@ -26,86 +26,18 @@ class ApiGeneratorSpringSwaggerImportCollisionTest {
         val outputDir = createTempDirectory("openapi2kotlin-spring-alias-test")
         val modelPackage = "demo.server.spring.generated.model"
         val apiPackage = "demo.server.spring.generated.server"
-
-        val apiResponseModel = ModelDO(
-            rawSchema = RawSchemaDO(
-                originalName = "ApiResponse",
-                allOfParents = emptyList(),
-                oneOfChildren = emptyList(),
-                discriminatorMapping = emptyMap(),
-                isDiscriminatorSelfMapped = false,
-            ),
-            packageName = modelPackage,
-            generatedName = "ApiResponse",
-            modelShape = ModelShapeDO.EmptyClass(
-                extend = null,
-                implements = emptyList(),
-            ),
-        )
-
-        val responseType = RefTypeDO(
-            schemaName = "ApiResponse",
-            nullable = false,
-        )
-
-        val operation = RawPathDO.OperationDO(
-            operationId = "uploadFile",
-            httpMethod = RawPathDO.HttpMethodDO.POST,
-            path = "/pet/{petId}/uploadImage",
-            summary = "Uploads an image.",
-            description = "Upload image of the pet.",
-            parameters = emptyList(),
-            requestBody = null,
-            responses = listOf(
-                RawPathDO.ResponseDO(
-                    statusCode = 200,
-                    type = RawSchemaDO.RawRefTypeDO("ApiResponse", false),
-                ),
-            ),
-        )
-
-        val endpoint = ApiEndpointDO(
-            rawOperation = operation,
-            generatedName = "uploadFile",
-            params = emptyList(),
-            requestBody = null,
-            successResponse = ApiSuccessResponseDO(
-                rawResponse = operation.responses!!.single(),
-                type = responseType,
-            ),
-            annotations = listOf(
-                ApiAnnotationDO(
-                    fqName = "io.swagger.v3.oas.annotations.Operation",
-                    argsCode = listOf(
-                        """
-                        responses = [io.swagger.v3.oas.annotations.responses.ApiResponse(
-                          responseCode = "200",
-                          description = "Success",
-                          content = [io.swagger.v3.oas.annotations.media.Content(
-                            schema = io.swagger.v3.oas.annotations.media.Schema(implementation = $modelPackage.ApiResponse::class)
-                          )]
-                        )]
-                        """.trimIndent(),
-                    ),
-                ),
-            ),
-        )
-
-        val api = ApiDO(
-            rawPath = RawPathDO(
-                tags = listOf("pet"),
-                operations = listOf(operation),
-            ),
-            generatedName = "PetApi",
-            endpoints = listOf(endpoint),
-        )
+        val apiResponseModel = createApiResponseModel(modelPackage)
+        val operation = createUploadFileOperation()
+        val endpoint = createUploadFileEndpoint(operation, modelPackage)
+        val api = createPetApi(operation, endpoint)
 
         ApiGenerator(TestSpringPolicy).generateApi(
             GenerateApiPort.Command(
-                apiContext = ApiContextDO(
-                    apis = listOf(api),
-                    basePath = "/api/v3",
-                ),
+                apiContext =
+                    ApiContextDO(
+                        apis = listOf(api),
+                        basePath = "/api/v3",
+                    ),
                 packageName = apiPackage,
                 modelPackageName = modelPackage,
                 outputDirPath = outputDir,
@@ -116,11 +48,99 @@ class ApiGeneratorSpringSwaggerImportCollisionTest {
         val generated = outputDir.resolve("demo/server/spring/generated/server/PetApi.kt").readText()
 
         assertContains(generated, "import demo.server.spring.generated.model.ApiResponse")
-        assertContains(generated, "import io.swagger.v3.oas.annotations.responses.ApiResponse as ResponsesApiResponseAnnotation")
+        assertContains(
+            generated,
+            "import io.swagger.v3.oas.annotations.responses.ApiResponse as ResponsesApiResponseAnnotation",
+        )
         assertContains(generated, "responses = [ResponsesApiResponseAnnotation(")
         assertContains(generated, "ResponseEntity<ApiResponse>")
         assertContains(generated, "implementation = ApiResponse::class")
     }
+
+    private fun createApiResponseModel(modelPackage: String): ModelDO =
+        ModelDO(
+            rawSchema =
+                RawSchemaDO(
+                    originalName = "ApiResponse",
+                    allOfParents = emptyList(),
+                    oneOfChildren = emptyList(),
+                    discriminatorMapping = emptyMap(),
+                    isDiscriminatorSelfMapped = false,
+                ),
+            packageName = modelPackage,
+            generatedName = "ApiResponse",
+            modelShape =
+                ModelShapeDO.EmptyClass(
+                    extend = null,
+                    implements = emptyList(),
+                ),
+        )
+
+    private fun createUploadFileOperation(): RawPathDO.OperationDO =
+        RawPathDO.OperationDO(
+            operationId = "uploadFile",
+            httpMethod = RawPathDO.HttpMethodDO.POST,
+            path = "/pet/{petId}/uploadImage",
+            summary = "Uploads an image.",
+            description = "Upload image of the pet.",
+            parameters = emptyList(),
+            requestBody = null,
+            responses =
+                listOf(
+                    RawPathDO.ResponseDO(
+                        statusCode = 200,
+                        type = RawSchemaDO.RawRefTypeDO("ApiResponse", false),
+                    ),
+                ),
+        )
+
+    private fun createUploadFileEndpoint(
+        operation: RawPathDO.OperationDO,
+        modelPackage: String,
+    ): ApiEndpointDO =
+        ApiEndpointDO(
+            rawOperation = operation,
+            generatedName = "uploadFile",
+            params = emptyList(),
+            requestBody = null,
+            successResponse =
+                ApiSuccessResponseDO(
+                    rawResponse = requireNotNull(operation.responses).single(),
+                    type = RefTypeDO(schemaName = "ApiResponse", nullable = false),
+                ),
+            annotations =
+                listOf(
+                    ApiAnnotationDO(
+                        fqName = "io.swagger.v3.oas.annotations.Operation",
+                        argsCode = listOf(operationResponsesAnnotation(modelPackage)),
+                    ),
+                ),
+        )
+
+    private fun createPetApi(
+        operation: RawPathDO.OperationDO,
+        endpoint: ApiEndpointDO,
+    ): ApiDO =
+        ApiDO(
+            rawPath =
+                RawPathDO(
+                    tags = listOf("pet"),
+                    operations = listOf(operation),
+                ),
+            generatedName = "PetApi",
+            endpoints = listOf(endpoint),
+        )
+
+    private fun operationResponsesAnnotation(modelPackage: String): String =
+        """
+        responses = [io.swagger.v3.oas.annotations.responses.ApiResponse(
+          responseCode = "200",
+          description = "Success",
+          content = [io.swagger.v3.oas.annotations.media.Content(
+            schema = io.swagger.v3.oas.annotations.media.Schema(implementation = $modelPackage.ApiResponse::class)
+          )]
+        )]
+        """.trimIndent()
 
     private object TestSpringPolicy : ApiPolicy {
         private val responseEntity = ClassName("org.springframework.http", "ResponseEntity")

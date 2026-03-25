@@ -5,11 +5,14 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
@@ -39,6 +42,7 @@ internal class ApiImplGenerator : GenerateApiPort {
 
         command.apiContext.apis.forEach { api ->
             FileSpec.builder(command.packageName, "${api.generatedName}Impl")
+                .indent("    ")
                 .addType(generateApiImpl(api, command.packageName, ctx))
                 .build()
                 .writeTo(outDir)
@@ -59,12 +63,12 @@ internal class ApiImplGenerator : GenerateApiPort {
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("client", HTTP_CLIENT_T)
-                    .build()
+                    .build(),
             )
             .addProperty(
                 PropertySpec.builder("client", HTTP_CLIENT_T, KModifier.PRIVATE)
                     .initializer("client")
-                    .build()
+                    .build(),
             )
             .apply {
                 api.endpoints.forEach { addFunction(generateEndpointFun(it, ctx)) }
@@ -78,19 +82,20 @@ internal class ApiImplGenerator : GenerateApiPort {
     ): FunSpec {
         val returnType = ApiPolicy.Default.returnType(ep, ctx)
         val requestCall = buildRequestCall(ep, ctx)
-        val methodBuilder = FunSpec.builder(ep.generatedName)
-            .addModifiers(KModifier.OVERRIDE, KModifier.SUSPEND)
-            .returns(returnType)
+        val methodBuilder =
+            FunSpec.builder(ep.generatedName)
+                .addModifiers(KModifier.OVERRIDE, KModifier.SUSPEND)
+                .returns(returnType)
 
         ep.params.forEach { param ->
             methodBuilder.addParameter(
-                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build()
+                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build(),
             )
         }
 
         ep.requestBody?.let { body ->
             methodBuilder.addParameter(
-                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build()
+                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build(),
             )
         }
 
@@ -107,13 +112,14 @@ internal class ApiImplGenerator : GenerateApiPort {
         ep: ApiEndpointDO,
         ctx: TypeNameContext,
     ): CodeBlock {
-        val httpMethod = when (ep.rawOperation.httpMethod) {
-            RawPathDO.HttpMethodDO.GET -> M_get
-            RawPathDO.HttpMethodDO.POST -> M_post
-            RawPathDO.HttpMethodDO.PUT -> M_put
-            RawPathDO.HttpMethodDO.PATCH -> M_patch
-            RawPathDO.HttpMethodDO.DELETE -> M_delete
-        }
+        val httpMethod =
+            when (ep.rawOperation.httpMethod) {
+                RawPathDO.HttpMethodDO.GET -> M_get
+                RawPathDO.HttpMethodDO.POST -> M_post
+                RawPathDO.HttpMethodDO.PUT -> M_put
+                RawPathDO.HttpMethodDO.PATCH -> M_patch
+                RawPathDO.HttpMethodDO.DELETE -> M_delete
+            }
 
         return CodeBlock.builder()
             .add("client.%M {\n", httpMethod)
@@ -133,18 +139,20 @@ internal class ApiImplGenerator : GenerateApiPort {
     }
 
     private fun CodeBlock.Builder.addPathBlock(ep: ApiEndpointDO): CodeBlock.Builder {
-        val segments = ep.rawOperation.path
-            .trim('/')
-            .split('/')
-            .filter { it.isNotBlank() }
+        val segments =
+            ep.rawOperation.path
+                .trim('/')
+                .split('/')
+                .filter { it.isNotBlank() }
 
         add("url {\n")
         indent()
         segments.forEach { segment ->
             val rawParamName = segment.removeSurrounding("{", "}")
-            val pathParam = ep.params.firstOrNull {
-                it.rawParam.location == RawPathDO.ParamLocationDO.PATH && it.rawParam.name == rawParamName
-            }
+            val pathParam =
+                ep.params.firstOrNull {
+                    it.rawParam.location == RawPathDO.ParamLocationDO.PATH && it.rawParam.name == rawParamName
+                }
 
             if (pathParam != null) {
                 val trivialType = pathParam.type as? TrivialTypeDO
@@ -166,36 +174,10 @@ internal class ApiImplGenerator : GenerateApiPort {
         ep.params
             .filter { it.rawParam.location == RawPathDO.ParamLocationDO.QUERY }
             .forEach { param ->
-                when (param.type) {
-                    is ListTypeDO -> {
-                        val listType = param.type as ListTypeDO
-                        val itemCode = if (listType.elementType is TrivialTypeDO &&
-                            (listType.elementType as TrivialTypeDO).kind == TrivialTypeDO.Kind.STRING
-                        ) {
-                            "it"
-                        } else {
-                            "it.toString()"
-                        }
-                        addStatement("%L?.forEach { %M(%S, $itemCode) }", param.generatedName, M_parameter, param.rawParam.name)
-                    }
-                    else -> {
-                        val trivialType = param.type as? TrivialTypeDO
-                        val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                            "it"
-                        } else {
-                            "it.toString()"
-                        }
-                        if (param.rawParam.required) {
-                            if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                                addStatement("%M(%S, %L)", M_parameter, param.rawParam.name, param.generatedName)
-                            } else {
-                                addStatement("%M(%S, %L.toString())", M_parameter, param.rawParam.name, param.generatedName)
-                            }
-                        } else {
-                            addStatement("%L?.let { %M(%S, $valueCode) }", param.generatedName, M_parameter, param.rawParam.name)
-                        }
-                    }
-                }
+                addQueryParam(
+                    param = param,
+                    parameterMember = M_parameter,
+                )
             }
         return this
     }
@@ -205,11 +187,12 @@ internal class ApiImplGenerator : GenerateApiPort {
             .filter { it.rawParam.location == RawPathDO.ParamLocationDO.HEADER }
             .forEach { param ->
                 val trivialType = param.type as? TrivialTypeDO
-                val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                    "it"
-                } else {
-                    "it.toString()"
-                }
+                val valueCode =
+                    if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+                        "it"
+                    } else {
+                        "it.toString()"
+                    }
                 if (param.rawParam.required) {
                     if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
                         addStatement("headers.append(%S, %L)", param.rawParam.name, param.generatedName)
@@ -230,3 +213,62 @@ internal class ApiImplGenerator : GenerateApiPort {
         return this
     }
 }
+
+private fun CodeBlock.Builder.addQueryParam(
+    param: ApiParamDO,
+    parameterMember: MemberName,
+) {
+    when (val type = param.type) {
+        is ListTypeDO -> addListQueryParam(param, type, parameterMember)
+        else -> addScalarQueryParam(param, type as? TrivialTypeDO, parameterMember)
+    }
+}
+
+private fun CodeBlock.Builder.addListQueryParam(
+    param: ApiParamDO,
+    listType: ListTypeDO,
+    parameterMember: MemberName,
+) {
+    val itemCode = listType.elementType.queryValueCode()
+    addStatement(
+        "%L?.forEach { %M(%S, $itemCode) }",
+        param.generatedName,
+        parameterMember,
+        param.rawParam.name,
+    )
+}
+
+private fun CodeBlock.Builder.addScalarQueryParam(
+    param: ApiParamDO,
+    trivialType: TrivialTypeDO?,
+    parameterMember: MemberName,
+) {
+    val rawValue = scalarValueExpression(trivialType, param.generatedName)
+    val letValueCode = scalarValueExpression(trivialType, "it")
+
+    when {
+        param.rawParam.required ->
+            addStatement("%M(%S, %L)", parameterMember, param.rawParam.name, rawValue)
+
+        else ->
+            addStatement(
+                "%L?.let { %M(%S, $letValueCode) }",
+                param.generatedName,
+                parameterMember,
+                param.rawParam.name,
+            )
+    }
+}
+
+private fun scalarValueExpression(
+    trivialType: TrivialTypeDO?,
+    variableName: String,
+): String =
+    if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+        variableName
+    } else {
+        "$variableName.toString()"
+    }
+
+private fun FieldTypeDO.queryValueCode(): String =
+    if (this is TrivialTypeDO && kind == TrivialTypeDO.Kind.STRING) "it" else "it.toString()"

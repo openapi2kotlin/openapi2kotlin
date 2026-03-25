@@ -8,33 +8,35 @@ import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCa
 private const val SERIALIZABLE = "kotlinx.serialization.Serializable"
 private const val SERIAL_NAME = "kotlinx.serialization.SerialName"
 
-internal fun List<ModelDO>.handleKotlinxAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig,
-) {
+internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.ModelConfig) {
     if (cfg.serialization != OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX) return
 
     if (cfg.kotlinxSerializable) {
         forEach { model ->
-            model.annotations += ModelAnnotationDO(
-                fqName = SERIALIZABLE,
-            )
+            model.annotations +=
+                ModelAnnotationDO(
+                    fqName = SERIALIZABLE,
+                )
         }
     }
 
     forEach { model ->
-        model.fields = model.fields
-            .map { field ->
-                if (field.originalName == field.generatedName) field
-                else field.addAnnotation(
-                    ModelAnnotationDO(
-                        fqName = SERIAL_NAME,
-                        argsCode = listOf("\"${field.originalName}\""),
-                    )
-                )
-            }
-            .toMutableList()
+        model.fields =
+            model.fields
+                .map { field ->
+                    if (field.originalName == field.generatedName) {
+                        field
+                    } else {
+                        field.addKotlinxAnnotation(
+                            ModelAnnotationDO(
+                                fqName = SERIAL_NAME,
+                                argsCode = listOf("\"${field.originalName}\""),
+                            ),
+                        )
+                    }
+                }
+                .toMutableList()
     }
 }
 
-private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO =
-    copy(annotations = annotations + a)
+private fun FieldDO.addKotlinxAnnotation(a: ModelAnnotationDO): FieldDO = copy(annotations = annotations + a)

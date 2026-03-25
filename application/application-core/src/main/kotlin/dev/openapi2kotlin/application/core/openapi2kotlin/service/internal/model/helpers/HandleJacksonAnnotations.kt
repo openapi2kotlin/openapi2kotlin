@@ -9,12 +9,12 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.Polymorphi
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
-private const val JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty"
-private const val JSON_TYPE_INFO = "com.fasterxml.jackson.annotation.JsonTypeInfo"
-private const val JSON_SUB_TYPES = "com.fasterxml.jackson.annotation.JsonSubTypes"
-private const val JSON_IGNORE_PROPERTIES = "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
-private const val JSON_VALUE = "com.fasterxml.jackson.annotation.JsonValue"
-private const val JSON_CREATOR = "com.fasterxml.jackson.annotation.JsonCreator"
+internal const val JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty"
+internal const val JSON_TYPE_INFO = "com.fasterxml.jackson.annotation.JsonTypeInfo"
+internal const val JSON_SUB_TYPES = "com.fasterxml.jackson.annotation.JsonSubTypes"
+internal const val JSON_IGNORE_PROPERTIES = "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
+internal const val JSON_VALUE = "com.fasterxml.jackson.annotation.JsonValue"
+internal const val JSON_CREATOR = "com.fasterxml.jackson.annotation.JsonCreator"
 
 /**
  * Applies Jackson-related annotations to generated models.
@@ -29,291 +29,125 @@ private const val JSON_CREATOR = "com.fasterxml.jackson.annotation.JsonCreator"
  * All structural decisions (sealed / open / data class) must already be resolved
  * in ModelDO.modelShape prior to this step.
  */
-internal fun List<ModelDO>.handleJacksonAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig,
-) {
+internal fun List<ModelDO>.handleJacksonAnnotations(cfg: OpenApi2KotlinUseCase.ModelConfig) {
     if (cfg.serialization != OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON) return
 
     val bySchemaName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
+    applyEnumJacksonAnnotations(cfg)
+    applyJsonPropertyMappings(cfg)
+    val wrappers = buildPolymorphismAnnotations(cfg, bySchemaName)
+    applyOneOfWrapperFieldAnnotations(wrappers, bySchemaName)
+    applyReadOnlyDiscriminators(bySchemaName)
+}
 
-    /* ---------------------------------------------------------------------
-     * 0) Enum Jackson annotations (@JsonValue / @JsonCreator)
-     * ------------------------------------------------------------------- */
+private fun List<ModelDO>.applyEnumJacksonAnnotations(cfg: OpenApi2KotlinUseCase.ModelConfig) {
+    if (!cfg.jacksonJsonValue && !cfg.jacksonJsonCreator) return
 
-    if (cfg.jacksonJsonValue || cfg.jacksonJsonCreator) {
-        forEach { model ->
-            if (model.modelShape !is ModelShapeDO.EnumClass) return@forEach
-
-            if (cfg.jacksonJsonValue) {
-                model.enumValueAnnotations += ModelAnnotationDO(
+    forEach { model ->
+        if (model.modelShape !is ModelShapeDO.EnumClass) return@forEach
+        if (cfg.jacksonJsonValue) {
+            model.enumValueAnnotations +=
+                ModelAnnotationDO(
                     useSite = ModelAnnotationDO.UseSiteDO.GET,
                     fqName = JSON_VALUE,
                 )
-            }
-
-            if (cfg.jacksonJsonCreator) {
-                model.enumFromValueAnnotations += ModelAnnotationDO(
-                    fqName = JSON_CREATOR,
-                )
-            }
         }
+        if (cfg.jacksonJsonCreator) model.enumFromValueAnnotations += ModelAnnotationDO(fqName = JSON_CREATOR)
     }
+}
 
+private fun List<ModelDO>.applyJsonPropertyMappings(cfg: OpenApi2KotlinUseCase.ModelConfig) {
+    if (!cfg.jacksonJsonPropertyMapping) return
 
-    /* ---------------------------------------------------------------------
-     * 1) @JsonProperty for renamed fields
-     * ------------------------------------------------------------------- */
-
-    if (cfg.jacksonJsonPropertyMapping) {
-        forEach { model ->
-            val useSite = model.jsonPropertyUseSite()
-
-            model.fields = model.fields
-                .map { field ->
-                    if (field.originalName == field.generatedName) field
-                    else field.addAnnotation(
+    forEach { model ->
+        val useSite = model.jsonPropertyUseSite()
+        model.fields =
+            model.fields.map { field ->
+                if (field.originalName == field.generatedName) {
+                    field
+                } else {
+                    field.addAnnotation(
                         ModelAnnotationDO(
                             useSite = useSite,
                             fqName = JSON_PROPERTY,
                             argsCode = listOf("\"${field.originalName}\""),
-                        )
-                    )
-                }
-                .toMutableList()
-        }
-    }
-
-    /* ---------------------------------------------------------------------
-     * 2) Polymorphism metadata + annotations
-     *
-     * Principles:
-     *  - For oneOf-wrapper sealed interfaces ("RefOrValue" unions):
-     *      * compute polymorphism metadata
-     *      * DO NOT add @JsonTypeInfo/@JsonSubTypes on the interface
-     *      * later annotate the FIELDS that reference the wrapper
-     *
-     *  - For "real" polymorphic bases (open class / inheritance base):
-     *      * keep class-level @JsonTypeInfo/@JsonSubTypes
-     * ------------------------------------------------------------------- */
-
-    // wrapper schema name -> polymorphism metadata (for field-site annotation)
-    val oneOfWrapperPolymorphismBySchemaName = mutableMapOf<String, PolymorphismDO>()
-
-    forEach { parent ->
-        val discOriginal = parent.rawSchema.discriminatorPropertyName ?: return@forEach
-        val discGenerated = discOriginal.toKotlinName()
-
-        // OpenAPI discriminator mapping: discriminatorValue -> schemaRef
-        val mappingValueToSchemaName =
-            parent.rawSchema.discriminatorMapping
-                .mapValues { (_, ref) -> ref.substringAfterLast('/') }
-
-        val hasMappingToOthers =
-            mappingValueToSchemaName.values.any { it != parent.rawSchema.originalName }
-
-        val isOneOfRoot = parent.rawSchema.oneOfChildren.isNotEmpty()
-
-        // Determine polymorphic subtypes (raw schema names)
-        val childrenSchemaNames: List<String> = when {
-            // oneOf wrapper unions (RefOrValue etc.)
-            isOneOfRoot ->
-                parent.rawSchema.oneOfChildren
-
-            // “real” polymorphic bases are defined by discriminator.mapping
-            hasMappingToOthers ->
-                mappingValueToSchemaName.values
-                    .distinct()
-                    .filter { it != parent.rawSchema.originalName }
-
-            else ->
-                emptyList()
-        }
-
-        // Not a polymorphic root → do not emit polymorphism annotations
-        if (childrenSchemaNames.isEmpty()) return@forEach
-
-        val schemaNameToDiscriminatorValue =
-            parent.buildSchemaNameToDiscriminatorValue(
-                children = childrenSchemaNames,
-                mappingValueToSchemaName = mappingValueToSchemaName,
-            )
-
-        parent.polymorphism = PolymorphismDO(
-            discriminatorPropertyOriginalName = discOriginal,
-            discriminatorPropertyGeneratedName = discGenerated,
-            schemaNameToDiscriminatorValue = schemaNameToDiscriminatorValue,
-        )
-
-        // --- treat sealed interface + oneOf as "wrapper" union ---
-        val isOneOfWrapperSealedInterface =
-            isOneOfRoot && parent.modelShape is ModelShapeDO.SealedInterface
-
-        if (isOneOfWrapperSealedInterface) {
-            // Store for field-site annotation and skip type-level @JsonTypeInfo/@JsonSubTypes
-            oneOfWrapperPolymorphismBySchemaName[parent.rawSchema.originalName] = parent.polymorphism!!
-            return@forEach
-        }
-
-        // Otherwise: annotate the type itself (open-class base / allOf base / etc.)
-        val isConcreteParent =
-            parent.modelShape is ModelShapeDO.OpenClass ||
-                    parent.modelShape is ModelShapeDO.DataClass ||
-                    parent.modelShape is ModelShapeDO.EmptyClass
-
-        // Include the parent itself as a subtype only if:
-        //  - discriminator mapping explicitly points to itself
-        //  - the parent is instantiable in Kotlin
-        //  - there is at least one other subtype
-        val includeSelfSubtype =
-            parent.rawSchema.isDiscriminatorSelfMapped &&
-                    isConcreteParent &&
-                    childrenSchemaNames.isNotEmpty()
-
-        val subtypeEntries = buildList {
-            if (includeSelfSubtype) {
-                val selfDiscValue =
-                    schemaNameToDiscriminatorValue[parent.rawSchema.originalName]
-                        ?: parent.rawSchema.originalName
-
-                add(
-                    "JsonSubTypes.Type(value = ${parent.generatedName}::class, name = \"$selfDiscValue\")"
-                )
-            }
-
-            childrenSchemaNames.forEach { childSchemaName ->
-                val child = bySchemaName[childSchemaName] ?: return@forEach
-                val discValue =
-                    schemaNameToDiscriminatorValue[childSchemaName] ?: childSchemaName
-
-                add(
-                    "JsonSubTypes.Type(value = ${child.generatedName}::class, name = \"$discValue\")"
-                )
-            }
-        }
-
-        val annotations = buildList {
-            if (cfg.jacksonStrictDiscriminatorSerialization) {
-                add(
-                    ModelAnnotationDO(
-                        fqName = JSON_IGNORE_PROPERTIES,
-                        argsCode = listOf(
-                            "value = [\"$discOriginal\"]",
-                            "allowSetters = true",
                         ),
                     )
-                )
-            }
-
-            add(
-                ModelAnnotationDO(
-                    fqName = JSON_TYPE_INFO,
-                    argsCode = listOf(
-                        "use = JsonTypeInfo.Id.NAME",
-                        "include = JsonTypeInfo.As.PROPERTY",
-                        "property = \"$discOriginal\"",
-                        "visible = true",
-                    ),
-                )
-            )
-
-            add(
-                ModelAnnotationDO(
-                    fqName = JSON_SUB_TYPES,
-                    argsCode = subtypeEntries,
-                )
-            )
-        }
-
-        parent.annotations += annotations
+                }
+            }.toMutableList()
     }
+}
 
-    /* ---------------------------------------------------------------------
-     * 3.5) Field-site polymorphism for oneOf wrapper unions
-     *
-     * Add @field:JsonTypeInfo + @field:JsonSubTypes on any field whose type
-     * is the wrapper schema (or list of wrapper schema).
-     * ------------------------------------------------------------------- */
+private fun List<ModelDO>.buildPolymorphismAnnotations(
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
+    bySchemaName: Map<String, ModelDO>,
+): Map<String, PolymorphismDO> {
+    val wrappers = mutableMapOf<String, PolymorphismDO>()
+    forEach { parent ->
+        val metadata = parent.buildPolymorphismMetadata() ?: return@forEach
+        parent.polymorphism = metadata.polymorphism
 
-    if (oneOfWrapperPolymorphismBySchemaName.isNotEmpty()) {
-        forEach { owner ->
-            owner.fields = owner.fields
-                .map { f ->
-                    val wrapperSchemaName = f.findWrapperSchemaNameReferenced(oneOfWrapperPolymorphismBySchemaName.keys)
-                        ?: return@map f
+        if (metadata.isOneOfWrapperSealedInterface) {
+            wrappers[parent.rawSchema.originalName] = metadata.polymorphism
+        } else {
+            parent.annotations += parent.buildPolymorphismAnnotations(metadata, bySchemaName, cfg)
+        }
+    }
+    return wrappers
+}
 
-                    val wrapperPolymorphism = oneOfWrapperPolymorphismBySchemaName[wrapperSchemaName]
-                        ?: return@map f
+private fun List<ModelDO>.applyOneOfWrapperFieldAnnotations(
+    oneOfWrapperPolymorphismBySchemaName: Map<String, PolymorphismDO>,
+    bySchemaName: Map<String, ModelDO>,
+) {
+    if (oneOfWrapperPolymorphismBySchemaName.isEmpty()) return
 
-                    val subtypeEntries = buildList {
-                        wrapperPolymorphism.schemaNameToDiscriminatorValue
-                            .filterKeys { it != wrapperSchemaName } // wrapper itself isn't a concrete subtype
-                            .forEach { (childSchemaName, discValue) ->
-                                val child = bySchemaName[childSchemaName] ?: return@forEach
-                                add("JsonSubTypes.Type(value = ${child.generatedName}::class, name = \"$discValue\")")
-                            }
-                    }
+    forEach { owner ->
+        owner.fields =
+            owner.fields.map { field ->
+                val wrapperSchemaName =
+                    field.findWrapperSchemaNameReferenced(oneOfWrapperPolymorphismBySchemaName.keys)
+                        ?: return@map field
+                val wrapperPolymorphism =
+                    oneOfWrapperPolymorphismBySchemaName[wrapperSchemaName] ?: return@map field
+                val subtypeEntries =
+                    buildWrapperSubtypeEntries(
+                        wrapperSchemaName = wrapperSchemaName,
+                        wrapperPolymorphism = wrapperPolymorphism,
+                        bySchemaName = bySchemaName,
+                    )
+                if (subtypeEntries.isEmpty()) return@map field
 
-                    // If we could not resolve children (edge cases), do not annotate.
-                    if (subtypeEntries.isEmpty()) return@map f
-
-                    f.addAnnotation(
+                field
+                    .addAnnotation(
                         ModelAnnotationDO(
                             useSite = ModelAnnotationDO.UseSiteDO.FIELD,
                             fqName = JSON_TYPE_INFO,
-                            argsCode = listOf(
-                                "use = JsonTypeInfo.Id.NAME",
-                                "include = JsonTypeInfo.As.PROPERTY",
-                                "property = \"${wrapperPolymorphism.discriminatorPropertyOriginalName}\"",
-                                "visible = true",
-                            ),
-                        )
-                    ).addAnnotation(
+                            argsCode =
+                                listOf(
+                                    "use = JsonTypeInfo.Id.NAME",
+                                    "include = JsonTypeInfo.As.PROPERTY",
+                                    "property = \"${wrapperPolymorphism.discriminatorPropertyOriginalName}\"",
+                                    "visible = true",
+                                ),
+                        ),
+                    )
+                    .addAnnotation(
                         ModelAnnotationDO(
                             useSite = ModelAnnotationDO.UseSiteDO.FIELD,
                             fqName = JSON_SUB_TYPES,
                             argsCode = subtypeEntries,
-                        )
+                        ),
                     )
-                }
-                .toMutableList()
-        }
+            }.toMutableList()
     }
+}
 
-    /* ---------------------------------------------------------------------
-     * 3) Make discriminator READ_ONLY on concrete non-polymorphic leaves
-     *
-     * Prevents accidental acceptance of incorrect @type values.
-     * ------------------------------------------------------------------- */
-
+private fun List<ModelDO>.applyReadOnlyDiscriminators(bySchemaName: Map<String, ModelDO>) {
     forEach { model ->
-        val isConcrete =
-            model.modelShape is ModelShapeDO.DataClass ||
-                    model.modelShape is ModelShapeDO.OpenClass ||
-                    model.modelShape is ModelShapeDO.EmptyClass
-
-        if (!isConcrete) return@forEach
-        if (model.rawSchema.oneOfChildren.isNotEmpty()) return@forEach
-        if (model.allOfChildren.isNotEmpty()) return@forEach
-
-        val parentWithDisc = model.findNearestDiscriminatorParent(bySchemaName)
-        val discOriginal =
-            model.rawSchema.discriminatorPropertyName
-                ?: parentWithDisc?.rawSchema?.discriminatorPropertyName
-                ?: return@forEach
-
-        model.fields = model.fields.map { f ->
-            if (f.originalName != discOriginal) f
-            else f.addAnnotation(
-                ModelAnnotationDO(
-                    useSite = ModelAnnotationDO.UseSiteDO.GET,
-                    fqName = JSON_PROPERTY,
-                    argsCode = listOf(
-                        "value = \"$discOriginal\"",
-                        "access = JsonProperty.Access.READ_ONLY",
-                    ),
-                )
-            )
-        }.toMutableList()
+        if (!model.shouldAddReadOnlyDiscriminator()) return@forEach
+        val discriminatorName = model.resolveDiscriminatorName(bySchemaName) ?: return@forEach
+        model.fields = model.fields.map { it.withReadOnlyDiscriminator(discriminatorName) }.toMutableList()
     }
 }
 
@@ -326,19 +160,15 @@ private fun FieldDO.findWrapperSchemaNameReferenced(wrapperSchemaNames: Set<Stri
         is RefTypeDO ->
             t.schemaName.takeIf { it in wrapperSchemaNames }
 
-        is ListTypeDO -> when (val e = t.elementType) {
-            is RefTypeDO -> e.schemaName.takeIf { it in wrapperSchemaNames }
-            else -> null
-        }
+        is ListTypeDO ->
+            when (val e = t.elementType) {
+                is RefTypeDO -> e.schemaName.takeIf { it in wrapperSchemaNames }
+                else -> null
+            }
 
         else -> null
     }
 }
-
-
-/* =====================================================================
- * Helper functions
- * =================================================================== */
 
 /**
  * Determines the appropriate @JsonProperty use-site.
@@ -351,34 +181,12 @@ private fun ModelDO.jsonPropertyUseSite(): ModelAnnotationDO.UseSiteDO =
         else -> ModelAnnotationDO.UseSiteDO.PARAM
     }
 
-/**
- * Builds schemaName -> discriminatorValue mapping for a polymorphic root.
- *
- * Uses explicit OpenAPI mapping when present, otherwise defaults to schema name.
- */
-private fun ModelDO.buildSchemaNameToDiscriminatorValue(
-    children: List<String>,
-    mappingValueToSchemaName: Map<String, String>,
-): Map<String, String> {
-    val inverted =
-        mappingValueToSchemaName.entries.associate { (discValue, schemaName) ->
-            schemaName to discValue
-        }
-
-    return buildMap {
-        put(rawSchema.originalName, inverted[rawSchema.originalName] ?: rawSchema.originalName)
-        for (schemaName in children) {
-            put(schemaName, inverted[schemaName] ?: schemaName)
-        }
-    }
-}
-
-private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
+internal fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
     val exists =
         annotations.any {
             it.useSite == a.useSite &&
-                    it.fqName == a.fqName &&
-                    it.argsCode == a.argsCode
+                it.fqName == a.fqName &&
+                it.argsCode == a.argsCode
         }
 
     return if (exists) this else copy(annotations = annotations + a)

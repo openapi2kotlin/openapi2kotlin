@@ -18,6 +18,18 @@ private const val PARAMETER = "io.swagger.v3.oas.annotations.Parameter"
 private const val PARAMETER_IN = "io.swagger.v3.oas.annotations.enums.ParameterIn"
 
 private const val SWAGGER_REQUEST_BODY = "io.swagger.v3.oas.annotations.parameters.RequestBody"
+private const val HTTP_OK = 200
+private const val HTTP_CREATED = 201
+private const val HTTP_ACCEPTED = 202
+private const val HTTP_NO_CONTENT = 204
+private const val HTTP_BAD_REQUEST = 400
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_CONFLICT = 409
+private const val HTTP_INTERNAL_SERVER_ERROR = 500
+private const val HTTP_NOT_IMPLEMENTED = 501
+private const val HTTP_SERVICE_UNAVAILABLE = 503
 
 internal fun List<ApiDO>.handleServerSwaggerAnnotations(
     cfg: OpenApi2KotlinUseCase.ApiConfig?,
@@ -29,12 +41,13 @@ internal fun List<ApiDO>.handleServerSwaggerAnnotations(
     forEach { api ->
         val tags = api.rawPath.tags.distinct().filter { it.isNotBlank() }
         if (tags.isNotEmpty()) {
-            api.annotations = api.annotations + tags.map { tag ->
-                ApiAnnotationDO(
-                    fqName = TAG,
-                    argsCode = listOf("name = ${tag.toKotlinStringLiteral()}"),
-                )
-            }
+            api.annotations = api.annotations +
+                tags.map { tag ->
+                    ApiAnnotationDO(
+                        fqName = TAG,
+                        argsCode = listOf("name = ${tag.toKotlinStringLiteral()}"),
+                    )
+                }
         }
 
         api.endpoints.forEach { ep ->
@@ -55,20 +68,30 @@ private fun buildOperationAnnotation(
     val op = ep.rawOperation
     val tags = apiTags.distinct().filter { it.isNotBlank() }
 
-    val args = buildList {
-        op.summary?.trim()?.takeIf { it.isNotBlank() }?.let { add("summary = ${it.toKotlinStringLiteral()}") }
-        op.operationId?.trim()?.takeIf { it.isNotBlank() }?.let { add("operationId = ${it.toKotlinStringLiteral()}") }
-        op.description?.trim()?.takeIf { it.isNotBlank() }?.let { add("description = ${it.toKotlinStringLiteral()}") }
+    val args =
+        buildList {
+            op.summary
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { add("summary = ${it.toKotlinStringLiteral()}") }
+            op.operationId
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { add("operationId = ${it.toKotlinStringLiteral()}") }
+            op.description
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { add("description = ${it.toKotlinStringLiteral()}") }
 
-        if (tags.isNotEmpty()) {
-            add("tags = [${tags.joinToString(", ") { it.toKotlinStringLiteral() }}]")
-        }
+            if (tags.isNotEmpty()) {
+                add("tags = [${tags.joinToString(", ") { it.toKotlinStringLiteral() }}]")
+            }
 
-        val responsesCode = buildApiResponsesCode(op.responses.orEmpty(), ctx)
-        if (responsesCode.isNotEmpty()) {
-            add("responses = [$responsesCode]")
+            val responsesCode = buildApiResponsesCode(op.responses.orEmpty(), ctx)
+            if (responsesCode.isNotEmpty()) {
+                add("responses = [$responsesCode]")
+            }
         }
-    }
 
     return ApiAnnotationDO(
         fqName = OPERATION,
@@ -90,11 +113,12 @@ private fun buildApiResponsesCode(
         val desc = defaultDescriptionForCode(r.statusCode)
         val contentCode = r.type?.let { buildContentCode(it, ctx) }
 
-        val args = buildList {
-            add("responseCode = ${r.statusCode.toString().toKotlinStringLiteral()}")
-            add("description = ${desc.toKotlinStringLiteral()}")
-            if (contentCode != null) add("content = [$contentCode]")
-        }.joinToString(", ")
+        val args =
+            buildList {
+                add("responseCode = ${r.statusCode.toString().toKotlinStringLiteral()}")
+                add("description = ${desc.toKotlinStringLiteral()}")
+                if (contentCode != null) add("content = [$contentCode]")
+            }.joinToString(", ")
 
         "$API_RESPONSE($args)"
     }
@@ -103,35 +127,41 @@ private fun buildApiResponsesCode(
 private fun buildContentCode(
     type: RawSchemaDO.RawFieldTypeDO,
     ctx: ApisContext,
-): String? {
-    return when (type) {
-        is RawSchemaDO.RawRefTypeDO -> {
-            val model = ctx.modelsBySchemaName[type.schemaName] ?: return null
-            val fqcn = "${model.packageName}.${model.generatedName}"
-            "$CONTENT(schema = $SCHEMA(implementation = $fqcn::class))"
-        }
-
-        is RawSchemaDO.RawArrayTypeDO -> {
-            val element = type.elementType
-            if (element is RawSchemaDO.RawRefTypeDO) {
-                val model = ctx.modelsBySchemaName[element.schemaName] ?: return null
-                val fqcn = "${model.packageName}.${model.generatedName}"
-                "$CONTENT(array = $ARRAY_SCHEMA(schema = $SCHEMA(implementation = $fqcn::class)))"
-            } else {
-                null
-            }
-        }
-
+): String? =
+    when (type) {
+        is RawSchemaDO.RawRefTypeDO -> buildRefContentCode(type.schemaName, ctx)
+        is RawSchemaDO.RawArrayTypeDO -> buildArrayContentCode(type, ctx)
         is RawSchemaDO.RawPrimitiveTypeDO -> null
+    }
+
+private fun buildRefContentCode(
+    schemaName: String,
+    ctx: ApisContext,
+): String? {
+    val model = ctx.modelsBySchemaName[schemaName] ?: return null
+    val fqcn = "${model.packageName}.${model.generatedName}"
+    return "$CONTENT(schema = $SCHEMA(implementation = $fqcn::class))"
+}
+
+private fun buildArrayContentCode(
+    type: RawSchemaDO.RawArrayTypeDO,
+    ctx: ApisContext,
+): String? {
+    val element = type.elementType as? RawSchemaDO.RawRefTypeDO
+    val model = element?.let { ctx.modelsBySchemaName[it.schemaName] }
+    return model?.let {
+        val fqcn = "${it.packageName}.${it.generatedName}"
+        "$CONTENT(array = $ARRAY_SCHEMA(schema = $SCHEMA(implementation = $fqcn::class)))"
     }
 }
 
 private fun buildParameterAnnotation(raw: RawPathDO.ParamDO): ApiAnnotationDO {
-    val args = buildList {
-        add("name = ${raw.name.toKotlinStringLiteral()}")
-        add("required = ${raw.required}")
-        add("`in` = $PARAMETER_IN.${raw.location.toSwaggerParameterInEnum()}")
-    }
+    val args =
+        buildList {
+            add("name = ${raw.name.toKotlinStringLiteral()}")
+            add("required = ${raw.required}")
+            add("`in` = $PARAMETER_IN.${raw.location.toSwaggerParameterInEnum()}")
+        }
 
     return ApiAnnotationDO(
         fqName = PARAMETER,
@@ -147,10 +177,11 @@ private fun buildRequestBodyAnnotation(
 
     val content = buildContentCode(rb.type, ctx)
 
-    val args = buildList {
-        add("required = ${rb.required}")
-        if (content != null) add("content = [$content]")
-    }
+    val args =
+        buildList {
+            add("required = ${rb.required}")
+            if (content != null) add("content = [$content]")
+        }
 
     return ApiAnnotationDO(
         fqName = SWAGGER_REQUEST_BODY,
@@ -158,40 +189,26 @@ private fun buildRequestBodyAnnotation(
     )
 }
 
-private fun RawPathDO.ParamLocationDO.toSwaggerParameterInEnum(): String = when (this) {
-    RawPathDO.ParamLocationDO.QUERY -> "QUERY"
-    RawPathDO.ParamLocationDO.PATH -> "PATH"
-    RawPathDO.ParamLocationDO.HEADER -> "HEADER"
-}
+private fun RawPathDO.ParamLocationDO.toSwaggerParameterInEnum(): String =
+    when (this) {
+        RawPathDO.ParamLocationDO.QUERY -> "QUERY"
+        RawPathDO.ParamLocationDO.PATH -> "PATH"
+        RawPathDO.ParamLocationDO.HEADER -> "HEADER"
+    }
 
-private fun defaultDescriptionForCode(code: Int): String = when (code) {
-    200 -> "Success"
-    201 -> "Created"
-    202 -> "Accepted"
-    204 -> "No Content"
-    400 -> "Bad Request"
-    401 -> "Unauthorized"
-    403 -> "Forbidden"
-    404 -> "Not Found"
-    409 -> "Conflict"
-    500 -> "Internal Server Error"
-    501 -> "Not Implemented"
-    503 -> "Service Unavailable"
-    else -> "Response"
-}
-
-private fun String.toKotlinStringLiteral(): String =
-    buildString {
-        append('"')
-        for (ch in this@toKotlinStringLiteral) {
-            when (ch) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> append(ch)
-            }
-        }
-        append('"')
+private fun defaultDescriptionForCode(code: Int): String =
+    when (code) {
+        HTTP_OK -> "Success"
+        HTTP_CREATED -> "Created"
+        HTTP_ACCEPTED -> "Accepted"
+        HTTP_NO_CONTENT -> "No Content"
+        HTTP_BAD_REQUEST -> "Bad Request"
+        HTTP_UNAUTHORIZED -> "Unauthorized"
+        HTTP_FORBIDDEN -> "Forbidden"
+        HTTP_NOT_FOUND -> "Not Found"
+        HTTP_CONFLICT -> "Conflict"
+        HTTP_INTERNAL_SERVER_ERROR -> "Internal Server Error"
+        HTTP_NOT_IMPLEMENTED -> "Not Implemented"
+        HTTP_SERVICE_UNAVAILABLE -> "Service Unavailable"
+        else -> "Response"
     }

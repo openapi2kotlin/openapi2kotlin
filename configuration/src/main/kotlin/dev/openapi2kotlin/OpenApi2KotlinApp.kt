@@ -1,11 +1,11 @@
 package dev.openapi2kotlin
 
-import dev.openapi2kotlin.adapter.generateclient.ktor.GenerateClientKtorAdapter
 import dev.openapi2kotlin.adapter.generateclient.http4k.GenerateClientHttp4kAdapter
+import dev.openapi2kotlin.adapter.generateclient.ktor.GenerateClientKtorAdapter
 import dev.openapi2kotlin.adapter.generateclient.restclient.GenerateClientRestClientAdapter
 import dev.openapi2kotlin.adapter.generatemodel.GenerateModelAdapter
-import dev.openapi2kotlin.adapter.generateserver.ktor.GenerateServerKtorAdapter
 import dev.openapi2kotlin.adapter.generateserver.http4k.GenerateServerHttp4kAdapter
+import dev.openapi2kotlin.adapter.generateserver.ktor.GenerateServerKtorAdapter
 import dev.openapi2kotlin.adapter.generateserver.spring.GenerateServerSpringAdapter
 import dev.openapi2kotlin.adapter.parser.ParseSpecAdapter
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
@@ -15,7 +15,6 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.service.OpenApi2Kotlin
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 object OpenApi2KotlinApp {
-
     fun openApi2kotlin(config: OpenApi2KotlinUseCase.Config) {
         openApi2kotlinUseCase(config).openApi2kotlin(config)
     }
@@ -31,38 +30,18 @@ object OpenApi2KotlinApp {
         when (config.api) {
             null -> NoopGenerateApiAdapter
 
-            is OpenApi2KotlinUseCase.ApiConfig.ClientKtor -> generateClientKtorPort()
-            is OpenApi2KotlinUseCase.ApiConfig.ClientHttp4k -> generateClientHttp4kPort()
-            is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient -> generateClientRestClientPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ClientKtor -> GenerateClientKtorAdapter()
+            is OpenApi2KotlinUseCase.ApiConfig.ClientHttp4k -> GenerateClientHttp4kAdapter()
+            is OpenApi2KotlinUseCase.ApiConfig.ClientRestClient -> GenerateClientRestClientAdapter()
 
-            is OpenApi2KotlinUseCase.ApiConfig.ServerKtor -> generateServerKtorPort()
-            is OpenApi2KotlinUseCase.ApiConfig.ServerHttp4k -> generateServerHttp4kPort()
-            is OpenApi2KotlinUseCase.ApiConfig.ServerSpring -> generateServerSpringPort()
+            is OpenApi2KotlinUseCase.ApiConfig.ServerKtor -> GenerateServerKtorAdapter()
+            is OpenApi2KotlinUseCase.ApiConfig.ServerHttp4k -> GenerateServerHttp4kAdapter()
+            is OpenApi2KotlinUseCase.ApiConfig.ServerSpring -> GenerateServerSpringAdapter()
         }
 
-    private fun parseSpecPort(): ParseSpecPort =
-        ParseSpecAdapter()
+    private fun parseSpecPort(): ParseSpecPort = ParseSpecAdapter()
 
-    private fun generateModelPort(): GenerateModelPort =
-        GenerateModelAdapter()
-
-    private fun generateServerKtorPort(): GenerateApiPort =
-        GenerateServerKtorAdapter()
-
-    private fun generateServerSpringPort(): GenerateApiPort =
-        GenerateServerSpringAdapter()
-
-    private fun generateServerHttp4kPort(): GenerateApiPort =
-        GenerateServerHttp4kAdapter()
-
-    private fun generateClientKtorPort(): GenerateApiPort =
-        GenerateClientKtorAdapter()
-
-    private fun generateClientHttp4kPort(): GenerateApiPort =
-        GenerateClientHttp4kAdapter()
-
-    private fun generateClientRestClientPort(): GenerateApiPort =
-        GenerateClientRestClientAdapter()
+    private fun generateModelPort(): GenerateModelPort = GenerateModelAdapter()
 
     private data object NoopGenerateApiAdapter : GenerateApiPort {
         override fun generateApi(command: GenerateApiPort.Command) {

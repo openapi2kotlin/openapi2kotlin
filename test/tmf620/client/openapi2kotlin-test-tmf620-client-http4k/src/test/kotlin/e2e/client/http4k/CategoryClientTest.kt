@@ -8,14 +8,14 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.client.http4k.generated.client.CategoryApiImpl
 import e2e.client.http4k.generated.model.CategoryFVO
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -46,8 +46,8 @@ class CategoryClientTest {
                     aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withHeader("X-Trace-Id", "trace-1")
-                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-1\",\"name\":\"Hardware\"}")
-                )
+                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-1\",\"name\":\"Hardware\"}"),
+                ),
         )
 
         val result = api.retrieveCategory("cat-1", null)
@@ -67,8 +67,8 @@ class CategoryClientTest {
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-2\",\"name\":\"Software\"}")
-                )
+                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-2\",\"name\":\"Software\"}"),
+                ),
         )
 
         val result = api.createCategory(null, CategoryFVO(name = "Software"))

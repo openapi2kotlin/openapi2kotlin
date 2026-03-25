@@ -16,7 +16,8 @@ import org.springframework.web.client.RestClient
 class Petstore3ClientConfiguration {
     @Bean
     fun restClient(props: AppPetstore3Props): RestClient =
-        RestClient.builder()
+        RestClient
+            .builder()
             .baseUrl(props.url)
             .build()
 

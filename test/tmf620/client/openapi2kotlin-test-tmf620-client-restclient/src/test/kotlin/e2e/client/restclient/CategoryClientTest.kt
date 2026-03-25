@@ -22,9 +22,10 @@ class CategoryClientTest {
     fun setUp() {
         server = WireMockServer(0)
         server.start()
-        val restClient = RestClient.builder()
-            .baseUrl("${server.baseUrl()}/tmf-api/productCatalogManagement/v5")
-            .build()
+        val restClient =
+            RestClient.builder()
+                .baseUrl("${server.baseUrl()}/tmf-api/productCatalogManagement/v5")
+                .build()
         api = CategoryApiImpl(restClient)
     }
 
@@ -40,8 +41,8 @@ class CategoryClientTest {
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-1\",\"name\":\"Hardware\"}")
-                )
+                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-1\",\"name\":\"Hardware\"}"),
+                ),
         )
 
         val result = api.retrieveCategory("cat-1", null)
@@ -57,8 +58,8 @@ class CategoryClientTest {
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-2\",\"name\":\"Software\"}")
-                )
+                        .withBody("{\"@type\":\"Category\",\"id\":\"cat-2\",\"name\":\"Software\"}"),
+                ),
         )
 
         val result = api.createCategory(null, CategoryFVO(name = "Software"))

@@ -1,11 +1,9 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
@@ -20,126 +18,26 @@ import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCa
  *
  * All constraints are derived from RawSchemaDO.SchemaPropertyDO.constraints (including inherited properties via allOf).
  */
-internal fun List<ModelDO>.handleValidationAnnotations(
-    cfg: OpenApi2KotlinUseCase.ModelConfig,
-) {
+internal fun List<ModelDO>.handleValidationAnnotations(cfg: OpenApi2KotlinUseCase.ModelConfig) {
     val validation = cfg.validation ?: return
 
     val bySchemaName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
 
-    val ns = validation.value
-    val VALID = "$ns.validation.Valid"
-    val NOT_NULL = "$ns.validation.constraints.NotNull"
-    val SIZE = "$ns.validation.constraints.Size"
-    val PATTERN = "$ns.validation.constraints.Pattern"
-    val DECIMAL_MIN = "$ns.validation.constraints.DecimalMin"
-    val DECIMAL_MAX = "$ns.validation.constraints.DecimalMax"
+    val annotations = ValidationAnnotationNames(validation.value)
 
     forEach { model ->
         val useSite = model.validationUseSite()
 
-        model.fields = model.fields.map { f ->
-            val prop = model.findPropertySchemaForField(field = f, bySchemaName = bySchemaName)
-
-            var out = f
-
-            // Required-but-nullable edge case (schema: nullable=true + required=true)
-            if (prop?.required == true && out.type.nullable) {
-                out = out.addAnnotation(
-                    ModelAnnotationDO(
-                        useSite = useSite,
-                        fqName = NOT_NULL,
-                    )
+        model.fields =
+            model.fields.map { field ->
+                val property = model.findPropertySchemaForField(field = field, bySchemaName = bySchemaName)
+                field.applyValidationAnnotations(
+                    property = property,
+                    bySchemaName = bySchemaName,
+                    useSite = useSite,
+                    annotationNames = annotations,
                 )
-            }
-
-            // Cascade validation for nested objects and lists of objects
-            if (out.shouldAddValid(bySchemaName)) {
-                out = out.addAnnotation(
-                    ModelAnnotationDO(
-                        useSite = useSite,
-                        fqName = VALID,
-                    )
-                )
-            }
-
-            val constraints = prop?.constraints ?: RawSchemaDO.ConstraintsDO()
-
-            // String constraints (minLength/maxLength/pattern)
-            constraints.string?.let { sc ->
-                val sizeArgs = buildList {
-                    sc.minLength?.let { add("min = $it") }
-                    sc.maxLength?.let { add("max = $it") }
-                }
-                if (sizeArgs.isNotEmpty()) {
-                    out = out.addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = useSite,
-                            fqName = SIZE,
-                            argsCode = sizeArgs,
-                        )
-                    )
-                }
-
-                sc.pattern?.takeIf { it.isNotBlank() }?.let { p ->
-                    out = out.addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = useSite,
-                            fqName = PATTERN,
-                            argsCode = listOf("regexp = ${p.toKotlinStringLiteral()}"),
-                        )
-                    )
-                }
-            }
-
-            // Array/List constraints (minItems/maxItems)
-            constraints.array?.let { ac ->
-                val sizeArgs = buildList {
-                    ac.minItems?.let { add("min = $it") }
-                    ac.maxItems?.let { add("max = $it") }
-                }
-                if (sizeArgs.isNotEmpty()) {
-                    out = out.addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = useSite,
-                            fqName = SIZE,
-                            argsCode = sizeArgs,
-                        )
-                    )
-                }
-            }
-
-            // Numeric constraints (minimum/maximum inclusive/exclusive)
-            constraints.number?.let { nc ->
-                nc.min?.let { min ->
-                    out = out.addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = useSite,
-                            fqName = DECIMAL_MIN,
-                            argsCode = buildList {
-                                add("value = ${min.value.toPlainString().toKotlinStringLiteral()}")
-                                if (!min.inclusive) add("inclusive = false")
-                            },
-                        )
-                    )
-                }
-
-                nc.max?.let { max ->
-                    out = out.addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = useSite,
-                            fqName = DECIMAL_MAX,
-                            argsCode = buildList {
-                                add("value = ${max.value.toPlainString().toKotlinStringLiteral()}")
-                                if (!max.inclusive) add("inclusive = false")
-                            },
-                        )
-                    )
-                }
-            }
-
-            out
-        }.toMutableList()
+            }.toMutableList()
     }
 }
 
@@ -149,74 +47,155 @@ private fun ModelDO.validationUseSite(): ModelAnnotationDO.UseSiteDO =
         else -> ModelAnnotationDO.UseSiteDO.FIELD
     }
 
-private fun FieldDO.shouldAddValid(bySchemaName: Map<String, ModelDO>): Boolean {
-    return when (val t = type) {
-        is RefTypeDO -> {
-            val target = bySchemaName[t.schemaName]?.rawSchema ?: return true
-            // Enums are terminal; @Valid is redundant.
-            target.enumValues.isEmpty()
-        }
-
-        is ListTypeDO -> {
-            when (val e = t.elementType) {
-                is RefTypeDO -> {
-                    val target = bySchemaName[e.schemaName]?.rawSchema ?: return true
-                    target.enumValues.isEmpty()
-                }
-
-                else -> false
-            }
-        }
-
-        else -> false
-    }
-}
-
 private fun ModelDO.findPropertySchemaForField(
     field: FieldDO,
     bySchemaName: Map<String, ModelDO>,
 ): RawSchemaDO.SchemaPropertyDO? {
-    rawSchema.ownProperties[field.originalName]?.let { return it }
-
-    val visited = mutableSetOf<String>()
-    val queue = ArrayDeque(rawSchema.allOfParents)
-
-    while (queue.isNotEmpty()) {
-        val parentName = queue.removeFirst()
-        if (!visited.add(parentName)) continue
-
-        val parent = bySchemaName[parentName] ?: continue
-        parent.rawSchema.ownProperties[field.originalName]?.let { return it }
-
-        queue.addAll(parent.rawSchema.allOfParents)
-    }
-
-    return null
+    val ownProperty = rawSchema.ownProperties[field.originalName]
+    return ownProperty ?: findInheritedPropertySchema(field, bySchemaName)
 }
 
-private fun FieldDO.addAnnotation(a: ModelAnnotationDO): FieldDO {
+private fun FieldDO.addValidationAnnotation(a: ModelAnnotationDO): FieldDO {
     val exists =
         annotations.any {
             it.useSite == a.useSite &&
-                    it.fqName == a.fqName &&
-                    it.argsCode == a.argsCode
+                it.fqName == a.fqName &&
+                it.argsCode == a.argsCode
         }
 
     return if (exists) this else copy(annotations = annotations + a)
 }
 
-private fun String.toKotlinStringLiteral(): String =
-    buildString {
-        append('"')
-        for (ch in this@toKotlinStringLiteral) {
-            when (ch) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> append(ch)
-            }
-        }
-        append('"')
+private fun FieldDO.applyValidationAnnotations(
+    property: RawSchemaDO.SchemaPropertyDO?,
+    bySchemaName: Map<String, ModelDO>,
+    useSite: ModelAnnotationDO.UseSiteDO,
+    annotationNames: ValidationAnnotationNames,
+): FieldDO {
+    var result = this
+
+    if (property?.required == true && result.type.nullable) {
+        result =
+            result.addValidationAnnotation(
+                ModelAnnotationDO(
+                    useSite = useSite,
+                    fqName = annotationNames.notNull,
+                ),
+            )
     }
+
+    if (result.shouldAddValid(bySchemaName)) {
+        result =
+            result.addValidationAnnotation(
+                ModelAnnotationDO(
+                    useSite = useSite,
+                    fqName = annotationNames.valid,
+                ),
+            )
+    }
+
+    val constraints = property?.constraints ?: RawSchemaDO.ConstraintsDO()
+    result = result.addStringConstraints(constraints, useSite, annotationNames)
+    result = result.addArrayConstraints(constraints, useSite, annotationNames)
+    result = result.addNumberConstraints(constraints, useSite, annotationNames)
+    return result
+}
+
+private fun FieldDO.addStringConstraints(
+    constraints: RawSchemaDO.ConstraintsDO,
+    useSite: ModelAnnotationDO.UseSiteDO,
+    annotationNames: ValidationAnnotationNames,
+): FieldDO {
+    var result = this
+    constraints.string?.let { stringConstraints ->
+        val sizeArgs =
+            buildList {
+                stringConstraints.minLength?.let { add("min = $it") }
+                stringConstraints.maxLength?.let { add("max = $it") }
+            }
+
+        if (sizeArgs.isNotEmpty()) {
+            result =
+                result.addValidationAnnotation(
+                    ModelAnnotationDO(
+                        useSite = useSite,
+                        fqName = annotationNames.size,
+                        argsCode = sizeArgs,
+                    ),
+                )
+        }
+
+        stringConstraints.pattern?.takeIf { it.isNotBlank() }?.let { pattern ->
+            result =
+                result.addValidationAnnotation(
+                    ModelAnnotationDO(
+                        useSite = useSite,
+                        fqName = annotationNames.pattern,
+                        argsCode = listOf("regexp = ${pattern.toKotlinStringLiteral()}"),
+                    ),
+                )
+        }
+    }
+    return result
+}
+
+private fun FieldDO.addArrayConstraints(
+    constraints: RawSchemaDO.ConstraintsDO,
+    useSite: ModelAnnotationDO.UseSiteDO,
+    annotationNames: ValidationAnnotationNames,
+): FieldDO {
+    var result = this
+    constraints.array?.let { arrayConstraints ->
+        val sizeArgs =
+            buildList {
+                arrayConstraints.minItems?.let { add("min = $it") }
+                arrayConstraints.maxItems?.let { add("max = $it") }
+            }
+
+        if (sizeArgs.isNotEmpty()) {
+            result =
+                result.addValidationAnnotation(
+                    ModelAnnotationDO(
+                        useSite = useSite,
+                        fqName = annotationNames.size,
+                        argsCode = sizeArgs,
+                    ),
+                )
+        }
+    }
+    return result
+}
+
+private fun FieldDO.addNumberConstraints(
+    constraints: RawSchemaDO.ConstraintsDO,
+    useSite: ModelAnnotationDO.UseSiteDO,
+    annotationNames: ValidationAnnotationNames,
+): FieldDO {
+    var result = this
+    constraints.number?.let { numberConstraints ->
+        numberConstraints.min?.let { min ->
+            result = result.addDecimalBoundAnnotation(useSite, annotationNames.decimalMin, min)
+        }
+        numberConstraints.max?.let { max ->
+            result = result.addDecimalBoundAnnotation(useSite, annotationNames.decimalMax, max)
+        }
+    }
+    return result
+}
+
+private fun FieldDO.addDecimalBoundAnnotation(
+    useSite: ModelAnnotationDO.UseSiteDO,
+    fqName: String,
+    bound: RawSchemaDO.ConstraintsDO.BoundDO,
+): FieldDO =
+    addValidationAnnotation(
+        ModelAnnotationDO(
+            useSite = useSite,
+            fqName = fqName,
+            argsCode =
+                buildList {
+                    add("value = ${bound.value.toPlainString().toKotlinStringLiteral()}")
+                    if (!bound.inclusive) add("inclusive = false")
+                },
+        ),
+    )

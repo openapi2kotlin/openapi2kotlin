@@ -17,9 +17,7 @@ private const val SCHEMA = "io.swagger.v3.oas.annotations.media.Schema"
  *  - name is always RawSchemaDO.originalName
  *  - description is RawSchemaDO.description (when present)
  */
-internal fun List<ModelDO>.handleModelSwaggerAnnotations(
-    cfg: OpenApi2KotlinUseCase.ApiConfig?,
-) {
+internal fun List<ModelDO>.handleModelSwaggerAnnotations(cfg: OpenApi2KotlinUseCase.ApiConfig?) {
     val enabled: Boolean =
         (cfg as? OpenApi2KotlinUseCase.ApiConfig.Server)?.swagger == true
 
@@ -29,18 +27,21 @@ internal fun List<ModelDO>.handleModelSwaggerAnnotations(
         val name = model.rawSchema.originalName
         val desc = model.rawSchema.description?.trim()?.takeIf { it.isNotBlank() }
 
-        val argsCode = buildList {
-            add("name = ${name.toKotlinStringLiteral()}")
-            desc?.let { add("description = ${it.toKotlinStringLiteral()}") }
-        }
+        val argsCode =
+            buildList {
+                add("name = ${name.toKotlinStringLiteral()}")
+                desc?.let { add("description = ${it.toKotlinStringLiteral()}") }
+            }
 
-        model.annotations = model.annotations + ModelAnnotationDO(
-            fqName = SCHEMA,
-            argsCode = argsCode,
-            metadata = buildMap {
-                put("swagger.schema.name", name)
-                if (desc != null) put("swagger.schema.description", desc)
-            },
-        )
+        model.annotations = model.annotations +
+            ModelAnnotationDO(
+                fqName = SCHEMA,
+                argsCode = argsCode,
+                metadata =
+                    buildMap {
+                        put("swagger.schema.name", name)
+                        if (desc != null) put("swagger.schema.description", desc)
+                    },
+            )
     }
 }

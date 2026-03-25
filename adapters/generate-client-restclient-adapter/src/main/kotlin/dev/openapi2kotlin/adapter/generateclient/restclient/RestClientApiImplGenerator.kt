@@ -10,6 +10,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
@@ -29,13 +30,15 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
         val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
-        val ctx = TypeNameContext(
-            modelPackageName = command.modelPackageName,
-            bySchemaName = bySchemaName,
-        )
+        val ctx =
+            TypeNameContext(
+                modelPackageName = command.modelPackageName,
+                bySchemaName = bySchemaName,
+            )
 
         command.apiContext.apis.forEach { api ->
             FileSpec.builder(command.packageName, "${api.generatedName}Impl")
+                .indent("    ")
                 .addType(generateApiImpl(api, command.packageName, command.apiContext.basePath, ctx))
                 .build()
                 .writeTo(outDir)
@@ -57,17 +60,17 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("restClient", REST_CLIENT_T)
-                    .build()
+                    .build(),
             )
             .addProperty(
                 PropertySpec.builder("restClient", REST_CLIENT_T, KModifier.PRIVATE)
                     .initializer("restClient")
-                    .build()
+                    .build(),
             )
             .addProperty(
                 PropertySpec.builder("basePath", String::class, KModifier.PRIVATE)
                     .initializer("%S", basePath)
-                    .build()
+                    .build(),
             )
             .addFunction(
                 FunSpec.builder("resolvePath")
@@ -89,9 +92,9 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
                             if (base.startsWith("/")) "${'$'}base/${'$'}path" else "/${'$'}base/${'$'}path"
                           }
                         }
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
-                    .build()
+                    .build(),
             )
             .apply {
                 api.endpoints.forEach { endpoint ->
@@ -108,9 +111,10 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         ep: ApiEndpointDO,
         ctx: TypeNameContext,
     ): FunSpec {
-        val builder = FunSpec.builder("${ep.generatedName}Request")
-            .addModifiers(KModifier.PRIVATE)
-            .returns(RESPONSE_SPEC_T)
+        val builder =
+            FunSpec.builder("${ep.generatedName}Request")
+                .addModifiers(KModifier.PRIVATE)
+                .returns(RESPONSE_SPEC_T)
 
         ep.params.forEach { param ->
             builder.addParameter(ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build())
@@ -128,8 +132,9 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         ctx: TypeNameContext,
     ): FunSpec {
         val returnType = RestClientApiPolicy.bodyReturnType(ep, ctx)
-        val builder = overrideFunBuilder(ep, ctx)
-            .returns(returnType)
+        val builder =
+            overrideFunBuilder(ep, ctx)
+                .returns(returnType)
 
         if (RestClientApiPolicy.hasBody(ep)) {
             builder.addCode(
@@ -149,8 +154,9 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         ep: ApiEndpointDO,
         ctx: TypeNameContext,
     ): FunSpec {
-        val builder = overrideFunBuilder(ep, ctx, suffix = "WithHttpInfo")
-            .returns(RestClientApiPolicy.httpInfoReturnType(ep, ctx))
+        val builder =
+            overrideFunBuilder(ep, ctx, suffix = "WithHttpInfo")
+                .returns(RestClientApiPolicy.httpInfoReturnType(ep, ctx))
 
         if (RestClientApiPolicy.hasBody(ep)) {
             builder.addCode(
@@ -179,15 +185,20 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         ctx: TypeNameContext?,
         suffix: String = "",
     ): FunSpec.Builder {
-        val builder = FunSpec.builder(ep.generatedName + suffix)
-            .addModifiers(KModifier.OVERRIDE)
+        val builder =
+            FunSpec.builder(ep.generatedName + suffix)
+                .addModifiers(KModifier.OVERRIDE)
 
         ep.params.forEach { param ->
             builder.addParameter(
                 ParameterSpec.builder(
                     param.generatedName,
-                    param.type.toTypeName(requireNotNull(ctx) { "TypeNameContext required for ${ep.generatedName}$suffix" }),
-                ).build()
+                    param.type.toTypeName(
+                        requireNotNull(ctx) {
+                            "TypeNameContext required for ${ep.generatedName}$suffix"
+                        },
+                    ),
+                ).build(),
             )
         }
 
@@ -195,116 +206,45 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             builder.addParameter(
                 ParameterSpec.builder(
                     body.generatedName,
-                    body.type.toTypeName(requireNotNull(ctx) { "TypeNameContext required for ${ep.generatedName}$suffix" }),
-                ).build()
+                    body.type.toTypeName(
+                        requireNotNull(ctx) {
+                            "TypeNameContext required for ${ep.generatedName}$suffix"
+                        },
+                    ),
+                ).build(),
             )
         }
 
-        val kdoc = buildString {
-            ep.rawOperation.summary?.let { appendLine(it) }
-            ep.rawOperation.description?.let {
-                if (isNotEmpty()) appendLine()
-                appendLine(it)
+        val kdoc =
+            buildString {
+                ep.rawOperation.summary?.let { appendLine(it) }
+                ep.rawOperation.description?.let {
+                    if (isNotEmpty()) appendLine()
+                    appendLine(it)
+                }
             }
-        }
         if (kdoc.isNotBlank()) builder.addKdoc(kdoc)
 
         return builder
     }
-
-    private fun requestCall(ep: ApiEndpointDO): String =
-        buildString {
-            append("${ep.generatedName}Request(")
-            append(
-                buildList {
-                    ep.params.forEach { add(it.generatedName) }
-                    ep.requestBody?.let { add(it.generatedName) }
-                }.joinToString(", ")
-            )
-            append(")")
-        }
 
     private fun buildRequestSpecCode(
         ep: ApiEndpointDO,
         ctx: TypeNameContext,
     ): CodeBlock {
         val builder = CodeBlock.builder()
-        val methodRef = when (ep.rawOperation.httpMethod) {
-            RawPathDO.HttpMethodDO.GET -> "GET"
-            RawPathDO.HttpMethodDO.POST -> "POST"
-            RawPathDO.HttpMethodDO.PUT -> "PUT"
-            RawPathDO.HttpMethodDO.PATCH -> "PATCH"
-            RawPathDO.HttpMethodDO.DELETE -> "DELETE"
-        }
+        val methodRef = httpMethodRef(ep)
 
         builder.addStatement("val request = restClient.method(%T.%L)", HTTP_METHOD_T, methodRef)
         builder.add("request.uri { builder ->\n")
         builder.indent()
         builder.addStatement("builder.path(resolvePath(%S))", ep.rawOperation.path)
-        ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.QUERY }.forEach { param ->
-            when (param.type) {
-                is ListTypeDO -> {
-                    val listType = param.type as ListTypeDO
-                    val itemCode = if (listType.elementType is TrivialTypeDO &&
-                        (listType.elementType as TrivialTypeDO).kind == TrivialTypeDO.Kind.STRING
-                    ) {
-                        "it"
-                    } else {
-                        "it.toString()"
-                    }
-                    if (param.rawParam.required) {
-                        builder.addStatement("%L.forEach { builder.queryParam(%S, $itemCode) }", param.generatedName, param.rawParam.name)
-                    } else {
-                        builder.addStatement("%L?.forEach { builder.queryParam(%S, $itemCode) }", param.generatedName, param.rawParam.name)
-                    }
-                }
-                else -> {
-                    val trivialType = param.type as? TrivialTypeDO
-                    val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                        "it"
-                    } else {
-                        "it.toString()"
-                    }
-                    if (param.rawParam.required) {
-                        builder.addStatement("builder.queryParam(%S, %L.toString())", param.rawParam.name, param.generatedName)
-                    } else {
-                        builder.addStatement("%L?.let { builder.queryParam(%S, $valueCode) }", param.generatedName, param.rawParam.name)
-                    }
-                }
-            }
-        }
-
-        val pathParams = ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.PATH }
-        if (pathParams.isEmpty()) {
-            builder.addStatement("builder.build()")
-        } else {
-            val vars = pathParams.joinToString(", ") { "%S to %L" }
-            val args = pathParams.flatMap { listOf(it.rawParam.name, it.generatedName) }.toTypedArray()
-            builder.add("builder.build(mapOf($vars))\n", *args)
-        }
+        addQueryParams(builder, ep)
+        addPathBuild(builder, ep)
         builder.unindent()
         builder.add("}\n")
 
-        val headerParams = ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.HEADER }
-        if (headerParams.isNotEmpty()) {
-            builder.add("request.headers { headers ->\n")
-            builder.indent()
-            headerParams.forEach { param ->
-                val trivialType = param.type as? TrivialTypeDO
-                val valueCode = if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                    "it"
-                } else {
-                    "it.toString()"
-                }
-                if (param.rawParam.required) {
-                    builder.addStatement("headers.add(%S, %L.toString())", param.rawParam.name, param.generatedName)
-                } else {
-                    builder.addStatement("%L?.let { headers.add(%S, $valueCode) }", param.generatedName, param.rawParam.name)
-                }
-            }
-            builder.unindent()
-            builder.add("}\n")
-        }
+        addHeaderParams(builder, ep)
 
         ep.requestBody?.let { body ->
             val bodyType = body.type.toTypeName(ctx)
@@ -328,4 +268,146 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             PARAMETERIZED_TYPE_REFERENCE_T,
             ep.successResponse!!.type!!.toTypeName(ctx),
         )
+}
+
+private fun requestCall(ep: ApiEndpointDO): String =
+    buildString {
+        append("${ep.generatedName}Request(")
+        append(
+            buildList {
+                ep.params.forEach { add(it.generatedName) }
+                ep.requestBody?.let { add(it.generatedName) }
+            }.joinToString(", "),
+        )
+        append(")")
+    }
+
+private fun httpMethodRef(ep: ApiEndpointDO): String =
+    when (ep.rawOperation.httpMethod) {
+        RawPathDO.HttpMethodDO.GET -> "GET"
+        RawPathDO.HttpMethodDO.POST -> "POST"
+        RawPathDO.HttpMethodDO.PUT -> "PUT"
+        RawPathDO.HttpMethodDO.PATCH -> "PATCH"
+        RawPathDO.HttpMethodDO.DELETE -> "DELETE"
+    }
+
+private fun addQueryParams(
+    builder: CodeBlock.Builder,
+    ep: ApiEndpointDO,
+) {
+    ep.params
+        .filter { it.rawParam.location == RawPathDO.ParamLocationDO.QUERY }
+        .forEach { param ->
+            when (param.type) {
+                is ListTypeDO -> addListQueryParam(builder, param)
+                else -> addScalarQueryParam(builder, param)
+            }
+        }
+}
+
+private fun addListQueryParam(
+    builder: CodeBlock.Builder,
+    param: ApiParamDO,
+) {
+    val listType = param.type as ListTypeDO
+    val itemCode =
+        if (listType.elementType is TrivialTypeDO &&
+            (listType.elementType as TrivialTypeDO).kind == TrivialTypeDO.Kind.STRING
+        ) {
+            "it"
+        } else {
+            "it.toString()"
+        }
+
+    if (param.rawParam.required) {
+        builder.addStatement(
+            "%L.forEach { builder.queryParam(%S, $itemCode) }",
+            param.generatedName,
+            param.rawParam.name,
+        )
+    } else {
+        builder.addStatement(
+            "%L?.forEach { builder.queryParam(%S, $itemCode) }",
+            param.generatedName,
+            param.rawParam.name,
+        )
+    }
+}
+
+private fun addScalarQueryParam(
+    builder: CodeBlock.Builder,
+    param: ApiParamDO,
+) {
+    val valueCode = optionalValueCode(param)
+    if (param.rawParam.required) {
+        builder.addStatement(
+            "builder.queryParam(%S, %L.toString())",
+            param.rawParam.name,
+            param.generatedName,
+        )
+    } else {
+        builder.addStatement(
+            "%L?.let { builder.queryParam(%S, $valueCode) }",
+            param.generatedName,
+            param.rawParam.name,
+        )
+    }
+}
+
+private fun addPathBuild(
+    builder: CodeBlock.Builder,
+    ep: ApiEndpointDO,
+) {
+    val pathParams = ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.PATH }
+    if (pathParams.isEmpty()) {
+        builder.addStatement("builder.build()")
+        return
+    }
+
+    builder.add("builder.build(mapOf(\n")
+    builder.indent()
+    pathParams.forEachIndexed { index, param ->
+        val suffix = if (index == pathParams.lastIndex) "" else ","
+        builder.add("%S to %L$suffix\n", param.rawParam.name, param.generatedName)
+    }
+    builder.unindent()
+    builder.add("))\n")
+}
+
+private fun addHeaderParams(
+    builder: CodeBlock.Builder,
+    ep: ApiEndpointDO,
+) {
+    val headerParams = ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.HEADER }
+    if (headerParams.isEmpty()) return
+
+    builder.add("request.headers { headers ->\n")
+    builder.indent()
+    headerParams.forEach { param ->
+        val valueCode = optionalValueCode(param)
+        if (param.rawParam.required) {
+            builder.addStatement(
+                "headers.add(%S, %L.toString())",
+                param.rawParam.name,
+                param.generatedName,
+            )
+        } else {
+            builder.addStatement(
+                "%L?.let { headers.add(%S, $valueCode) }",
+                param.generatedName,
+                param.rawParam.name,
+            )
+        }
+    }
+    builder.unindent()
+    builder.add("}\n")
+}
+
+private fun optionalValueCode(param: ApiParamDO): String {
+    val trivialType = param.type as? TrivialTypeDO
+    return if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
+        "it"
+    } else {
+        "it.toString()"
+    }
 }

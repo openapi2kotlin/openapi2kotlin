@@ -12,13 +12,14 @@ internal fun OpenAPI.toRawServers(): List<RawServerDO> =
 private fun Server.toRawServerDO(): RawServerDO =
     RawServerDO(
         url = url,
-        vars = variables
-            ?.entries
-            ?.mapNotNull { (name, variable) ->
-                variable?.toRawVar(name)
-            }
-            .orEmpty()
-            .sortedBy { it.name },
+        vars =
+            variables
+                ?.entries
+                ?.mapNotNull { (name, variable) ->
+                    variable?.toRawVar(name)
+                }
+                .orEmpty()
+                .sortedBy { it.name },
     )
 
 private fun ServerVariable.toRawVar(name: String): RawServerDO.Var? {
