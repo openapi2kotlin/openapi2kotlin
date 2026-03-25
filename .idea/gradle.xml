@@ -30,6 +30,15 @@
         </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-restclient" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-restclient" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
