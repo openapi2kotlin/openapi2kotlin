@@ -1,5 +1,6 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import org.gradle.api.attributes.Bundling
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
@@ -9,13 +10,27 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 val javaVersion = providers.gradleProperty("openapi2kotlin.jvm").get().toInt()
 val kotlinJvmTarget = JvmTarget.fromTarget(javaVersion.toString())
 val detektJvmTarget = minOf(javaVersion, 22)
+val ktlintCliVersion = "1.0.1"
 
 plugins {
     base
     alias(libs.plugins.kotlin.jvm) apply false
-    alias(libs.plugins.ktlint) apply false
-    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
     idea
+}
+
+configure<KtlintExtension> {
+    filter {
+        exclude("**/build/**")
+        exclude("**/generated/**")
+    }
+}
+
+configure<DetektExtension> {
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom(rootProject.file("detekt.yml"))
 }
 
 subprojects {
@@ -76,6 +91,13 @@ subprojects {
             exclude("**/build/**", "**/generated/**")
             jvmTarget = detektJvmTarget.toString()
         }
+
+        tasks.matching { task ->
+            task.name.startsWith("runKtlint") &&
+                task.name != "loadKtlintReporters"
+        }.configureEach {
+            dependsOn("loadKtlintReporters")
+        }
     }
 }
 
@@ -99,6 +121,18 @@ if (tagVersion != null) {
     }
 }
 
+val demoKtlintCli by configurations.creating
+val demoDetektCli by configurations.creating
+
+demoKtlintCli.attributes {
+    attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named("shadowed"))
+}
+
+dependencies {
+    demoKtlintCli("com.pinterest.ktlint:ktlint-cli:$ktlintCliVersion")
+    demoDetektCli("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
+}
+
 fun standaloneProjects(rootDirName: String): List<String> =
     fileTree(rootDir.resolve(rootDirName)) {
         include("**/settings.gradle.kts")
@@ -115,6 +149,14 @@ fun String.toStandaloneTaskSuffix(): String =
         .split(Regex("\\s+"))
         .filter { it.isNotBlank() }
         .joinToString("") { segment -> segment.replaceFirstChar(Char::uppercaseChar) }
+
+fun standaloneLintSources(path: String): List<File> =
+    listOf(
+        rootDir.resolve(path).resolve("src/main/kotlin"),
+        rootDir.resolve(path).resolve("src/test/kotlin"),
+        rootDir.resolve(path).resolve("build.gradle.kts"),
+        rootDir.resolve(path).resolve("settings.gradle.kts"),
+    ).filter(File::exists)
 
 val gradleCommand = if (OperatingSystem.current().isWindows) "gradlew.bat" else "./gradlew"
 
@@ -138,8 +180,50 @@ val cleanBuildStandaloneTests =
         }
     }
 
-val lintStandaloneProjects =
-    (standaloneDemoProjects + standaloneTestProjects).map { path ->
+val lintStandaloneDemoProjects =
+    standaloneDemoProjects.flatMap { path ->
+        val suffix = path.toStandaloneTaskSuffix()
+        val ktlintTask =
+            tasks.register<JavaExec>("ktlint$suffix") {
+                group = "verification"
+                description = "Runs ktlintCheck for standalone demo project $path."
+                classpath = demoKtlintCli
+                mainClass.set("com.pinterest.ktlint.Main")
+                args("--editorconfig=${rootDir.resolve(".editorconfig").invariantSeparatorsPath}")
+                args(standaloneLintSources(path).map(File::invariantSeparatorsPath))
+            }
+        val detektTask =
+            tasks.register<JavaExec>("detekt$suffix") {
+                group = "verification"
+                description = "Runs detekt for standalone demo project $path."
+                classpath = demoDetektCli
+                mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+                args(
+                    "--build-upon-default-config",
+                    "--config",
+                    rootDir.resolve("detekt.yml").invariantSeparatorsPath,
+                    "--input",
+                    rootDir.resolve(path).invariantSeparatorsPath,
+                    "--includes",
+                    "**/*.kt,**/*.kts",
+                    "--excludes",
+                    "**/build/**,**/generated/**",
+                    "--jvm-target",
+                    detektJvmTarget.toString(),
+                )
+            }
+        val lintTask =
+            tasks.register("lint$suffix") {
+                group = "verification"
+                description = "Runs ktlintCheck and detekt for standalone demo project $path."
+                dependsOn(ktlintTask, detektTask)
+            }
+
+        listOf(ktlintTask, detektTask, lintTask)
+    }
+
+val lintStandaloneTestProjects =
+    standaloneTestProjects.map { path ->
         tasks.register<Exec>("lint${path.toStandaloneTaskSuffix()}") {
             group = "verification"
             description = "Runs ktlintCheck and detekt for standalone project $path."
@@ -148,8 +232,24 @@ val lintStandaloneProjects =
         }
     }
 
-val formatStandaloneProjects =
-    (standaloneDemoProjects + standaloneTestProjects).map { path ->
+val formatStandaloneDemoProjects =
+    standaloneDemoProjects.map { path ->
+        val suffix = path.toStandaloneTaskSuffix()
+        tasks.register<JavaExec>("format$suffix") {
+            group = "formatting"
+            description = "Runs ktlintFormat for standalone demo project $path."
+            classpath = demoKtlintCli
+            mainClass.set("com.pinterest.ktlint.Main")
+            args(
+                "--editorconfig=${rootDir.resolve(".editorconfig").invariantSeparatorsPath}",
+                "--format",
+            )
+            args(standaloneLintSources(path).map(File::invariantSeparatorsPath))
+        }
+    }
+
+val formatStandaloneTestProjects =
+    standaloneTestProjects.map { path ->
         tasks.register<Exec>("format${path.toStandaloneTaskSuffix()}") {
             group = "formatting"
             description = "Runs ktlintFormat for standalone project $path."
@@ -183,16 +283,16 @@ tasks.register("cleanBuildStandaloneProjects") {
 tasks.register("lintStandaloneProjects") {
     group = "verification"
     description = "Runs ktlintCheck and detekt for all standalone demo and test projects."
-    dependsOn(lintStandaloneProjects)
+    dependsOn(lintStandaloneDemoProjects, lintStandaloneTestProjects)
 }
 
 tasks.register("formatStandaloneProjects") {
     group = "formatting"
     description = "Runs ktlintFormat for all standalone demo and test projects."
-    dependsOn(formatStandaloneProjects)
+    dependsOn(formatStandaloneDemoProjects, formatStandaloneTestProjects)
 }
 
-tasks.register("ktlintFormat") {
+tasks.named("ktlintFormat") {
     group = "formatting"
     description = "Runs ktlintFormat for all Kotlin subprojects and standalone demo/test projects."
     dependsOn(

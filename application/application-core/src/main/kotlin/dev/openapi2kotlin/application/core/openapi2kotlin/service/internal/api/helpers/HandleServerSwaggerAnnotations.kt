@@ -115,7 +115,7 @@ private fun buildApiResponsesCode(
 
         val args =
             buildList {
-                add("responseCode = ${r.statusCode.toString().toKotlinStringLiteral()}")
+                add("responseCode = ${renderSwaggerResponseCode(r.statusCode).toKotlinStringLiteral()}")
                 add("description = ${desc.toKotlinStringLiteral()}")
                 if (contentCode != null) add("content = [$contentCode]")
             }.joinToString(", ")

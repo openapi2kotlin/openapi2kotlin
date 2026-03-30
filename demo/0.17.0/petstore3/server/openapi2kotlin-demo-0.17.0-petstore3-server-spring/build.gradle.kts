@@ -10,24 +10,28 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.bundles.restclient)
+    implementation(libs.bundles.spring)
     testImplementation(libs.bundles.test)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
 openapi2kotlin {
     inputSpec = "$projectDir/src/main/resources/openapi.yaml"
-    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    outputDir =
+        layout.buildDirectory
+            .dir("generated/src/main/kotlin")
+            .get()
+            .asFile.path
 
     model {
         packageName = "dev.openapi2kotlin.demo.model"
     }
 
-    client {
-        packageName = "dev.openapi2kotlin.demo.client"
-        library = RestClient
+    server {
+        packageName = "dev.openapi2kotlin.demo.server"
+        library = Spring
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

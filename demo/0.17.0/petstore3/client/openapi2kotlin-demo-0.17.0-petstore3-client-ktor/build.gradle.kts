@@ -1,16 +1,20 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.spring)
-    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.openapi2kotlin)
+    application
 }
 
 kotlin {
     jvmToolchain(25)
 }
 
+application {
+    mainClass.set("dev.openapi2kotlin.demo.petstore3.client.ktor.MainKt")
+}
+
 dependencies {
-    implementation(libs.bundles.restclient)
+    implementation(libs.bundles.ktor)
     testImplementation(libs.bundles.test)
 }
 
@@ -24,10 +28,11 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.demo.model"
+        serialization = KotlinX
     }
 
     client {
         packageName = "dev.openapi2kotlin.demo.client"
-        library = RestClient
+        library = Ktor
     }
 }

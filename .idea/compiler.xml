@@ -8,6 +8,9 @@
       <module name="openapi2kotlin-demo-0.17.0-petstore3-client-restclient" options="-parameters" />
       <module name="openapi2kotlin-demo-0.17.0-petstore3-client-restclient.main" options="-parameters" />
       <module name="openapi2kotlin-demo-0.17.0-petstore3-client-restclient.test" options="-parameters" />
+      <module name="openapi2kotlin-demo-0.17.0-petstore3-server-spring" options="-parameters" />
+      <module name="openapi2kotlin-demo-0.17.0-petstore3-server-spring.main" options="-parameters" />
+      <module name="openapi2kotlin-demo-0.17.0-petstore3-server-spring.test" options="-parameters" />
       <module name="openapi2kotlin-test-petstore3-server-spring" options="-parameters" />
       <module name="openapi2kotlin-test-petstore3-server-spring.main" options="-parameters" />
       <module name="openapi2kotlin-test-petstore3-server-spring.test" options="-parameters" />

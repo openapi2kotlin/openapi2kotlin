@@ -1,27 +1,33 @@
 [versions]
 kotlin = "2.3.0"
-openapi2kotlin = "0.17.0"
 spring-boot = "4.0.4"
-wiremock = "3.13.1"
+swagger = "2.2.31"
 
 [libraries]
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "spring-boot" }
+spring-boot-starter-json = { module = "org.springframework.boot:spring-boot-starter-json", version.ref = "spring-boot" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "spring-boot" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
-wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
+swagger-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
 
 [bundles]
-restclient = [
+spring = [
+    "kotlin-reflect",
     "spring-boot-starter-web",
+    "spring-boot-starter-json",
+    "spring-boot-starter-validation",
+    "swagger-annotations-jakarta",
 ]
 test = [
     "spring-boot-starter-test",
+    "spring-boot-starter-json",
     "kotlin-test-junit5",
-    "wiremock",
 ]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
-openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }
+openapi2kotlin = { id = "dev.openapi2kotlin" }
