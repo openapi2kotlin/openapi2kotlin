@@ -1,0 +1,37 @@
+[versions]
+kotlin = "2.3.0"
+openapi2kotlin = "0.17.0"
+ktor = "3.4.1"
+kotlinx-serialization = "1.9.0"
+
+[libraries]
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+[bundles]
+ktor = [
+    "ktor-server-core",
+    "ktor-server-content-negotiation",
+    "ktor-server-netty",
+    "ktor-serialization-kotlinx-json",
+    "kotlinx-serialization-json",
+]
+test = [
+    "kotlin-test-junit5",
+    "ktor-client-cio",
+    "ktor-client-content-negotiation",
+    "ktor-server-test-host",
+    "ktor-serialization-kotlinx-json",
+]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }

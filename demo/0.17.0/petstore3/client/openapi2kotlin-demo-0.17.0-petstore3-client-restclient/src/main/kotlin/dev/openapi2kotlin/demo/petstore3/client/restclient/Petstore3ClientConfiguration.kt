@@ -12,10 +12,10 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.web.client.RestClient
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(AppPetstore3Props::class)
+@EnableConfigurationProperties(Petstore3Props::class)
 class Petstore3ClientConfiguration {
     @Bean
-    fun restClient(props: AppPetstore3Props): RestClient =
+    fun restClient(props: Petstore3Props): RestClient =
         RestClient
             .builder()
             .baseUrl(props.url)

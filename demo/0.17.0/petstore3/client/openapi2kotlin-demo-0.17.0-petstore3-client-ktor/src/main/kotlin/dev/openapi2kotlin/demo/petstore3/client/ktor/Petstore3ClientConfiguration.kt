@@ -20,12 +20,12 @@ const val HTTP_CLIENT = "HTTP_CLIENT"
 
 fun Application.petstore3ClientConfiguration() {
     dependencies {
-        provide<AppPetstore3Props> {
-            AppPetstore3Props.from(this@petstore3ClientConfiguration)
+        provide<Petstore3Props> {
+            Petstore3Props.from(this@petstore3ClientConfiguration)
         }
 
         provide<HttpClient>(HTTP_CLIENT) {
-            val props = resolve<AppPetstore3Props>()
+            val props = resolve<Petstore3Props>()
 
             HttpClient(CIO) {
                 install(ContentNegotiation) {
