@@ -8,13 +8,13 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.postProcess
@@ -37,7 +37,8 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             )
 
         command.apiContext.apis.forEach { api ->
-            FileSpec.builder(command.packageName, "${api.generatedName}Impl")
+            FileSpec
+                .builder(command.packageName, "${api.generatedName}Impl")
                 .indent("    ")
                 .addType(generateApiImpl(api, command.packageName, command.apiContext.basePath, ctx))
                 .build()
@@ -55,25 +56,27 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
     ): TypeSpec {
         val apiType = ClassName(apiPackageName, api.generatedName)
 
-        return TypeSpec.classBuilder("${api.generatedName}Impl")
+        return TypeSpec
+            .classBuilder("${api.generatedName}Impl")
             .addSuperinterface(apiType)
             .primaryConstructor(
-                FunSpec.constructorBuilder()
+                FunSpec
+                    .constructorBuilder()
                     .addParameter("restClient", REST_CLIENT_T)
                     .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("restClient", REST_CLIENT_T, KModifier.PRIVATE)
+            ).addProperty(
+                PropertySpec
+                    .builder("restClient", REST_CLIENT_T, KModifier.PRIVATE)
                     .initializer("restClient")
                     .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("basePath", String::class, KModifier.PRIVATE)
+            ).addProperty(
+                PropertySpec
+                    .builder("basePath", String::class, KModifier.PRIVATE)
                     .initializer("%S", basePath)
                     .build(),
-            )
-            .addFunction(
-                FunSpec.builder("resolvePath")
+            ).addFunction(
+                FunSpec
+                    .builder("resolvePath")
                     .addModifiers(KModifier.PRIVATE)
                     .addParameter("apiPath", String::class)
                     .returns(String::class)
@@ -81,7 +84,7 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
                         """
                         val normalizedBasePath = basePath.trim()
                         val normalizedApiPath = apiPath.trim()
-                        
+
                         return when {
                           normalizedBasePath.isBlank() && normalizedApiPath.isBlank() -> ""
                           normalizedBasePath.isBlank() -> if (normalizedApiPath.startsWith("/")) normalizedApiPath else "/${'$'}normalizedApiPath"
@@ -93,18 +96,15 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
                           }
                         }
                         """.trimIndent(),
-                    )
-                    .build(),
-            )
-            .apply {
+                    ).build(),
+            ).apply {
                 api.endpoints.forEach { endpoint ->
                     addFunction(generateRequestSpecFun(endpoint, ctx))
                     addFunction(generateBodyMethod(endpoint, ctx))
                     addFunction(generateHttpInfoMethod(endpoint, ctx))
                     addFunction(generateResponseSpecMethod(endpoint, ctx))
                 }
-            }
-            .build()
+            }.build()
     }
 
     private fun generateRequestSpecFun(
@@ -112,7 +112,8 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         ctx: TypeNameContext,
     ): FunSpec {
         val builder =
-            FunSpec.builder("${ep.generatedName}Request")
+            FunSpec
+                .builder("${ep.generatedName}Request")
                 .addModifiers(KModifier.PRIVATE)
                 .returns(RESPONSE_SPEC_T)
 
@@ -186,32 +187,35 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         suffix: String = "",
     ): FunSpec.Builder {
         val builder =
-            FunSpec.builder(ep.generatedName + suffix)
+            FunSpec
+                .builder(ep.generatedName + suffix)
                 .addModifiers(KModifier.OVERRIDE)
 
         ep.params.forEach { param ->
             builder.addParameter(
-                ParameterSpec.builder(
-                    param.generatedName,
-                    param.type.toTypeName(
-                        requireNotNull(ctx) {
-                            "TypeNameContext required for ${ep.generatedName}$suffix"
-                        },
-                    ),
-                ).build(),
+                ParameterSpec
+                    .builder(
+                        param.generatedName,
+                        param.type.toTypeName(
+                            requireNotNull(ctx) {
+                                "TypeNameContext required for ${ep.generatedName}$suffix"
+                            },
+                        ),
+                    ).build(),
             )
         }
 
         ep.requestBody?.let { body ->
             builder.addParameter(
-                ParameterSpec.builder(
-                    body.generatedName,
-                    body.type.toTypeName(
-                        requireNotNull(ctx) {
-                            "TypeNameContext required for ${ep.generatedName}$suffix"
-                        },
-                    ),
-                ).build(),
+                ParameterSpec
+                    .builder(
+                        body.generatedName,
+                        body.type.toTypeName(
+                            requireNotNull(ctx) {
+                                "TypeNameContext required for ${ep.generatedName}$suffix"
+                            },
+                        ),
+                    ).build(),
             )
         }
 

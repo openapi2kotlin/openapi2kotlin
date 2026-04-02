@@ -1,8 +1,8 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 import io.github.oshai.kotlinlogging.KotlinLogging
 

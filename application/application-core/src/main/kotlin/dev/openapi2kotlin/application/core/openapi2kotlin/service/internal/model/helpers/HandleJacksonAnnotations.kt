@@ -1,12 +1,12 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.PolymorphismDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.PolymorphismDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 internal const val JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty"
@@ -62,19 +62,20 @@ private fun List<ModelDO>.applyJsonPropertyMappings(cfg: OpenApi2KotlinUseCase.M
     forEach { model ->
         val useSite = model.jsonPropertyUseSite()
         model.fields =
-            model.fields.map { field ->
-                if (field.originalName == field.generatedName) {
-                    field
-                } else {
-                    field.addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = useSite,
-                            fqName = JSON_PROPERTY,
-                            argsCode = listOf("\"${field.originalName}\""),
-                        ),
-                    )
-                }
-            }.toMutableList()
+            model.fields
+                .map { field ->
+                    if (field.originalName == field.generatedName) {
+                        field
+                    } else {
+                        field.addAnnotation(
+                            ModelAnnotationDO(
+                                useSite = useSite,
+                                fqName = JSON_PROPERTY,
+                                argsCode = listOf("\"${field.originalName}\""),
+                            ),
+                        )
+                    }
+                }.toMutableList()
     }
 }
 
@@ -104,42 +105,42 @@ private fun List<ModelDO>.applyOneOfWrapperFieldAnnotations(
 
     forEach { owner ->
         owner.fields =
-            owner.fields.map { field ->
-                val wrapperSchemaName =
-                    field.findWrapperSchemaNameReferenced(oneOfWrapperPolymorphismBySchemaName.keys)
-                        ?: return@map field
-                val wrapperPolymorphism =
-                    oneOfWrapperPolymorphismBySchemaName[wrapperSchemaName] ?: return@map field
-                val subtypeEntries =
-                    buildWrapperSubtypeEntries(
-                        wrapperSchemaName = wrapperSchemaName,
-                        wrapperPolymorphism = wrapperPolymorphism,
-                        bySchemaName = bySchemaName,
-                    )
-                if (subtypeEntries.isEmpty()) return@map field
+            owner.fields
+                .map { field ->
+                    val wrapperSchemaName =
+                        field.findWrapperSchemaNameReferenced(oneOfWrapperPolymorphismBySchemaName.keys)
+                            ?: return@map field
+                    val wrapperPolymorphism =
+                        oneOfWrapperPolymorphismBySchemaName[wrapperSchemaName] ?: return@map field
+                    val subtypeEntries =
+                        buildWrapperSubtypeEntries(
+                            wrapperSchemaName = wrapperSchemaName,
+                            wrapperPolymorphism = wrapperPolymorphism,
+                            bySchemaName = bySchemaName,
+                        )
+                    if (subtypeEntries.isEmpty()) return@map field
 
-                field
-                    .addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = ModelAnnotationDO.UseSiteDO.FIELD,
-                            fqName = JSON_TYPE_INFO,
-                            argsCode =
-                                listOf(
-                                    "use = JsonTypeInfo.Id.NAME",
-                                    "include = JsonTypeInfo.As.PROPERTY",
-                                    "property = \"${wrapperPolymorphism.discriminatorPropertyOriginalName}\"",
-                                    "visible = true",
-                                ),
-                        ),
-                    )
-                    .addAnnotation(
-                        ModelAnnotationDO(
-                            useSite = ModelAnnotationDO.UseSiteDO.FIELD,
-                            fqName = JSON_SUB_TYPES,
-                            argsCode = subtypeEntries,
-                        ),
-                    )
-            }.toMutableList()
+                    field
+                        .addAnnotation(
+                            ModelAnnotationDO(
+                                useSite = ModelAnnotationDO.UseSiteDO.FIELD,
+                                fqName = JSON_TYPE_INFO,
+                                argsCode =
+                                    listOf(
+                                        "use = JsonTypeInfo.Id.NAME",
+                                        "include = JsonTypeInfo.As.PROPERTY",
+                                        "property = \"${wrapperPolymorphism.discriminatorPropertyOriginalName}\"",
+                                        "visible = true",
+                                    ),
+                            ),
+                        ).addAnnotation(
+                            ModelAnnotationDO(
+                                useSite = ModelAnnotationDO.UseSiteDO.FIELD,
+                                fqName = JSON_SUB_TYPES,
+                                argsCode = subtypeEntries,
+                            ),
+                        )
+                }.toMutableList()
     }
 }
 
@@ -155,20 +156,23 @@ private fun List<ModelDO>.applyReadOnlyDiscriminators(bySchemaName: Map<String, 
  * If this field references any of the oneOf wrapper schema names (directly or as list element),
  * return the wrapper schema name, else null.
  */
-private fun FieldDO.findWrapperSchemaNameReferenced(wrapperSchemaNames: Set<String>): String? {
-    return when (val t = type) {
-        is RefTypeDO ->
+private fun FieldDO.findWrapperSchemaNameReferenced(wrapperSchemaNames: Set<String>): String? =
+    when (val t = type) {
+        is RefTypeDO -> {
             t.schemaName.takeIf { it in wrapperSchemaNames }
+        }
 
-        is ListTypeDO ->
+        is ListTypeDO -> {
             when (val e = t.elementType) {
                 is RefTypeDO -> e.schemaName.takeIf { it in wrapperSchemaNames }
                 else -> null
             }
+        }
 
-        else -> null
+        else -> {
+            null
+        }
     }
-}
 
 /**
  * Determines the appropriate @JsonProperty use-site.

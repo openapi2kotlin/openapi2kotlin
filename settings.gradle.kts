@@ -23,6 +23,7 @@ include("application:application-core")
 
 include("tools:generator-tools")
 include("tools:api-generator")
+include("tools:detekt-tools")
 
 include("adapters:parse-spec-adapter")
 

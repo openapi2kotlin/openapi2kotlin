@@ -5,9 +5,9 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.postProcess
@@ -24,7 +24,8 @@ internal class RestClientInterfaceGenerator : GenerateApiPort {
             )
 
         command.apiContext.apis.forEach { api ->
-            FileSpec.builder(command.packageName, api.generatedName)
+            FileSpec
+                .builder(command.packageName, api.generatedName)
                 .indent("    ")
                 .addType(generateApiInterface(api, ctx))
                 .build()
@@ -38,15 +39,15 @@ internal class RestClientInterfaceGenerator : GenerateApiPort {
         api: ApiDO,
         ctx: TypeNameContext,
     ): TypeSpec =
-        TypeSpec.interfaceBuilder(api.generatedName)
+        TypeSpec
+            .interfaceBuilder(api.generatedName)
             .apply {
                 api.endpoints.forEach { endpoint ->
                     addFunction(generateBodyMethod(endpoint, ctx))
                     addFunction(generateHttpInfoMethod(endpoint, ctx))
                     addFunction(generateResponseSpecMethod(endpoint, ctx))
                 }
-            }
-            .build()
+            }.build()
 
     private fun generateBodyMethod(
         ep: ApiEndpointDO,
@@ -78,7 +79,8 @@ internal class RestClientInterfaceGenerator : GenerateApiPort {
         suffix: String = "",
     ): FunSpec.Builder {
         val builder =
-            FunSpec.builder(ep.generatedName + suffix)
+            FunSpec
+                .builder(ep.generatedName + suffix)
                 .addModifiers(KModifier.ABSTRACT)
 
         ep.params.forEach { param ->

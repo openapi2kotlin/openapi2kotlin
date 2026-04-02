@@ -1,6 +1,6 @@
 package dev.openapi2kotlin.adapter.parser.internal
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.ConstraintsDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.ConstraintsDO
 import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.Schema
 import java.math.BigDecimal

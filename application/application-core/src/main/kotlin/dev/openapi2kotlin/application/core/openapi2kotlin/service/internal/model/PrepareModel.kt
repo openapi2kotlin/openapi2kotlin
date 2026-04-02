@@ -1,7 +1,7 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers.cleanSchemaNameHandler
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers.handleAllOfChildren
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers.handleDefaultValues

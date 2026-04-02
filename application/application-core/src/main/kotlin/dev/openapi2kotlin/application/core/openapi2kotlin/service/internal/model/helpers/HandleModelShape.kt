@@ -1,13 +1,13 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.EnumValue
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.EnumValueDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 internal fun List<ModelDO>.handleModelShape(cfg: OpenApi2KotlinUseCase.ModelConfig) {
@@ -19,22 +19,36 @@ internal fun List<ModelDO>.handleModelShape(cfg: OpenApi2KotlinUseCase.ModelConf
 
 private fun RawSchemaDO.RawFieldTypeDO.toFieldTypeDO(): FieldTypeDO =
     when (this) {
-        is RawSchemaDO.RawRefTypeDO ->
+        is RawSchemaDO.RawRefTypeDO -> {
             RefTypeDO(schemaName = schemaName, nullable = nullable)
+        }
 
-        is RawSchemaDO.RawArrayTypeDO ->
+        is RawSchemaDO.RawArrayTypeDO -> {
             ListTypeDO(elementType = elementType.toFieldTypeDO(), nullable = nullable)
+        }
 
         is RawSchemaDO.RawPrimitiveTypeDO -> {
             val trivial =
                 when (type) {
-                    RawSchemaDO.RawPrimitiveTypeDO.Type.STRING -> TrivialTypeDO.Kind.STRING
-                    RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN -> TrivialTypeDO.Kind.BOOLEAN
+                    RawSchemaDO.RawPrimitiveTypeDO.Type.STRING -> {
+                        TrivialTypeDO.Kind.STRING
+                    }
+
+                    RawSchemaDO.RawPrimitiveTypeDO.Type.BOOLEAN -> {
+                        TrivialTypeDO.Kind.BOOLEAN
+                    }
+
                     RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER -> {
                         if (format == "int64") TrivialTypeDO.Kind.LONG else TrivialTypeDO.Kind.INT
                     }
-                    RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER -> TrivialTypeDO.Kind.DOUBLE
-                    RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT -> TrivialTypeDO.Kind.ANY
+
+                    RawSchemaDO.RawPrimitiveTypeDO.Type.NUMBER -> {
+                        TrivialTypeDO.Kind.DOUBLE
+                    }
+
+                    RawSchemaDO.RawPrimitiveTypeDO.Type.OBJECT -> {
+                        TrivialTypeDO.Kind.ANY
+                    }
                 }
             TrivialTypeDO(kind = trivial, nullable = nullable)
         }
@@ -140,7 +154,7 @@ private fun ModelDO.toEnumShape(): ModelShapeDO.EnumClass? {
     return ModelShapeDO.EnumClass(
         values =
             rawSchema.enumValues.map { original ->
-                EnumValue(
+                EnumValueDO(
                     originalValue = original,
                     generatedValue = original.toEnumConstName(),
                 )
@@ -171,9 +185,13 @@ private fun ModelDO.resolveInheritedShape(byName: Map<String, ModelDO>): ModelSh
 
     return when (val shape = modelShape) {
         is ModelShapeDO.SealedInterface -> shape.copy(extends = parentInterfaces)
+
         is ModelShapeDO.DataClass -> shape.copy(extend = parentClass, implements = parentInterfaces)
+
         is ModelShapeDO.EmptyClass -> shape.copy(extend = parentClass, implements = parentInterfaces)
+
         is ModelShapeDO.OpenClass -> shape.copy(extend = parentClass, implements = parentInterfaces)
+
         is ModelShapeDO.EnumClass,
         is ModelShapeDO.TypeAlias,
         is ModelShapeDO.Undecided,
@@ -183,7 +201,31 @@ private fun ModelDO.resolveInheritedShape(byName: Map<String, ModelDO>): ModelSh
 
 private val KOTLIN_KEYWORDS =
     setOf(
-        "AS", "BREAK", "CLASS", "CONTINUE", "DO", "ELSE", "FALSE", "FOR", "FUN", "IF",
-        "IN", "INTERFACE", "IS", "NULL", "OBJECT", "PACKAGE", "RETURN", "SUPER",
-        "THIS", "THROW", "TRUE", "TRY", "TYPEALIAS", "VAL", "VAR", "WHEN", "WHILE",
+        "AS",
+        "BREAK",
+        "CLASS",
+        "CONTINUE",
+        "DO",
+        "ELSE",
+        "FALSE",
+        "FOR",
+        "FUN",
+        "IF",
+        "IN",
+        "INTERFACE",
+        "IS",
+        "NULL",
+        "OBJECT",
+        "PACKAGE",
+        "RETURN",
+        "SUPER",
+        "THIS",
+        "THROW",
+        "TRUE",
+        "TRY",
+        "TYPEALIAS",
+        "VAL",
+        "VAR",
+        "WHEN",
+        "WHILE",
     )

@@ -1,7 +1,7 @@
 package dev.openapi2kotlin.adapter.generateserver.http4k
 
 import dev.openapi2kotlin.adapter.generateserver.http4k.internal.generateHttp4kRoutes
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 

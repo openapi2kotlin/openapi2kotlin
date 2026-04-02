@@ -12,9 +12,12 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiRequestBodyDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.apigenerator.internal.formatFunParams
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
@@ -97,7 +100,7 @@ class ApiGenerator(
         return funBuilder.build()
     }
 
-    private fun dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO.toParameterSpec(
+    private fun ApiParamDO.toParameterSpec(
         ctx: TypeNameContext,
         aliases: Map<String, String>,
     ): ParameterSpec {
@@ -106,7 +109,7 @@ class ApiGenerator(
         return builder.build()
     }
 
-    private fun dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiRequestBodyDO.toParameterSpec(
+    private fun ApiRequestBodyDO.toParameterSpec(
         ctx: TypeNameContext,
         aliases: Map<String, String>,
     ): ParameterSpec {
@@ -115,7 +118,7 @@ class ApiGenerator(
         return builder.build()
     }
 
-    private fun dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO.OperationDO.toKdoc(): String =
+    private fun RawPathDO.OperationDO.toKdoc(): String =
         buildString {
             summary?.let { appendLine(it) }
             description?.let {

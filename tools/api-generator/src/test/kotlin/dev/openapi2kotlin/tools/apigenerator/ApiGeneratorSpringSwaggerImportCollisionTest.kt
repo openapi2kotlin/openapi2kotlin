@@ -2,16 +2,16 @@ package dev.openapi2kotlin.tools.apigenerator
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiContextDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiSuccessResponseDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiContextDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiSuccessResponseDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.toTypeName

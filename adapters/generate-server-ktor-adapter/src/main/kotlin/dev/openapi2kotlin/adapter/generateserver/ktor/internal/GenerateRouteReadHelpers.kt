@@ -1,9 +1,9 @@
 package dev.openapi2kotlin.adapter.generateserver.ktor.internal
 
 import com.squareup.kotlinpoet.CodeBlock
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 
 internal fun pathReadExpr(
     param: ApiParamDO,
@@ -11,18 +11,29 @@ internal fun pathReadExpr(
 ): CodeBlock {
     val key = param.rawParam.name
     return when ((param.type as? TrivialTypeDO)?.kind) {
-        TrivialTypeDO.Kind.STRING, null ->
+        TrivialTypeDO.Kind.STRING, null -> {
             badRequestPathExpr(key, label, "call.parameters[%S]")
-        TrivialTypeDO.Kind.LONG ->
+        }
+
+        TrivialTypeDO.Kind.LONG -> {
             badRequestPathExpr(key, label, "call.parameters[%S]?.toLongOrNull()")
-        TrivialTypeDO.Kind.INT ->
+        }
+
+        TrivialTypeDO.Kind.INT -> {
             badRequestPathExpr(key, label, "call.parameters[%S]?.toIntOrNull()")
-        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE ->
+        }
+
+        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> {
             badRequestPathExpr(key, label, "call.parameters[%S]?.toDoubleOrNull()")
-        TrivialTypeDO.Kind.BOOLEAN ->
+        }
+
+        TrivialTypeDO.Kind.BOOLEAN -> {
             badRequestPathExpr(key, label, "call.parameters[%S]?.toBooleanStrictOrNull()")
-        else ->
+        }
+
+        else -> {
             badRequestPathExpr(key, label, "call.parameters[%S]")
+        }
     }
 }
 
@@ -37,14 +48,29 @@ internal fun queryReadExpr(param: ApiParamDO): CodeBlock {
 internal fun headerReadExpr(param: ApiParamDO): CodeBlock {
     val key = param.rawParam.name
     return when ((param.type as? TrivialTypeDO)?.kind) {
-        TrivialTypeDO.Kind.STRING, null -> CodeBlock.of("call.request.headers[%S]", key)
-        TrivialTypeDO.Kind.LONG -> CodeBlock.of("call.request.headers[%S]?.toLongOrNull()", key)
-        TrivialTypeDO.Kind.INT -> CodeBlock.of("call.request.headers[%S]?.toIntOrNull()", key)
-        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE ->
+        TrivialTypeDO.Kind.STRING, null -> {
+            CodeBlock.of("call.request.headers[%S]", key)
+        }
+
+        TrivialTypeDO.Kind.LONG -> {
+            CodeBlock.of("call.request.headers[%S]?.toLongOrNull()", key)
+        }
+
+        TrivialTypeDO.Kind.INT -> {
+            CodeBlock.of("call.request.headers[%S]?.toIntOrNull()", key)
+        }
+
+        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> {
             CodeBlock.of("call.request.headers[%S]?.toDoubleOrNull()", key)
-        TrivialTypeDO.Kind.BOOLEAN ->
+        }
+
+        TrivialTypeDO.Kind.BOOLEAN -> {
             CodeBlock.of("call.request.headers[%S]?.toBooleanStrictOrNull()", key)
-        else -> CodeBlock.of("call.request.headers[%S]", key)
+        }
+
+        else -> {
+            CodeBlock.of("call.request.headers[%S]", key)
+        }
     }
 }
 
@@ -54,13 +80,25 @@ private fun listQueryReadExpr(
 ): CodeBlock {
     val elementKind = (listType.elementType as? TrivialTypeDO)?.kind
     return when (elementKind) {
-        TrivialTypeDO.Kind.LONG -> listQueryParseExpr(key, "String::toLongOrNull")
-        TrivialTypeDO.Kind.INT -> listQueryParseExpr(key, "String::toIntOrNull")
-        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE ->
+        TrivialTypeDO.Kind.LONG -> {
+            listQueryParseExpr(key, "String::toLongOrNull")
+        }
+
+        TrivialTypeDO.Kind.INT -> {
+            listQueryParseExpr(key, "String::toIntOrNull")
+        }
+
+        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> {
             listQueryParseExpr(key, "String::toDoubleOrNull")
-        TrivialTypeDO.Kind.BOOLEAN ->
+        }
+
+        TrivialTypeDO.Kind.BOOLEAN -> {
             listQueryParseExpr(key, "String::toBooleanStrictOrNull")
-        else -> CodeBlock.of("call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }", key)
+        }
+
+        else -> {
+            CodeBlock.of("call.request.queryParameters.getAll(%S)?.takeIf { it.isNotEmpty() }", key)
+        }
     }
 }
 
@@ -69,14 +107,29 @@ private fun scalarQueryReadExpr(
     kind: TrivialTypeDO.Kind?,
 ): CodeBlock =
     when (kind) {
-        TrivialTypeDO.Kind.STRING, null -> CodeBlock.of("call.request.queryParameters[%S]", key)
-        TrivialTypeDO.Kind.LONG -> CodeBlock.of("call.request.queryParameters[%S]?.toLongOrNull()", key)
-        TrivialTypeDO.Kind.INT -> CodeBlock.of("call.request.queryParameters[%S]?.toIntOrNull()", key)
-        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE ->
+        TrivialTypeDO.Kind.STRING, null -> {
+            CodeBlock.of("call.request.queryParameters[%S]", key)
+        }
+
+        TrivialTypeDO.Kind.LONG -> {
+            CodeBlock.of("call.request.queryParameters[%S]?.toLongOrNull()", key)
+        }
+
+        TrivialTypeDO.Kind.INT -> {
+            CodeBlock.of("call.request.queryParameters[%S]?.toIntOrNull()", key)
+        }
+
+        TrivialTypeDO.Kind.FLOAT, TrivialTypeDO.Kind.DOUBLE -> {
             CodeBlock.of("call.request.queryParameters[%S]?.toDoubleOrNull()", key)
-        TrivialTypeDO.Kind.BOOLEAN ->
+        }
+
+        TrivialTypeDO.Kind.BOOLEAN -> {
             CodeBlock.of("call.request.queryParameters[%S]?.toBooleanStrictOrNull()", key)
-        else -> CodeBlock.of("call.request.queryParameters[%S]", key)
+        }
+
+        else -> {
+            CodeBlock.of("call.request.queryParameters[%S]", key)
+        }
     }
 
 private fun badRequestPathExpr(

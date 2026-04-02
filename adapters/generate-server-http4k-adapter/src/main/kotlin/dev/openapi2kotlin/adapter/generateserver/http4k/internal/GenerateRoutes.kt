@@ -5,11 +5,11 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.toTypeName
 import java.nio.file.Path
@@ -31,7 +31,8 @@ internal fun generateHttp4kRoutes(
         val routesFileName = apiStem + "Routes"
         val routesFunName = apiStem.replaceFirstChar { it.lowercaseChar() } + "Routes"
 
-        FileSpec.builder(serverPackageName, routesFileName)
+        FileSpec
+            .builder(serverPackageName, routesFileName)
             .indent("    ")
             .addImport("org.http4k.format.KotlinxSerialization", "auto")
             .addImport("org.http4k.routing", "bind", "path", "routes")
@@ -53,7 +54,8 @@ private fun generateRoutes(
 ): FunSpec {
     val apiType = ClassName(serverPackageName, api.generatedName)
 
-    return FunSpec.builder(routesFunName)
+    return FunSpec
+        .builder(routesFunName)
         .addParameter(ParameterSpec.builder("api", apiType).build())
         .returns(ROUTING_HTTP_HANDLER_T)
         .addCode(buildRoutesCode(api, basePath, ctx))
@@ -66,11 +68,12 @@ private fun buildRoutesCode(
     ctx: TypeNameContext,
 ): CodeBlock {
     val builder = CodeBlock.builder()
+    val orderedEndpoints = api.endpoints.sortedByHttp4kRouteSpecificity()
     builder.add("return routes(\n")
     builder.indent()
-    api.endpoints.forEachIndexed { index, ep ->
+    orderedEndpoints.forEachIndexed { index, ep ->
         builder.add(buildRouteEntry(ep, basePath, ctx))
-        if (index != api.endpoints.lastIndex) builder.add(",\n") else builder.add("\n")
+        if (index != orderedEndpoints.lastIndex) builder.add(",\n") else builder.add("\n")
     }
     builder.unindent()
     builder.add(")\n")
@@ -137,30 +140,37 @@ private fun addRequestBodyRead(
         val bodyType = body.type.toTypeName(ctx)
         val isByteArray = (body.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.BYTE_ARRAY
         when {
-            isByteArray && bodyType.isNullable ->
+            isByteArray && bodyType.isNullable -> {
                 builder.addStatement(
                     "val %L = request.bodyString().takeIf { it.isNotBlank() }?.encodeToByteArray()",
                     body.generatedName,
                 )
-            isByteArray ->
+            }
+
+            isByteArray -> {
                 builder.addStatement(
                     "val %L = request.bodyString().encodeToByteArray()",
                     body.generatedName,
                 )
-            bodyType.isNullable ->
+            }
+
+            bodyType.isNullable -> {
                 builder.addStatement(
                     "val %L = request.bodyString().takeIf { it.isNotBlank() }?.let { %T.auto<%T>().toLens()(request) }",
                     body.generatedName,
                     BODY_T,
                     bodyType.copy(nullable = false),
                 )
-            else ->
+            }
+
+            else -> {
                 builder.addStatement(
                     "val %L = %T.auto<%T>().toLens()(request)",
                     body.generatedName,
                     BODY_T,
                     bodyType,
                 )
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.port
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiContextDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiContextDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import java.nio.file.Path
 
 fun interface GenerateApiPort {

@@ -9,6 +9,8 @@ complexity:
     LongParameterList:
         ignoreAnnotated:
             - Resource
+    TooManyFunctions:
+        active: false
 
 coroutines:
     SuspendFunSwallowedCancellation:
@@ -21,3 +23,23 @@ naming:
 style:
     MaxLineLength:
         maxLineLength: 120
+
+hexagonalArchitecture:
+    CoreImportBoundary:
+        active: true
+    SuffixAwareTooManyFunctions:
+        active: true
+        defaultThreshold: 11
+        relaxedThreshold: 30
+        relaxedSuffixes:
+            - Controller
+            - ApiImpl
+            - Api
+    TopLevelFunctionFileName:
+        active: true
+    UnusedTopLevelDeclaration:
+        active: true
+    UnusedTopLevelFunction:
+        active: true
+    UsecaseDtoSuffix:
+        active: true

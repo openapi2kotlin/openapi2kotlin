@@ -1,10 +1,10 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 
 internal fun ModelDO.findInheritedPropertySchema(
     field: FieldDO,

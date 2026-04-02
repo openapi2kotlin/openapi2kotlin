@@ -1,10 +1,10 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 /**
@@ -29,15 +29,16 @@ internal fun List<ModelDO>.handleValidationAnnotations(cfg: OpenApi2KotlinUseCas
         val useSite = model.validationUseSite()
 
         model.fields =
-            model.fields.map { field ->
-                val property = model.findPropertySchemaForField(field = field, bySchemaName = bySchemaName)
-                field.applyValidationAnnotations(
-                    property = property,
-                    bySchemaName = bySchemaName,
-                    useSite = useSite,
-                    annotationNames = annotations,
-                )
-            }.toMutableList()
+            model.fields
+                .map { field ->
+                    val property = model.findPropertySchemaForField(field = field, bySchemaName = bySchemaName)
+                    field.applyValidationAnnotations(
+                        property = property,
+                        bySchemaName = bySchemaName,
+                        useSite = useSite,
+                        annotationNames = annotations,
+                    )
+                }.toMutableList()
     }
 }
 

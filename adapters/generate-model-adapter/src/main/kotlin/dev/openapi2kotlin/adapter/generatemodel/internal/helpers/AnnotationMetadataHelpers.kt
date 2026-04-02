@@ -1,6 +1,6 @@
 package dev.openapi2kotlin.adapter.generatemodel.internal.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
 
 internal fun String.splitPackageAndSimple(): Pair<String, String> {
     val idx = lastIndexOf('.')

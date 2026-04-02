@@ -1,13 +1,13 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiRequestBodyDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiSuccessResponseDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiRequestBodyDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiSuccessResponseDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.toFinalType
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.withNullability
 
@@ -88,7 +88,9 @@ private fun RawPathDO.OperationDO.toBaseEndpoint(ctx: ApisContext): ApiEndpointD
     )
 }
 
-internal enum class OperationVerb(val kotlinName: String) {
+internal enum class OperationVerb(
+    val kotlinName: String,
+) {
     RETRIEVE("retrieve"),
     LIST("list"),
     CREATE("create"),
@@ -125,8 +127,7 @@ private fun generatedOperationName(
                 successResponseType = successResponseType,
                 singularized = ctx.apiCfg?.methodNameSingularized ?: true,
                 pluralized = ctx.apiCfg?.methodNamePluralized ?: true,
-            )
-            .flatMap { it.splitIdentifierWords() }
+            ).flatMap { it.splitIdentifierWords() }
             .map { it.lowercase() }
 
     val nameTokens = listOf(preferredVerb.kotlinName) + resourceTokens
@@ -140,7 +141,12 @@ private fun generatedOperationNameFromOperationId(
     operationId: String?,
     path: String,
 ): String {
-    val source = operationId ?: path.trim('/').replace("/", "_").replace("{", "").replace("}", "")
+    val source =
+        operationId ?: path
+            .trim('/')
+            .replace("/", "_")
+            .replace("{", "")
+            .replace("}", "")
     val rawTokens = source.splitIdentifierWords()
     if (rawTokens.isEmpty()) return fallbackVerb(method).kotlinName
 

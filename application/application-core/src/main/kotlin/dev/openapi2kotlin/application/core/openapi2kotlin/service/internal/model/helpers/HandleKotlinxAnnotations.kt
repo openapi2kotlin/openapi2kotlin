@@ -1,8 +1,8 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelAnnotationDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 private const val SERIALIZABLE = "kotlinx.serialization.Serializable"
@@ -34,8 +34,7 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
                             ),
                         )
                     }
-                }
-                .toMutableList()
+                }.toMutableList()
     }
 }
 

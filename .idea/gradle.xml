@@ -25,6 +25,7 @@
             <option value="$PROJECT_DIR$/gradle-plugin" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -52,6 +53,64 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
+                  <project path="$PROJECT_DIR$/tools/generator-tools" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-http4k" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/adapters" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-http4k-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-ktor-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-restclient-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-model-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-server-http4k-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-server-spring-adapter" />
+            <option value="$PROJECT_DIR$/adapters/parse-spec-adapter" />
+            <option value="$PROJECT_DIR$/application" />
+            <option value="$PROJECT_DIR$/application/application-core" />
+            <option value="$PROJECT_DIR$/application/application-usecase" />
+            <option value="$PROJECT_DIR$/configuration" />
+            <option value="$PROJECT_DIR$/demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-http4k" />
+            <option value="$PROJECT_DIR$/gradle-plugin" />
+            <option value="$PROJECT_DIR$/tools" />
+            <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
+            <option value="$PROJECT_DIR$/tools/generator-tools" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$" name="openapi2kotlin">
+                <projects>
+                  <project path="$PROJECT_DIR$" />
+                  <project path="$PROJECT_DIR$/adapters" />
+                  <project path="$PROJECT_DIR$/adapters/generate-client-http4k-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-client-ktor-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-client-restclient-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-model-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-server-http4k-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-server-spring-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/parse-spec-adapter" />
+                  <project path="$PROJECT_DIR$/application" />
+                  <project path="$PROJECT_DIR$/application/application-core" />
+                  <project path="$PROJECT_DIR$/application/application-usecase" />
+                  <project path="$PROJECT_DIR$/configuration" />
+                  <project path="$PROJECT_DIR$/gradle-plugin" />
+                  <project path="$PROJECT_DIR$/tools" />
+                  <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -80,6 +139,7 @@
             <option value="$PROJECT_DIR$/gradle-plugin" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -107,6 +167,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -135,6 +196,7 @@
             <option value="$PROJECT_DIR$/gradle-plugin" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -162,6 +224,64 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
+                  <project path="$PROJECT_DIR$/tools/generator-tools" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/demo/0.17.0/petstore3/server/openapi2kotlin-demo-0.17.0-petstore3-server-http4k" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/adapters" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-http4k-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-ktor-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-client-restclient-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-model-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-server-http4k-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
+            <option value="$PROJECT_DIR$/adapters/generate-server-spring-adapter" />
+            <option value="$PROJECT_DIR$/adapters/parse-spec-adapter" />
+            <option value="$PROJECT_DIR$/application" />
+            <option value="$PROJECT_DIR$/application/application-core" />
+            <option value="$PROJECT_DIR$/application/application-usecase" />
+            <option value="$PROJECT_DIR$/configuration" />
+            <option value="$PROJECT_DIR$/demo/0.17.0/petstore3/server/openapi2kotlin-demo-0.17.0-petstore3-server-http4k" />
+            <option value="$PROJECT_DIR$/gradle-plugin" />
+            <option value="$PROJECT_DIR$/tools" />
+            <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
+            <option value="$PROJECT_DIR$/tools/generator-tools" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$" name="openapi2kotlin">
+                <projects>
+                  <project path="$PROJECT_DIR$" />
+                  <project path="$PROJECT_DIR$/adapters" />
+                  <project path="$PROJECT_DIR$/adapters/generate-client-http4k-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-client-ktor-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-client-restclient-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-model-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-server-http4k-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/generate-server-spring-adapter" />
+                  <project path="$PROJECT_DIR$/adapters/parse-spec-adapter" />
+                  <project path="$PROJECT_DIR$/application" />
+                  <project path="$PROJECT_DIR$/application/application-core" />
+                  <project path="$PROJECT_DIR$/application/application-usecase" />
+                  <project path="$PROJECT_DIR$/configuration" />
+                  <project path="$PROJECT_DIR$/gradle-plugin" />
+                  <project path="$PROJECT_DIR$/tools" />
+                  <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -190,6 +310,7 @@
             <option value="$PROJECT_DIR$/gradle-plugin" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -217,6 +338,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -245,6 +367,7 @@
             <option value="$PROJECT_DIR$/gradle-plugin" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -272,6 +395,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -300,6 +424,7 @@
             <option value="$PROJECT_DIR$/test/petstore3/client/openapi2kotlin-test-petstore3-client-http4k" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -327,6 +452,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -355,6 +481,7 @@
             <option value="$PROJECT_DIR$/test/petstore3/client/openapi2kotlin-test-petstore3-client-ktor" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -382,6 +509,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -410,6 +538,7 @@
             <option value="$PROJECT_DIR$/test/petstore3/client/openapi2kotlin-test-petstore3-client-restclient" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -437,6 +566,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -465,6 +595,7 @@
             <option value="$PROJECT_DIR$/test/petstore3/server/openapi2kotlin-test-petstore3-server-http4k" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -492,6 +623,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -520,6 +652,7 @@
             <option value="$PROJECT_DIR$/test/petstore3/server/openapi2kotlin-test-petstore3-server-ktor" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -547,6 +680,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -575,6 +709,7 @@
             <option value="$PROJECT_DIR$/test/petstore3/server/openapi2kotlin-test-petstore3-server-spring" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -602,6 +737,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -630,6 +766,7 @@
             <option value="$PROJECT_DIR$/test/tmf620/client/openapi2kotlin-test-tmf620-client-http4k" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -657,6 +794,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -685,6 +823,7 @@
             <option value="$PROJECT_DIR$/test/tmf620/client/openapi2kotlin-test-tmf620-client-ktor" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -712,6 +851,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -740,6 +880,7 @@
             <option value="$PROJECT_DIR$/test/tmf620/client/openapi2kotlin-test-tmf620-client-restclient" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -767,6 +908,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -795,6 +937,7 @@
             <option value="$PROJECT_DIR$/test/tmf620/server/openapi2kotlin-test-tmf620-server-http4k" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -822,6 +965,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -850,6 +994,7 @@
             <option value="$PROJECT_DIR$/test/tmf620/server/openapi2kotlin-test-tmf620-server-ktor" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>
@@ -877,6 +1022,7 @@
                   <project path="$PROJECT_DIR$/gradle-plugin" />
                   <project path="$PROJECT_DIR$/tools" />
                   <project path="$PROJECT_DIR$/tools/api-generator" />
+                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
                   <project path="$PROJECT_DIR$/tools/generator-tools" />
                 </projects>
               </build>
@@ -905,6 +1051,7 @@
             <option value="$PROJECT_DIR$/test/tmf620/server/openapi2kotlin-test-tmf620-server-spring" />
             <option value="$PROJECT_DIR$/tools" />
             <option value="$PROJECT_DIR$/tools/api-generator" />
+            <option value="$PROJECT_DIR$/tools/detekt-tools" />
             <option value="$PROJECT_DIR$/tools/generator-tools" />
           </set>
         </option>

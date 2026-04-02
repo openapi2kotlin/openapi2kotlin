@@ -2,7 +2,7 @@ package dev.openapi2kotlin.tools.generatortools
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiAnnotationDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiAnnotationDO
 
 private val FQCN_CLASS_LITERAL =
     Regex("""(?<![A-Za-z0-9_`])((?:[a-zA-Z_][a-zA-Z0-9_]*\.)+[A-Za-z_][A-Za-z0-9_]*)(::class)""")

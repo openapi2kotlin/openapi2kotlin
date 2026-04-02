@@ -3,7 +3,7 @@ package dev.openapi2kotlin.adapter.generateserver.http4k
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.UNIT
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.toTypeName
 

@@ -63,6 +63,10 @@ subprojects {
         apply(plugin = "org.jlleitschuh.gradle.ktlint")
         apply(plugin = "io.gitlab.arturbosch.detekt")
 
+        if (project.path != ":tools:detekt-tools") {
+            dependencies.add("detektPlugins", project(":tools:detekt-tools"))
+        }
+
         extensions.configure(KotlinJvmProjectExtension::class.java) {
             jvmToolchain {
                 languageVersion.set(JavaLanguageVersion.of(javaVersion))
@@ -123,6 +127,7 @@ if (tagVersion != null) {
 
 val demoKtlintCli by configurations.creating
 val demoDetektCli by configurations.creating
+val demoDetektPlugins by configurations.creating
 
 demoKtlintCli.attributes {
     attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named("shadowed"))
@@ -131,6 +136,7 @@ demoKtlintCli.attributes {
 dependencies {
     demoKtlintCli("com.pinterest.ktlint:ktlint-cli:$ktlintCliVersion")
     demoDetektCli("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
+    demoDetektPlugins(project(":tools:detekt-tools"))
 }
 
 fun standaloneProjects(rootDirName: String): List<String> =
@@ -157,6 +163,26 @@ fun standaloneLintSources(path: String): List<File> =
         rootDir.resolve(path).resolve("build.gradle.kts"),
         rootDir.resolve(path).resolve("settings.gradle.kts"),
     ).filter(File::exists)
+
+fun repoLintSources(): List<File> =
+    buildList {
+        add(rootDir.resolve("build.gradle.kts"))
+        add(rootDir.resolve("settings.gradle.kts"))
+        subprojects.forEach { project ->
+            add(project.projectDir.resolve("src/main/kotlin"))
+            add(project.projectDir.resolve("src/test/kotlin"))
+            add(project.projectDir.resolve("build.gradle.kts"))
+        }
+    }.filter(File::exists)
+
+fun repoDetektInputs(): List<File> =
+    buildList {
+        add(rootDir.resolve("build.gradle.kts"))
+        add(rootDir.resolve("settings.gradle.kts"))
+        subprojects.forEach { project ->
+            add(project.projectDir)
+        }
+    }.filter(File::exists)
 
 val gradleCommand = if (OperatingSystem.current().isWindows) "gradlew.bat" else "./gradlew"
 
@@ -196,7 +222,7 @@ val lintStandaloneDemoProjects =
             tasks.register<JavaExec>("detekt$suffix") {
                 group = "verification"
                 description = "Runs detekt for standalone demo project $path."
-                classpath = demoDetektCli
+                classpath = demoDetektCli + demoDetektPlugins
                 mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
                 args(
                     "--build-upon-default-config",
@@ -223,13 +249,45 @@ val lintStandaloneDemoProjects =
     }
 
 val lintStandaloneTestProjects =
-    standaloneTestProjects.map { path ->
-        tasks.register<Exec>("lint${path.toStandaloneTaskSuffix()}") {
-            group = "verification"
-            description = "Runs ktlintCheck and detekt for standalone project $path."
-            workingDir = rootDir
-            commandLine(gradleCommand, "--no-daemon", "-p", path, "ktlintCheck", "detekt")
-        }
+    standaloneTestProjects.flatMap { path ->
+        val suffix = path.toStandaloneTaskSuffix()
+        val ktlintTask =
+            tasks.register<JavaExec>("ktlint$suffix") {
+                group = "verification"
+                description = "Runs ktlintCheck for standalone test project $path."
+                classpath = demoKtlintCli
+                mainClass.set("com.pinterest.ktlint.Main")
+                args("--editorconfig=${rootDir.resolve(".editorconfig").invariantSeparatorsPath}")
+                args(standaloneLintSources(path).map(File::invariantSeparatorsPath))
+            }
+        val detektTask =
+            tasks.register<JavaExec>("detekt$suffix") {
+                group = "verification"
+                description = "Runs detekt for standalone test project $path."
+                classpath = demoDetektCli + demoDetektPlugins
+                mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+                args(
+                    "--build-upon-default-config",
+                    "--config",
+                    rootDir.resolve("detekt.yml").invariantSeparatorsPath,
+                    "--input",
+                    rootDir.resolve(path).invariantSeparatorsPath,
+                    "--includes",
+                    "**/*.kt,**/*.kts",
+                    "--excludes",
+                    "**/build/**,**/generated/**",
+                    "--jvm-target",
+                    detektJvmTarget.toString(),
+                )
+            }
+        val lintTask =
+            tasks.register("lint$suffix") {
+                group = "verification"
+                description = "Runs ktlintCheck and detekt for standalone test project $path."
+                dependsOn(ktlintTask, detektTask)
+            }
+
+        listOf(ktlintTask, detektTask, lintTask)
     }
 
 val formatStandaloneDemoProjects =
@@ -256,6 +314,37 @@ val formatStandaloneTestProjects =
             workingDir = rootDir
             commandLine(gradleCommand, "--no-daemon", "-p", path, "ktlintFormat")
         }
+    }
+
+val ktlintRepoSources =
+    tasks.register<JavaExec>("ktlintRepoSources") {
+        group = "verification"
+        description = "Runs ktlintCheck once over root repo Kotlin sources and Gradle scripts."
+        classpath = demoKtlintCli
+        mainClass.set("com.pinterest.ktlint.Main")
+        args("--editorconfig=${rootDir.resolve(".editorconfig").invariantSeparatorsPath}")
+        args(repoLintSources().map(File::invariantSeparatorsPath))
+    }
+
+val detektRepoSources =
+    tasks.register<JavaExec>("detektRepoSources") {
+        group = "verification"
+        description = "Runs detekt once over root repo Kotlin sources and Gradle scripts."
+        classpath = demoDetektCli + demoDetektPlugins
+        mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+        args(
+            "--build-upon-default-config",
+            "--config",
+            rootDir.resolve("detekt.yml").invariantSeparatorsPath,
+            "--input",
+            repoDetektInputs().joinToString(",") { it.invariantSeparatorsPath },
+            "--includes",
+            "**/*.kt,**/*.kts",
+            "--excludes",
+            "**/build/**,**/generated/**",
+            "--jvm-target",
+            detektJvmTarget.toString(),
+        )
     }
 
 tasks.named("build") {
@@ -309,15 +398,8 @@ tasks.register("preCommit") {
     group = "verification"
     description = "Runs repo linting for root and standalone projects."
     dependsOn(
-        subprojects
-            .mapNotNull { project ->
-                project.plugins.findPlugin("org.jetbrains.kotlin.jvm")?.let {
-                    listOf(
-                        project.tasks.named("ktlintCheck"),
-                        project.tasks.named("detekt"),
-                    )
-                }
-            }.flatten(),
+        ktlintRepoSources,
+        detektRepoSources,
         tasks.named("lintStandaloneProjects"),
     )
 }

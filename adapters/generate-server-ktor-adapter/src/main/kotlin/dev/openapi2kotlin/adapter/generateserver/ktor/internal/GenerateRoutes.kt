@@ -5,9 +5,9 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.MemberName
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import java.nio.file.Path
 
@@ -46,7 +46,8 @@ internal fun generateRoutes(
         val routesFileName = apiStem + "Routes"
         val routesFunName = apiStem.replaceFirstChar { it.lowercaseChar() } + "Routes"
 
-        FileSpec.builder(serverPackageName, routesFileName)
+        FileSpec
+            .builder(serverPackageName, routesFileName)
             .indent("    ")
             .addFunction(
                 generateRoutes(
@@ -56,8 +57,7 @@ internal fun generateRoutes(
                     serverPackageName = serverPackageName,
                     ctx = ctx,
                 ),
-            )
-            .build()
+            ).build()
             .writeTo(outDir)
     }
 }
@@ -71,7 +71,12 @@ private fun inferBasePath(api: ApiDO): String {
             .minByOrNull { it.length }
             ?: "/"
 
-    val seg = shortest.trim('/').split('/').firstOrNull().orEmpty()
+    val seg =
+        shortest
+            .trim('/')
+            .split('/')
+            .firstOrNull()
+            .orEmpty()
     return "/" + seg
 }
 
@@ -84,11 +89,13 @@ private fun generateRoutes(
 ): FunSpec {
     val apiType = ClassName(serverPackageName, api.generatedName)
 
-    return FunSpec.builder(routesFunName)
+    return FunSpec
+        .builder(routesFunName)
         .receiver(ROUTE_T)
         .addParameter("api", apiType)
         .addCode(
-            CodeBlock.builder()
+            CodeBlock
+                .builder()
                 .addStatement("%M(%S) {", M_route, basePath)
                 .indent()
                 .apply {
@@ -121,12 +128,10 @@ private fun generateRoutes(
                                 addStatement("}")
                             }
                         }
-                }
-                .unindent()
+                }.unindent()
                 .addStatement("}")
                 .build(),
-        )
-        .build()
+        ).build()
 }
 
 private fun suffixUnderBase(

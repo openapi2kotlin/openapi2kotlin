@@ -1,8 +1,8 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.port
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawServerDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawServerDO
 import java.nio.file.Path
 
 fun interface ParseSpecPort {

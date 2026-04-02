@@ -1,7 +1,7 @@
 package dev.openapi2kotlin.adapter.parser.internal
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO.RawFieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawFieldTypeDO
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.ComposedSchema

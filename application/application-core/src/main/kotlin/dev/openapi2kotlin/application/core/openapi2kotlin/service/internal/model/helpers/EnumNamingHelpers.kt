@@ -1,7 +1,7 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
 
 internal fun String.hasIdentifierBoundaryAt(index: Int): Boolean {
     val prev = getOrNull(index - 1) ?: return false
@@ -88,6 +88,7 @@ internal fun List<String>.firstResolvableParentClass(byName: Map<String, ModelDO
             is ModelShapeDO.DataClass,
             is ModelShapeDO.EmptyClass,
             -> parentName
+
             else -> null
         }
     }

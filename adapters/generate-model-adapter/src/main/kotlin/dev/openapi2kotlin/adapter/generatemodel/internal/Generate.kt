@@ -10,8 +10,8 @@ import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.postProcess
 import dev.openapi2kotlin.tools.generatortools.toTypeName
@@ -47,23 +47,29 @@ fun generate(
     models.forEach { model ->
         val fileSpec: FileSpec =
             when (val shape = model.modelShape) {
-                is ModelShapeDO.EnumClass ->
+                is ModelShapeDO.EnumClass -> {
                     buildEnumFile(model, shape)
+                }
 
-                is ModelShapeDO.SealedInterface ->
+                is ModelShapeDO.SealedInterface -> {
                     buildSealedInterfaceFile(model, shape, byName, ctxByPackageName)
+                }
 
-                is ModelShapeDO.DataClass ->
+                is ModelShapeDO.DataClass -> {
                     buildDataClassFile(model, shape, byName, ctxByPackageName)
+                }
 
-                is ModelShapeDO.EmptyClass ->
+                is ModelShapeDO.EmptyClass -> {
                     buildEmptyClassFile(model, shape, byName, ctxByPackageName)
+                }
 
-                is ModelShapeDO.OpenClass ->
+                is ModelShapeDO.OpenClass -> {
                     buildOpenClassFile(model, shape, byName, ctxByPackageName)
+                }
 
-                is ModelShapeDO.TypeAlias ->
+                is ModelShapeDO.TypeAlias -> {
                     buildTypeAliasFile(model, shape, ctxByPackageName)
+                }
 
                 is ModelShapeDO.Undecided -> {
                     log.warn { "Shape for ${model.generatedName} is still Undecided, generating simple data class." }
@@ -92,7 +98,8 @@ private fun buildEnumFile(
     shape: ModelShapeDO.EnumClass,
 ): FileSpec {
     val typeBuilder =
-        TypeSpec.enumBuilder(schema.generatedName)
+        TypeSpec
+            .enumBuilder(schema.generatedName)
             .applyModelAnnotations(schema)
 
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
@@ -100,13 +107,15 @@ private fun buildEnumFile(
     }
 
     val ctor =
-        FunSpec.constructorBuilder()
+        FunSpec
+            .constructorBuilder()
             .addParameter("value", String::class)
             .build()
     typeBuilder.primaryConstructor(ctor)
 
     typeBuilder.addProperty(
-        PropertySpec.builder("value", String::class)
+        PropertySpec
+            .builder("value", String::class)
             .initializer("value")
             .applyAnnotations(schema.enumValueAnnotations)
             .build(),
@@ -114,7 +123,8 @@ private fun buildEnumFile(
 
     shape.values.forEach { ev ->
         val enumConst =
-            TypeSpec.anonymousClassBuilder()
+            TypeSpec
+                .anonymousClassBuilder()
                 .addSuperclassConstructorParameter("%S", ev.originalValue)
                 .build()
 
@@ -122,7 +132,8 @@ private fun buildEnumFile(
     }
 
     val fromValueFun =
-        FunSpec.builder("fromValue")
+        FunSpec
+            .builder("fromValue")
             .returns(schema.className())
             .addParameter("v", String::class)
             .applyAnnotations(schema.enumFromValueAnnotations)
@@ -131,11 +142,11 @@ private fun buildEnumFile(
                 return entries.firstOrNull { it.value == v }
                     ?: throw IllegalArgumentException("Unexpected value for ${schema.generatedName}: '${'$'}v'")
                 """.trimIndent(),
-            )
-            .build()
+            ).build()
 
     val companion =
-        TypeSpec.companionObjectBuilder()
+        TypeSpec
+            .companionObjectBuilder()
             .addFunction(fromValueFun)
             .build()
 
@@ -159,7 +170,8 @@ private fun buildSealedInterfaceFile(
     val ctx = ctxByPackageName.getValue(schema.packageName)
 
     val typeBuilder =
-        TypeSpec.interfaceBuilder(schema.generatedName)
+        TypeSpec
+            .interfaceBuilder(schema.generatedName)
             .addModifiers(KModifier.SEALED)
             .applyModelAnnotations(schema)
 
@@ -215,7 +227,8 @@ private fun buildDataClassFile(
     val ctor = buildClassConstructor(schema, ctx, renderOverriddenInCtorOnly)
 
     val typeBuilder =
-        TypeSpec.classBuilder(schema.generatedName)
+        TypeSpec
+            .classBuilder(schema.generatedName)
             .primaryConstructor(ctor)
             .applyModelAnnotations(schema)
             .addModelKdoc(schema)
@@ -249,7 +262,8 @@ private fun buildEmptyClassFile(
     val ctor = buildClassConstructor(schema, ctx, renderOverriddenInCtorOnly)
 
     val typeBuilder =
-        TypeSpec.classBuilder(schema.generatedName)
+        TypeSpec
+            .classBuilder(schema.generatedName)
             .primaryConstructor(ctor)
             .applyModelAnnotations(schema)
             .addModelKdoc(schema)
@@ -284,7 +298,8 @@ private fun buildOpenClassFile(
     val ctor = buildClassConstructor(schema, ctx, renderOverriddenInCtorOnly)
 
     val typeBuilder =
-        TypeSpec.classBuilder(schema.generatedName)
+        TypeSpec
+            .classBuilder(schema.generatedName)
             .addModifiers(KModifier.OPEN)
             .primaryConstructor(ctor)
             .applyModelAnnotations(schema)
@@ -320,7 +335,8 @@ private fun buildTypeAliasFile(
     val targetTypeName = shape.target.toTypeName(ctx)
 
     val fileBuilder =
-        FileSpec.builder(schema.packageName, schema.generatedName)
+        FileSpec
+            .builder(schema.packageName, schema.generatedName)
             .indent("    ")
 
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->

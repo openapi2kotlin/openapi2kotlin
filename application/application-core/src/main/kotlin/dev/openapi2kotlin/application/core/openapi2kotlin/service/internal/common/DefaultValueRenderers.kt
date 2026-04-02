@@ -1,9 +1,9 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 
 internal fun renderDefaultForFinalType(
     finalType: FieldTypeDO,
@@ -34,14 +34,23 @@ private fun renderStructuredDefault(
 ): String =
     when (kind) {
         TrivialTypeDO.Kind.BIG_DECIMAL -> "BigDecimal(${quote(rawDefault)})"
+
         TrivialTypeDO.Kind.BOOLEAN -> rawDefault.lowercase()
+
         TrivialTypeDO.Kind.JAVA_LOCAL_DATE -> "LocalDate.parse(${quote(rawDefault)})"
+
         TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE -> "LocalDate.parse(${quote(rawDefault)})"
+
         TrivialTypeDO.Kind.OFFSET_DATE_TIME -> "OffsetDateTime.parse(${quote(rawDefault)})"
+
         TrivialTypeDO.Kind.INSTANT -> "Instant.parse(${quote(rawDefault)})"
+
         TrivialTypeDO.Kind.BYTE_ARRAY -> rawDefault
+
         TrivialTypeDO.Kind.JSON_ELEMENT -> rawDefault
+
         TrivialTypeDO.Kind.ANY -> rawDefault
+
         TrivialTypeDO.Kind.STRING,
         TrivialTypeDO.Kind.INT,
         TrivialTypeDO.Kind.LONG,

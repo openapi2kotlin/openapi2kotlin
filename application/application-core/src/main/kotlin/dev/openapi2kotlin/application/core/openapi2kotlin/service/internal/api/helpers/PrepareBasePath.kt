@@ -1,6 +1,6 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawServerDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawServerDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 import io.github.oshai.kotlinlogging.KotlinLogging
 

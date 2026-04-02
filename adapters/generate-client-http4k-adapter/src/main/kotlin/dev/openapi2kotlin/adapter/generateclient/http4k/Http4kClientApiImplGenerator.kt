@@ -9,13 +9,13 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.postProcess
@@ -29,7 +29,11 @@ private val BODY_T = ClassName("org.http4k.core", "Body")
 internal class Http4kClientApiImplGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
-        val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
+        val bySchemaName: Map<String, dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO> =
+            command.models
+                .associateBy {
+                    it.rawSchema.originalName
+                }
         val ctx =
             TypeNameContext(
                 modelPackageName = command.modelPackageName,
@@ -37,7 +41,8 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
             )
 
         command.apiContext.apis.forEach { api ->
-            FileSpec.builder(command.packageName, "${api.generatedName}Impl")
+            FileSpec
+                .builder(command.packageName, "${api.generatedName}Impl")
                 .indent("    ")
                 .addImport("org.http4k.format.KotlinxSerialization", "auto")
                 .addType(generateApiImpl(api, command.packageName, command.apiContext.basePath, ctx))
@@ -49,32 +54,34 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
     }
 
     private fun generateApiImpl(
-        api: ApiDO,
+        api: dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO,
         apiPackageName: String,
         basePath: String,
         ctx: TypeNameContext,
     ): TypeSpec {
         val apiType = ClassName(apiPackageName, api.generatedName)
 
-        return TypeSpec.classBuilder("${api.generatedName}Impl")
+        return TypeSpec
+            .classBuilder("${api.generatedName}Impl")
             .addSuperinterface(apiType)
             .primaryConstructor(
-                FunSpec.constructorBuilder()
+                FunSpec
+                    .constructorBuilder()
                     .addParameter("client", HTTP_HANDLER_T)
                     .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("client", HTTP_HANDLER_T, KModifier.PRIVATE)
+            ).addProperty(
+                PropertySpec
+                    .builder("client", HTTP_HANDLER_T, KModifier.PRIVATE)
                     .initializer("client")
                     .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("basePath", String::class, KModifier.PRIVATE)
+            ).addProperty(
+                PropertySpec
+                    .builder("basePath", String::class, KModifier.PRIVATE)
                     .initializer("%S", basePath)
                     .build(),
-            )
-            .addFunction(
-                FunSpec.builder("resolvePath")
+            ).addFunction(
+                FunSpec
+                    .builder("resolvePath")
                     .addModifiers(KModifier.PRIVATE)
                     .addParameter("apiPath", String::class)
                     .returns(String::class)
@@ -94,20 +101,17 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
                           }
                         }
                         """.trimIndent(),
-                    )
-                    .build(),
-            )
-            .apply {
+                    ).build(),
+            ).apply {
                 api.endpoints.forEach { endpoint ->
                     addFunction(generateRawMethod(endpoint, ctx))
                     addFunction(generateBodyMethod(endpoint, ctx))
                 }
-            }
-            .build()
+            }.build()
     }
 
     private fun generateBodyMethod(
-        ep: ApiEndpointDO,
+        ep: dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO,
         ctx: TypeNameContext,
     ): FunSpec {
         val returnType = Http4kClientApiPolicy.bodyReturnType(ep, ctx)
@@ -116,10 +120,15 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
                 .returns(returnType)
 
         when {
-            returnType == UNIT -> builder.addCode("%L\n", rawCall(ep))
-            (ep.successResponse?.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.BYTE_ARRAY ->
+            returnType == UNIT -> {
+                builder.addCode("%L\n", rawCall(ep))
+            }
+
+            (ep.successResponse?.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.BYTE_ARRAY -> {
                 builder.addCode("return %L.bodyString().encodeToByteArray()\n", rawCall(ep))
-            else ->
+            }
+
+            else -> {
                 builder.addCode(
                     """
                     val response = %L
@@ -130,6 +139,7 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
                     BODY_T,
                     returnType,
                 )
+            }
         }
 
         return builder.build()
@@ -150,7 +160,8 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
         suffix: String = "",
     ): FunSpec.Builder {
         val builder =
-            FunSpec.builder(ep.generatedName + suffix)
+            FunSpec
+                .builder(ep.generatedName + suffix)
                 .addModifiers(KModifier.OVERRIDE)
 
         ep.params.forEach { param ->
@@ -266,19 +277,21 @@ private fun CodeBlock.Builder.addRequestBody(
     val isByteArray = (body.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.BYTE_ARRAY
 
     when {
-        isByteArray && bodyType.isNullable ->
+        isByteArray && bodyType.isNullable -> {
             addStatement(
                 "%L?.let { request = request.body(it.decodeToString()) }",
                 body.generatedName,
             )
+        }
 
-        isByteArray ->
+        isByteArray -> {
             addStatement(
                 "request = request.body(%L.decodeToString())",
                 body.generatedName,
             )
+        }
 
-        bodyType.isNullable ->
+        bodyType.isNullable -> {
             addStatement(
                 """
                 %1L?.let {
@@ -290,8 +303,9 @@ private fun CodeBlock.Builder.addRequestBody(
                 BODY_T,
                 bodyType.copy(nullable = false),
             )
+        }
 
-        else ->
+        else -> {
             addStatement(
                 """
                 run {
@@ -303,6 +317,7 @@ private fun CodeBlock.Builder.addRequestBody(
                 bodyType,
                 body.generatedName,
             )
+        }
     }
 }
 

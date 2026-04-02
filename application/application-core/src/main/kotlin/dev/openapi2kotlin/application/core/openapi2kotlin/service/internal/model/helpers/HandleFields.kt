@@ -1,12 +1,12 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelShapeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.renderDefault
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.toFinalType
 import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.withNullability
@@ -38,16 +38,17 @@ internal fun List<ModelDO>.handleFields(cfg: OpenApi2KotlinUseCase.ModelConfig) 
         val parent = byNameAfter[parentName] ?: return@forEach
 
         component.fields =
-            component.fields.map { field ->
-                val parentField = parent.fields.firstOrNull { it.generatedName == field.generatedName }
+            component.fields
+                .map { field ->
+                    val parentField = parent.fields.firstOrNull { it.generatedName == field.generatedName }
 
-                val parentRequired = parentField?.required ?: false
-                val finalRequired = parentRequired || field.required
-                val finalType = field.type.withNullability(nullable = !finalRequired)
+                    val parentRequired = parentField?.required ?: false
+                    val finalRequired = parentRequired || field.required
+                    val finalType = field.type.withNullability(nullable = !finalRequired)
 
-                // requiredness pass must not rewrite docs; docs were resolved in the first pass
-                field.copy(type = finalType, required = finalRequired)
-            }.toMutableList()
+                    // requiredness pass must not rewrite docs; docs were resolved in the first pass
+                    field.copy(type = finalType, required = finalRequired)
+                }.toMutableList()
     }
 }
 
@@ -151,18 +152,21 @@ private fun ModelDO.prependDiscriminatorFieldIfMissing(fields: MutableList<Field
 
 private fun FieldTypeDO.canBeOverriddenBy(child: FieldTypeDO): Boolean =
     when (this) {
-        is TrivialTypeDO ->
+        is TrivialTypeDO -> {
             when {
                 kind == TrivialTypeDO.Kind.ANY -> true
                 child !is TrivialTypeDO -> false
                 else -> kind == child.kind
             }
+        }
 
-        is RefTypeDO ->
+        is RefTypeDO -> {
             child is RefTypeDO && schemaName == child.schemaName
+        }
 
-        is ListTypeDO ->
+        is ListTypeDO -> {
             child is ListTypeDO && elementType.canBeOverriddenBy(child.elementType)
+        }
     }
 
 private data class PropInfo(

@@ -9,14 +9,14 @@ import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiEndpointDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.api.ApiParamDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawPathDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.apigenerator.ApiPolicy
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
@@ -41,7 +41,8 @@ internal class ApiImplGenerator : GenerateApiPort {
         val ctx = TypeNameContext(modelPackageName = command.modelPackageName, bySchemaName = bySchemaName)
 
         command.apiContext.apis.forEach { api ->
-            FileSpec.builder(command.packageName, "${api.generatedName}Impl")
+            FileSpec
+                .builder(command.packageName, "${api.generatedName}Impl")
                 .indent("    ")
                 .addType(generateApiImpl(api, command.packageName, ctx))
                 .build()
@@ -58,22 +59,22 @@ internal class ApiImplGenerator : GenerateApiPort {
     ): TypeSpec {
         val apiType = ClassName(apiPackageName, api.generatedName)
 
-        return TypeSpec.classBuilder("${api.generatedName}Impl")
+        return TypeSpec
+            .classBuilder("${api.generatedName}Impl")
             .addSuperinterface(apiType)
             .primaryConstructor(
-                FunSpec.constructorBuilder()
+                FunSpec
+                    .constructorBuilder()
                     .addParameter("client", HTTP_CLIENT_T)
                     .build(),
-            )
-            .addProperty(
-                PropertySpec.builder("client", HTTP_CLIENT_T, KModifier.PRIVATE)
+            ).addProperty(
+                PropertySpec
+                    .builder("client", HTTP_CLIENT_T, KModifier.PRIVATE)
                     .initializer("client")
                     .build(),
-            )
-            .apply {
+            ).apply {
                 api.endpoints.forEach { addFunction(generateEndpointFun(it, ctx)) }
-            }
-            .build()
+            }.build()
     }
 
     private fun generateEndpointFun(
@@ -83,7 +84,8 @@ internal class ApiImplGenerator : GenerateApiPort {
         val returnType = ApiPolicy.Default.returnType(ep, ctx)
         val requestCall = buildRequestCall(ep, ctx)
         val methodBuilder =
-            FunSpec.builder(ep.generatedName)
+            FunSpec
+                .builder(ep.generatedName)
                 .addModifiers(KModifier.OVERRIDE, KModifier.SUSPEND)
                 .returns(returnType)
 
@@ -121,7 +123,8 @@ internal class ApiImplGenerator : GenerateApiPort {
                 RawPathDO.HttpMethodDO.DELETE -> M_delete
             }
 
-        return CodeBlock.builder()
+        return CodeBlock
+            .builder()
             .add("client.%M {\n", httpMethod)
             .indent()
             .addPathBlock(ep)
@@ -134,8 +137,7 @@ internal class ApiImplGenerator : GenerateApiPort {
                 ep.successResponse?.type?.let { successType ->
                     add(".%M<%T>()", M_body, successType.toTypeName(ctx))
                 }
-            }
-            .build()
+            }.build()
     }
 
     private fun CodeBlock.Builder.addPathBlock(ep: ApiEndpointDO): CodeBlock.Builder {
@@ -247,16 +249,18 @@ private fun CodeBlock.Builder.addScalarQueryParam(
     val letValueCode = scalarValueExpression(trivialType, "it")
 
     when {
-        param.rawParam.required ->
+        param.rawParam.required -> {
             addStatement("%M(%S, %L)", parameterMember, param.rawParam.name, rawValue)
+        }
 
-        else ->
+        else -> {
             addStatement(
                 "%L?.let { %M(%S, $letValueCode) }",
                 param.generatedName,
                 parameterMember,
                 param.rawParam.name,
             )
+        }
     }
 }
 

@@ -24,9 +24,29 @@ fun readRepoJvmVersion(): Int =
         .firstOrNull()
         ?: error("Could not locate openapi2kotlin.jvm in repository gradle.properties from $projectDir")
 
+fun readRepoCoordinate(moduleName: String): String =
+    generateSequence(projectDir) { it.parentFile }
+        .map { it.resolve("gradle.properties") }
+        .filter { it.isFile }
+        .mapNotNull { propertiesFile ->
+            Properties().apply {
+                propertiesFile.inputStream().use(::load)
+            }.run {
+                val group = getProperty("group")
+                val version = getProperty("version")
+                if (group != null && version != null) {
+                    "$group:$moduleName:$version"
+                } else {
+                    null
+                }
+            }
+        }.firstOrNull()
+        ?: error("Could not locate group/version in repository gradle.properties from $projectDir")
+
 val repoRoot = readRepoRoot()
 val repoJvmVersion = readRepoJvmVersion()
 val detektJvmTarget = minOf(repoJvmVersion, 22)
+val detektToolsCoordinate = readRepoCoordinate("detekt-tools")
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -77,6 +97,7 @@ tasks.test {
 }
 
 dependencies {
+    detektPlugins(detektToolsCoordinate)
     implementation(libs.bundles.ktor)
     testImplementation(libs.bundles.test)
 }

@@ -1,6 +1,6 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.api.helpers
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 
 private const val PLURAL_IES_SUFFIX_MIN_LENGTH = 3
 private const val TRAILING_S_MIN_LENGTH = 1

@@ -1,10 +1,10 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common
 
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.RefTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.TrivialTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 internal fun FieldTypeDO.withNullability(nullable: Boolean): FieldTypeDO =
@@ -16,20 +16,23 @@ internal fun FieldTypeDO.withNullability(nullable: Boolean): FieldTypeDO =
 
 internal fun RawSchemaDO.RawFieldTypeDO.toFinalType(cfg: OpenApi2KotlinUseCase.ModelConfig): FieldTypeDO =
     when (this) {
-        is RawSchemaDO.RawRefTypeDO ->
+        is RawSchemaDO.RawRefTypeDO -> {
             RefTypeDO(schemaName = schemaName, nullable = nullable)
+        }
 
-        is RawSchemaDO.RawArrayTypeDO ->
+        is RawSchemaDO.RawArrayTypeDO -> {
             ListTypeDO(
                 elementType = elementType.toFinalType(cfg),
                 nullable = nullable,
             )
+        }
 
-        is RawSchemaDO.RawPrimitiveTypeDO ->
+        is RawSchemaDO.RawPrimitiveTypeDO -> {
             TrivialTypeDO(
                 kind = toFinalTrivialKind(cfg),
                 nullable = nullable,
             )
+        }
     }
 
 private fun RawSchemaDO.RawPrimitiveTypeDO.toFinalTrivialKind(
@@ -87,16 +90,22 @@ private fun RawSchemaDO.RawPrimitiveTypeDO.toObjectKind(cfg: OpenApi2KotlinUseCa
 
 private fun OpenApi2KotlinUseCase.ModelConfig.dateKind(): TrivialTypeDO.Kind =
     when (serialization) {
-        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX ->
+        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> {
             TrivialTypeDO.Kind.KOTLINX_LOCAL_DATE
+        }
 
-        else -> TrivialTypeDO.Kind.JAVA_LOCAL_DATE
+        else -> {
+            TrivialTypeDO.Kind.JAVA_LOCAL_DATE
+        }
     }
 
 private fun OpenApi2KotlinUseCase.ModelConfig.dateTimeKind(): TrivialTypeDO.Kind =
     when (serialization) {
-        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX ->
+        OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX -> {
             TrivialTypeDO.Kind.INSTANT
+        }
 
-        else -> TrivialTypeDO.Kind.OFFSET_DATE_TIME
+        else -> {
+            TrivialTypeDO.Kind.OFFSET_DATE_TIME
+        }
     }

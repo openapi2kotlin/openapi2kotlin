@@ -8,8 +8,8 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.toParamSpec
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.FieldDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.model.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.toTypeName
 
@@ -23,11 +23,13 @@ internal fun buildClassConstructor(
     ctx: TypeNameContext,
     renderOverriddenInCtorOnly: Boolean,
 ): FunSpec =
-    FunSpec.constructorBuilder().apply {
-        schema.fields.forEach { field ->
-            addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
-        }
-    }.build()
+    FunSpec
+        .constructorBuilder()
+        .apply {
+            schema.fields.forEach { field ->
+                addParameter(field.toParamSpec(ctx, renderOverriddenInCtorOnly))
+            }
+        }.build()
 
 internal fun TypeSpec.Builder.addModelKdoc(schema: ModelDO): TypeSpec.Builder {
     schema.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
@@ -69,10 +71,11 @@ private fun addSchemaProperty(
     }
 
     val propBuilder =
-        PropertySpec.builder(
-            storageName,
-            field.type.toTypeName(ctx),
-        ).initializer(storageName)
+        PropertySpec
+            .builder(
+                storageName,
+                field.type.toTypeName(ctx),
+            ).initializer(storageName)
 
     field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
         propBuilder.addKdoc("%L\n", doc.trim())
@@ -96,26 +99,28 @@ private fun addCtorOnlyOverrideProperty(
     storageName: String,
 ) {
     typeBuilder.addProperty(
-        PropertySpec.builder(
-            storageName,
-            field.type.toTypeName(ctx),
-        ).initializer(storageName)
+        PropertySpec
+            .builder(
+                storageName,
+                field.type.toTypeName(ctx),
+            ).initializer(storageName)
             .addModifiers(KModifier.PRIVATE)
             .apply {
                 field.applyPropertyAnnotations(this)
-            }
-            .build(),
+            }.build(),
     )
 
     val overrideProperty =
-        PropertySpec.builder(
-            field.generatedName,
-            field.type.toTypeName(ctx),
-        ).getter(
-            FunSpec.getterBuilder()
-                .addCode("return %N\n", storageName)
-                .build(),
-        ).addModifiers(KModifier.OVERRIDE)
+        PropertySpec
+            .builder(
+                field.generatedName,
+                field.type.toTypeName(ctx),
+            ).getter(
+                FunSpec
+                    .getterBuilder()
+                    .addCode("return %N\n", storageName)
+                    .build(),
+            ).addModifiers(KModifier.OVERRIDE)
             .addAnnotation(AnnotationSpec.builder(KOTLINX_TRANSIENT).build())
 
     field.kdoc?.takeIf { it.isNotBlank() }?.let { doc ->
