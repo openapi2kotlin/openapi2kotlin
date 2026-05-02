@@ -147,19 +147,57 @@ layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
 #### Ktor
 
 ```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
     client {
         packageName = "dev.openapi2kotlin.client"
         library = Ktor
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
     }
+}
 ```
 
 #### RestClient
 
 ```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = Jackson
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
     client {
         packageName = "dev.openapi2kotlin.client"
         library = RestClient
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
     }
+}
 ```
 
 ### Server
@@ -167,19 +205,59 @@ layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
 #### Ktor
 
 ```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
     server {
         packageName = "dev.openapi2kotlin.server"
         library = Ktor
+        swagger = false
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
     }
+}
 ```
 
 #### Spring
 
 ```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = Jackson
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
     server {
         packageName = "dev.openapi2kotlin.server"
         library = Spring
+        swagger = true
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
     }
+}
 ```
 
 ## External Links

@@ -155,6 +155,112 @@ def row(property_name: str, data: dict[str, str]) -> dict[str, str]:
     }
 
 
+def minimal_target_snippet(target_kind: str, library: str) -> str:
+    target_name = target_kind.lower()
+    return "\n".join(
+        [
+            f"    {target_name} {{",
+            f"        packageName = \"dev.openapi2kotlin.{target_name}\"",
+            f"        library = {library}",
+            "    }",
+        ]
+    )
+
+
+def minimal_config_snippets(client_libraries: list[str], server_libraries: list[str]) -> dict[str, dict[str, str]]:
+    return {
+        "client": {
+            library: minimal_target_snippet("Client", library)
+            for library in client_libraries
+        },
+        "server": {
+            library: minimal_target_snippet("Server", library)
+            for library in server_libraries
+        },
+    }
+
+
+def model_config_snippet(serialization: str) -> str:
+    return f"""    model {{
+        packageName = "dev.openapi2kotlin.model"
+        serialization = {serialization}
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }}"""
+
+
+def target_config_snippet(target_kind: str, library: str, swagger: bool | None = None) -> str:
+    lines = [
+        f"    {target_kind.lower()} {{",
+        f"        packageName = \"dev.openapi2kotlin.{target_kind.lower()}\"",
+        f"        library = {library}",
+    ]
+    if swagger is not None:
+        lines.append(f"        swagger = {str(swagger).lower()}")
+    lines.extend(
+        [
+            "        basePathVar = \"basePath\"",
+            "        methodNameSingularized = true",
+            "        methodNamePluralized = true",
+            "        methodNameFromOperationId = false",
+            "    }",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def full_config_snippet(target_kind: str, library: str, serialization: str, swagger: bool | None = None) -> str:
+    return "\n".join(
+        [
+            "openapi2kotlin {",
+            "    inputSpec = \"$projectDir/src/main/resources/openapi.yaml\"",
+            "    outputDir = layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path",
+            "    enabled = true",
+            "",
+            model_config_snippet(serialization),
+            "",
+            target_config_snippet(target_kind, library, swagger),
+            "}",
+        ]
+    )
+
+
+def model_serialization_for_client_library(library: str) -> str:
+    return "Jackson" if library == "RestClient" else "KotlinX"
+
+
+def model_serialization_for_server_library(library: str) -> str:
+    return "Jackson" if library == "Spring" else "KotlinX"
+
+
+def default_swagger_for_server_library(library: str) -> bool:
+    return library == "Spring"
+
+
+def config_snippets(client_libraries: list[str], server_libraries: list[str]) -> dict[str, dict[str, str]]:
+    return {
+        "client": {
+            library: full_config_snippet(
+                "Client",
+                library,
+                model_serialization_for_client_library(library),
+            )
+            for library in client_libraries
+        },
+        "server": {
+            library: full_config_snippet(
+                "Server",
+                library,
+                model_serialization_for_server_library(library),
+                swagger=default_swagger_for_server_library(library),
+            )
+            for library in server_libraries
+        },
+    }
+
+
 def generate(version: str) -> dict:
     text = EXT_PATH.read_text()
 
@@ -192,18 +298,10 @@ def generate(version: str) -> dict:
         "defaultClientLibrary": "Ktor",
         "defaultServerLibrary": "Ktor",
         "configRows": rows,
-        "snippets": {
-            "client": {
-                "Ktor": """    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = Ktor\n    }""",
-                "Http4k": """    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = Http4k\n    }""",
-                "RestClient": """    client {\n        packageName = \"dev.openapi2kotlin.client\"\n        library = RestClient\n    }""",
-            },
-            "server": {
-                "Ktor": """    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Ktor\n    }""",
-                "Http4k": """    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Http4k\n    }""",
-                "Spring": """    server {\n        packageName = \"dev.openapi2kotlin.server\"\n        library = Spring\n    }""",
-            },
-        },
+        "snippets": minimal_config_snippets(
+            client_libraries=client_enum_values,
+            server_libraries=server_enum_values,
+        ),
     }
     return docs
 
@@ -336,6 +434,23 @@ def write_site_docs(version: str, docs: dict) -> None:
     (SITE_DOCS_DIR / "versions.json").write_text(json.dumps({"versions": versions}, indent=2) + "\n")
 
 
+def update_existing_site_doc_snippets() -> None:
+    for path in sorted(SITE_DOCS_DIR.glob("*.json")):
+        if not re.match(r"^\d+\.\d+\.\d+([-.].+)?$", path.stem):
+            continue
+
+        docs = json.loads(path.read_text())
+        snippets = minimal_config_snippets(
+            client_libraries=docs.get("clientLibraries", []),
+            server_libraries=docs.get("serverLibraries", []),
+        )
+        if docs.get("snippets") == snippets:
+            continue
+
+        docs["snippets"] = snippets
+        path.write_text(json.dumps(docs, indent=2) + "\n")
+
+
 def load_all_site_docs() -> list[dict]:
     docs_by_version: list[dict] = []
     for path in sorted(SITE_DOCS_DIR.glob("*.json")):
@@ -428,9 +543,242 @@ def render_config_rows(rows: list[dict[str, str]]) -> list[str]:
     return lines
 
 
+def fenced(language: str, lines: list[str]) -> list[str]:
+    return [
+        f"```{language}",
+        *lines,
+        "```",
+    ]
+
+
+def demo_library_dir(version: str, target_kind: str, library: str) -> Path | None:
+    slug = library.lower()
+    path = ROOT / "demo" / version / "petstore3" / target_kind / f"openapi2kotlin-demo-{version}-petstore3-{target_kind}-{slug}"
+    return path if path.exists() else None
+
+
+def generated_file(demo_dir: Path, suffix: str) -> Path | None:
+    matches = sorted((demo_dir / "build/generated/src/main/kotlin").glob(f"**/{suffix}"))
+    return matches[0] if matches else None
+
+
+def code_file_block(path: Path, language: str = "kotlin") -> list[str]:
+    return [
+        f"`{path.relative_to(ROOT)}`:",
+        "",
+        *fenced(language, path.read_text().splitlines()),
+        "",
+    ]
+
+
+def code_excerpt_block(path: Path, title: str, lines: list[str], language: str = "kotlin") -> list[str]:
+    return [
+        f"`{path.relative_to(ROOT)}` {title}:",
+        "",
+        *fenced(language, lines),
+        "",
+    ]
+
+
+def extract_first_matching_block(lines: list[str], contains: str, end_prefix: str | None = None) -> list[str]:
+    for index, line in enumerate(lines):
+        if contains not in line:
+            continue
+
+        start = index
+        for previous in range(index - 1, -1, -1):
+            if lines[previous].strip() == "/**":
+                start = previous
+                break
+            if lines[previous].strip() == "":
+                break
+
+        if end_prefix is None:
+            return lines[start:index + 1]
+
+        end = index
+        while end < len(lines) and not lines[end].startswith(end_prefix):
+            end += 1
+        if end < len(lines):
+            end += 1
+        return lines[start:end]
+    return []
+
+
+def extract_balanced_block(lines: list[str], contains: str) -> list[str]:
+    for index, line in enumerate(lines):
+        if contains not in line:
+            continue
+
+        start = index
+        depth = 0
+        seen_brace = False
+        for end in range(index, len(lines)):
+            depth += lines[end].count("{")
+            if "{" in lines[end]:
+                seen_brace = True
+            depth -= lines[end].count("}")
+            if seen_brace and depth == 0:
+                return lines[start:end + 1]
+    return []
+
+
+def openapi_demo_excerpt(demo_dir: Path) -> list[str]:
+    source = demo_dir / "src/main/resources/openapi.yaml"
+    if not source.exists():
+        return []
+
+    lines = source.read_text().splitlines()
+    route = extract_yaml_section(lines, "  /pet:", stop_indent=2)
+    post = extract_yaml_section(route, "    post:", stop_indent=4)
+    pet = extract_yaml_section(lines, "    Pet:", stop_indent=4)
+    error = extract_yaml_section(lines, "    Error:", stop_indent=4)
+    info = extract_yaml_section(lines, "info:", stop_indent=0)
+
+    return [
+        lines[0],
+        *info,
+        "paths:",
+        "  /pet:",
+        *strip_yaml_xml_blocks(post),
+        "components:",
+        "  schemas:",
+        *strip_yaml_xml_blocks(pet),
+        *strip_yaml_xml_blocks(error),
+    ]
+
+
+def extract_yaml_section(lines: list[str], header: str, stop_indent: int) -> list[str]:
+    try:
+        start = lines.index(header)
+    except ValueError:
+        return []
+
+    section = [lines[start]]
+    for line in lines[start + 1:]:
+        if line.strip() and not line.startswith(" " * (stop_indent + 1)):
+            break
+        section.append(line)
+    return section
+
+
+def strip_yaml_xml_blocks(lines: list[str]) -> list[str]:
+    stripped: list[str] = []
+    skip_indent: int | None = None
+
+    for line in lines:
+        indent = len(line) - len(line.lstrip(" "))
+        if skip_indent is not None:
+            if line.strip() and indent > skip_indent:
+                continue
+            skip_indent = None
+
+        if line.strip() in {"xml:", "application/xml:", "application/x-www-form-urlencoded:"}:
+            skip_indent = indent
+            continue
+
+        stripped.append(line)
+
+    return stripped
+
+
+def render_how_it_works(docs: dict) -> list[str]:
+    version = docs["version"]
+    demo_dirs = [
+        demo_library_dir(version, "client", library)
+        for library in docs["clientLibraries"]
+    ] + [
+        demo_library_dir(version, "server", library)
+        for library in docs["serverLibraries"]
+    ]
+    demo_dirs = [path for path in demo_dirs if path is not None]
+    if not demo_dirs:
+        return []
+
+    openapi_lines = openapi_demo_excerpt(demo_dirs[0])
+    if not openapi_lines:
+        return []
+
+    lines = [
+        "## How It Works",
+        "",
+        f"Examples in this section are extracted from generated demo files for version {version}.",
+        "",
+        "Minimal OpenAPI excerpt based on the petstore3 demo `/pet` POST route; XML metadata is omitted:",
+        "",
+        *fenced("yaml", openapi_lines),
+        "",
+        "Generated sources land under `build/generated/src/main/kotlin`.",
+        "",
+    ]
+
+    lines.extend(render_demo_models(demo_dirs[0]))
+    lines.extend(render_demo_clients(version, docs["clientLibraries"]))
+    lines.extend(render_demo_servers(version, docs["serverLibraries"]))
+    return lines
+
+
+def render_demo_models(demo_dir: Path) -> list[str]:
+    lines = ["### Generated Models", ""]
+    for suffix in ("model/Pet.kt", "model/Error.kt"):
+        path = generated_file(demo_dir, suffix)
+        if path is not None:
+            lines.extend(code_file_block(path))
+    return lines
+
+
+def render_demo_clients(version: str, client_libraries: list[str]) -> list[str]:
+    lines: list[str] = []
+    for library in client_libraries:
+        demo_dir = demo_library_dir(version, "client", library)
+        if demo_dir is None:
+            continue
+        api_path = generated_file(demo_dir, "client/PetApi.kt")
+        impl_path = generated_file(demo_dir, "client/PetApiImpl.kt")
+        if api_path is None or impl_path is None:
+            continue
+
+        if not lines:
+            lines.extend(["### Generated Clients", ""])
+        lines.extend([f"#### {library} Client", ""])
+        api_lines = api_path.read_text().splitlines()
+        impl_lines = impl_path.read_text().splitlines()
+        lines.extend(code_excerpt_block(api_path, "`createPet` excerpt", extract_first_matching_block(api_lines, "createPet(body: Pet)")))
+        lines.extend(code_excerpt_block(impl_path, "`createPet` excerpt", extract_balanced_block(impl_lines, "createPet(body: Pet)")))
+    return lines
+
+
+def render_demo_servers(version: str, server_libraries: list[str]) -> list[str]:
+    lines: list[str] = []
+    for library in server_libraries:
+        demo_dir = demo_library_dir(version, "server", library)
+        if demo_dir is None:
+            continue
+        api_path = generated_file(demo_dir, "server/PetApi.kt")
+        route_path = generated_file(demo_dir, "server/PetRoutes.kt")
+        if api_path is None:
+            continue
+
+        if not lines:
+            lines.extend(["### Generated Servers", ""])
+        lines.extend([f"#### {library} Server", ""])
+        api_lines = api_path.read_text().splitlines()
+        lines.extend(code_excerpt_block(api_path, "`createPet` excerpt", extract_first_matching_block(api_lines, "createPet(")))
+
+        if route_path is not None:
+            route_lines = route_path.read_text().splitlines()
+            route_excerpt = extract_balanced_block(route_lines, "\"/pet\" bind org.http4k.core.Method.POST") if library == "Http4k" else extract_balanced_block(route_lines, "post {")
+            lines.extend(code_excerpt_block(route_path, "`POST /pet` route excerpt", route_excerpt))
+    return lines
+
+
 def render_snippets(docs: dict) -> list[str]:
     lines = ["## Configuration Snippets", ""]
-    for target_kind, snippets in (("Client", docs["snippets"]["client"]), ("Server", docs["snippets"]["server"])):
+    snippets_by_target = config_snippets(
+        client_libraries=docs["clientLibraries"],
+        server_libraries=docs["serverLibraries"],
+    )
+    for target_kind, snippets in (("Client", snippets_by_target["client"]), ("Server", snippets_by_target["server"])):
         lines.append(f"### {target_kind}")
         lines.append("")
         for library, snippet in snippets.items():
@@ -471,7 +819,7 @@ def build_root_llms(latest_docs: dict, all_versions: list[str]) -> str:
         latest_or_versioned_url = format_latest_doc_link(version, latest_version)
         versioned_url = format_versioned_doc_link(version)
         lines.append(f"- {version}: {latest_or_versioned_url} ({versioned_url}/llms.txt)")
-    lines.extend(["", *render_config_rows(latest_docs["configRows"]), *render_snippets(latest_docs)])
+    lines.extend(["", *render_how_it_works(latest_docs), *render_config_rows(latest_docs["configRows"]), *render_snippets(latest_docs)])
     lines.extend(
         [
             "## External Links",
@@ -507,6 +855,7 @@ def build_versioned_llms(docs: dict, latest_version: str) -> str:
             f"- Client libraries: {', '.join(docs['clientLibraries'])}",
             f"- Server libraries: {', '.join(docs['serverLibraries'])}",
             "",
+            *render_how_it_works(docs),
             *render_config_rows(docs["configRows"]),
             *render_snippets(docs),
             "## External Links",
@@ -544,6 +893,7 @@ def main() -> None:
 
     docs = generate(args.version)
     write_site_docs(args.version, docs)
+    update_existing_site_doc_snippets()
     write_site_llms(args.version)
     update_readme(docs["configRows"])
     print(f"Generated docs for version {args.version}")
