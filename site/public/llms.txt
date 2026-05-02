@@ -1,0 +1,269 @@
+# Openapi2kotlin Documentation
+
+> Openapi2kotlin generates Kotlin models, clients, and servers from OpenAPI specs for real applications.
+
+Latest stable version: 0.17.0
+
+## Start Here
+- Overview: https://openapi2kotlin.dev/
+- Installation: https://openapi2kotlin.dev/#installation
+- AI / LLMs: https://openapi2kotlin.dev/#llms
+- Under the Hood: https://openapi2kotlin.dev/#under-the-hood
+- API Reference: https://openapi2kotlin.dev/#api-reference
+
+## Framework Targets
+- Client libraries: Ktor, Http4k, RestClient
+- Server libraries: Ktor, Http4k, Spring
+
+## Versioned Documentation
+- 0.17.0: https://openapi2kotlin.dev/ (https://openapi2kotlin.dev/0.17.0/llms.txt)
+- 0.16.0: https://openapi2kotlin.dev/0.16.0 (https://openapi2kotlin.dev/0.16.0/llms.txt)
+- 0.15.0: https://openapi2kotlin.dev/0.15.0 (https://openapi2kotlin.dev/0.15.0/llms.txt)
+- 0.14.0: https://openapi2kotlin.dev/0.14.0 (https://openapi2kotlin.dev/0.14.0/llms.txt)
+
+## Configuration Options
+
+### `inputSpec`
+
+- Required: true
+- Default: -
+- Values: -
+- Description:
+```kotlin
+Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml".
+```
+
+### `outputDir`
+
+- Required: true
+- Default: -
+- Values: -
+- Description:
+```kotlin
+Root directory for generated Kotlin sources, e.g.
+layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
+```
+
+### `enabled`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Enables or disables code generation for the current Gradle run.
+
+### `model.packageName`
+
+- Required: false
+- Default: "dev.openapi2kotlin.model"
+- Values: -
+- Description: Package name for generated model classes.
+
+### `model.serialization`
+
+- Required: false
+- Default: Ktor -> KotlinX, Http4k -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
+- Values: KotlinX, Jackson
+- Description: Serialization annotation family for generated model classes.
+
+### `model.validation`
+
+- Required: false
+- Default: None
+- Values: None, Jakarta, JavaX
+- Description: Validation annotations namespace used in generated models.
+
+### `model.double2BigDecimal`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Maps OpenAPI number/double to BigDecimal instead of Double.
+
+### `model.float2BigDecimal`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Maps OpenAPI number/float to BigDecimal instead of Float.
+
+### `model.integer2Long`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Maps OpenAPI integer to Long instead of Int.
+
+### `client.packageName`
+
+- Required: false
+- Default: "dev.openapi2kotlin.client"
+- Values: -
+- Description: Base package for generated API classes.
+
+### `client.library`
+
+- Required: true
+- Default: -
+- Values: Ktor, Http4k, RestClient
+- Description: Target HTTP client library used by generated client API.
+
+### `client.basePathVar`
+
+- Required: false
+- Default: "basePath"
+- Values: -
+- Description:
+```kotlin
+Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
+
+servers:
+  - url: '/{basePath}'
+    variables:
+      basePath:
+        default: 'v5/'
+```
+
+### `client.methodNameSingularized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.
+
+### `client.methodNamePluralized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Pluralizes method names for collection endpoints, e.g. `listQuotes`.
+
+### `client.methodNameFromOperationId`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Derives method names from OpenAPI `operationId` instead of URL path.
+
+### `server.packageName`
+
+- Required: false
+- Default: "dev.openapi2kotlin.server"
+- Values: -
+- Description: Base package for generated API classes.
+
+### `server.library`
+
+- Required: true
+- Default: -
+- Values: Ktor, Http4k, Spring
+- Description: Target server framework used by generated server API.
+
+### `server.swagger`
+
+- Required: false
+- Default: Ktor -> false, Http4k -> false, Spring -> true
+- Values: true, false
+- Description: Enables generated Swagger/OpenAPI annotations.
+
+### `server.basePathVar`
+
+- Required: false
+- Default: "basePath"
+- Values: -
+- Description:
+```kotlin
+Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
+
+servers:
+  - url: '/{basePath}'
+    variables:
+      basePath:
+        default: 'v5/'
+```
+
+### `server.methodNameSingularized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.
+
+### `server.methodNamePluralized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Pluralizes method names for collection endpoints, e.g. `listQuotes`.
+
+### `server.methodNameFromOperationId`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Derives method names from OpenAPI `operationId` instead of URL path.
+
+## Configuration Snippets
+
+### Client
+
+#### Ktor
+
+```kotlin
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = Ktor
+    }
+```
+
+#### Http4k
+
+```kotlin
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = Http4k
+    }
+```
+
+#### RestClient
+
+```kotlin
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = RestClient
+    }
+```
+
+### Server
+
+#### Ktor
+
+```kotlin
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Ktor
+    }
+```
+
+#### Http4k
+
+```kotlin
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Http4k
+    }
+```
+
+#### Spring
+
+```kotlin
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Spring
+    }
+```
+
+## External Links
+- GitHub: https://github.com/openapi2kotlin/openapi2kotlin
+- Maven Central: https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin
+- OpenAPI Specification: https://spec.openapis.org/oas/v3.2.0.html
+

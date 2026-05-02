@@ -9,7 +9,7 @@ set -euo pipefail
 #       VITE_LATEST_STABLE_RELEASE_VERSION="x.y.z"
 #   - Updates README.md:
 #       openapi2kotlin = "x.y.z" (inside the TOML snippet under libs.versions.toml)
-#   - Commits documentation changes
+#   - Commits documentation changes, including generated llms.txt files
 #   - Creates annotated git tag vX.Y.Z
 #   - Pushes commit and tag to origin
 
@@ -105,10 +105,10 @@ fi
 
 echo
 echo "Changes:"
-git --no-pager diff -- "${SITE_ENV}" "${README}" "./site/docs" || true
+git --no-pager diff -- "${SITE_ENV}" "${README}" "./site/docs" "./site/public/llms.txt" "./site/public" || true
 echo
 
-git add "${SITE_ENV}" "${README}" "./site/docs"
+git add "${SITE_ENV}" "${README}" "./site/docs" "./site/public/llms.txt" "./site/public"
 git commit -m "chore(release): ${TAG}"
 
 git tag -a "${TAG}" -m "${TAG}"

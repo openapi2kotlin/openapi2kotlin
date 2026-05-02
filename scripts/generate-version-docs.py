@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 EXT_PATH = ROOT / "gradle-plugin/src/main/kotlin/dev/openapi2kotlin/gradleplugin/OpenApi2KotlinExtension.kt"
 README_PATH = ROOT / "README.md"
 SITE_DOCS_DIR = ROOT / "site/docs"
+SITE_PUBLIC_DIR = ROOT / "site/public"
+SITE_BASE_URL = "https://openapi2kotlin.dev"
 
 
 def extract_class_body(text: str, class_name: str) -> str:
@@ -334,6 +336,207 @@ def write_site_docs(version: str, docs: dict) -> None:
     (SITE_DOCS_DIR / "versions.json").write_text(json.dumps({"versions": versions}, indent=2) + "\n")
 
 
+def load_all_site_docs() -> list[dict]:
+    docs_by_version: list[dict] = []
+    for path in sorted(SITE_DOCS_DIR.glob("*.json")):
+        if not re.match(r"^\d+\.\d+\.\d+([-.].+)?$", path.stem):
+            continue
+        docs_by_version.append(json.loads(path.read_text()))
+    return docs_by_version
+
+
+def compare_versions(a: str, b: str) -> int:
+    pa = a.split(".")
+    pb = b.split(".")
+    for xa, xb in zip(pa, pb):
+        na = int(xa) if xa.isdigit() else xa
+        nb = int(xb) if xb.isdigit() else xb
+        if na == nb:
+            continue
+        return -1 if na < nb else 1
+    if len(pa) == len(pb):
+        return 0
+    return -1 if len(pa) < len(pb) else 1
+
+
+def sort_versions_desc(versions: list[str]) -> list[str]:
+    return sorted(
+        versions,
+        key=lambda s: tuple(int(x) if x.isdigit() else x for x in re.split(r"[.-]", s)),
+        reverse=True,
+    )
+
+
+def format_latest_doc_link(version: str, latest_stable_version: str) -> str:
+    if version == latest_stable_version:
+        return f"{SITE_BASE_URL}/"
+    return f"{SITE_BASE_URL}/{version}"
+
+
+def format_versioned_doc_link(version: str) -> str:
+    return f"{SITE_BASE_URL}/{version}"
+
+
+def llms_header(title: str, summary: str) -> list[str]:
+    return [
+        f"# {title}",
+        "",
+        f"> {summary}",
+        "",
+    ]
+
+
+def format_multiline_value(value: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        return "-"
+    return normalized
+
+
+def looks_like_code_block(value: str) -> bool:
+    normalized = value.strip()
+    return "```" in normalized or "\n" in normalized or "layout.buildDirectory" in normalized or "$projectDir" in normalized
+
+
+def render_field(label: str, value: str) -> list[str]:
+    normalized = format_multiline_value(value)
+    if normalized == "-":
+        return [f"- {label}: -"]
+
+    if looks_like_code_block(normalized):
+        stripped = normalized.replace("```", "").strip()
+        return [
+            f"- {label}:",
+            "```kotlin",
+            stripped,
+            "```",
+        ]
+
+    return [f"- {label}: {normalized}"]
+
+
+def render_config_rows(rows: list[dict[str, str]]) -> list[str]:
+    lines = ["## Configuration Options", ""]
+    for config_row in rows:
+        lines.append(f"### `{config_row['property']}`")
+        lines.append("")
+        lines.append(f"- Required: {'true' if config_row.get('required') else 'false'}")
+        lines.extend(render_field("Default", config_row.get("default", "")))
+        lines.extend(render_field("Values", config_row.get("values", "")))
+        lines.extend(render_field("Description", config_row.get("description", "")))
+        lines.append("")
+    return lines
+
+
+def render_snippets(docs: dict) -> list[str]:
+    lines = ["## Configuration Snippets", ""]
+    for target_kind, snippets in (("Client", docs["snippets"]["client"]), ("Server", docs["snippets"]["server"])):
+        lines.append(f"### {target_kind}")
+        lines.append("")
+        for library, snippet in snippets.items():
+            lines.append(f"#### {library}")
+            lines.append("")
+            lines.append("```kotlin")
+            lines.extend(snippet.splitlines())
+            lines.append("```")
+            lines.append("")
+    return lines
+
+
+def build_root_llms(latest_docs: dict, all_versions: list[str]) -> str:
+    latest_version = latest_docs["version"]
+    lines = llms_header(
+        "Openapi2kotlin Documentation",
+        "Openapi2kotlin generates Kotlin models, clients, and servers from OpenAPI specs for real applications.",
+    )
+    lines.extend(
+        [
+            f"Latest stable version: {latest_version}",
+            "",
+            "## Start Here",
+            f"- Overview: {SITE_BASE_URL}/",
+            f"- Installation: {SITE_BASE_URL}/#installation",
+            f"- AI / LLMs: {SITE_BASE_URL}/#llms",
+            f"- Under the Hood: {SITE_BASE_URL}/#under-the-hood",
+            f"- API Reference: {SITE_BASE_URL}/#api-reference",
+            "",
+            "## Framework Targets",
+            f"- Client libraries: {', '.join(latest_docs['clientLibraries'])}",
+            f"- Server libraries: {', '.join(latest_docs['serverLibraries'])}",
+            "",
+            "## Versioned Documentation",
+        ]
+    )
+    for version in all_versions:
+        latest_or_versioned_url = format_latest_doc_link(version, latest_version)
+        versioned_url = format_versioned_doc_link(version)
+        lines.append(f"- {version}: {latest_or_versioned_url} ({versioned_url}/llms.txt)")
+    lines.extend(["", *render_config_rows(latest_docs["configRows"]), *render_snippets(latest_docs)])
+    lines.extend(
+        [
+            "## External Links",
+            "- GitHub: https://github.com/openapi2kotlin/openapi2kotlin",
+            "- Maven Central: https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin",
+            "- OpenAPI Specification: https://spec.openapis.org/oas/v3.2.0.html",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def build_versioned_llms(docs: dict, latest_version: str) -> str:
+    version = docs["version"]
+    version_url = format_versioned_doc_link(version)
+    lines = llms_header(
+        f"Openapi2kotlin {version} Documentation",
+        f"Version-pinned documentation for openapi2kotlin {version}. Use this file when you need links and structured data for this exact release.",
+    )
+    lines.extend(
+        [
+            f"Version: {version}",
+            f"Latest stable version: {latest_version}",
+            "",
+            "## Start Here",
+            f"- Versioned docs: {version_url}",
+            f"- Installation: {version_url}#installation",
+            f"- AI / LLMs: {version_url}#llms",
+            f"- Under the Hood: {version_url}#under-the-hood",
+            f"- API Reference: {version_url}#api-reference",
+            "",
+            "## Framework Targets",
+            f"- Client libraries: {', '.join(docs['clientLibraries'])}",
+            f"- Server libraries: {', '.join(docs['serverLibraries'])}",
+            "",
+            *render_config_rows(docs["configRows"]),
+            *render_snippets(docs),
+            "## External Links",
+            "- GitHub: https://github.com/openapi2kotlin/openapi2kotlin",
+            "- Maven Central: https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_site_llms(latest_stable_version: str) -> None:
+    SITE_PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
+    all_docs = load_all_site_docs()
+    docs_by_version = {docs["version"]: docs for docs in all_docs}
+
+    if latest_stable_version not in docs_by_version:
+        raise RuntimeError(f"Latest stable version {latest_stable_version} not found in site docs")
+
+    all_versions = sort_versions_desc(list(docs_by_version))
+    latest_docs = docs_by_version[latest_stable_version]
+
+    (SITE_PUBLIC_DIR / "llms.txt").write_text(build_root_llms(latest_docs, all_versions) + "\n")
+
+    for version, docs in docs_by_version.items():
+        version_dir = SITE_PUBLIC_DIR / version
+        version_dir.mkdir(parents=True, exist_ok=True)
+        (version_dir / "llms.txt").write_text(build_versioned_llms(docs, latest_stable_version) + "\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("version", help="Docs version, e.g. 0.15.0")
@@ -341,6 +544,7 @@ def main() -> None:
 
     docs = generate(args.version)
     write_site_docs(args.version, docs)
+    write_site_llms(args.version)
     update_readme(docs["configRows"])
     print(f"Generated docs for version {args.version}")
 

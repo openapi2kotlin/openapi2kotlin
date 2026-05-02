@@ -15,6 +15,7 @@ import PillLink from "./components/PillLink.tsx";
 import Footer from "./components/Footer.tsx";
 import {VERSION_DOCS_BY_VERSION, VERSION_DOCS_LIST} from "./service/version-docs-registry";
 import {Link as RouterLink, useLocation, useNavigate, useParams} from "react-router-dom";
+import InlineCopyLinkButton from "./components/InlineCopyLinkButton.tsx";
 
 type ApiTarget = "Client" | "Server";
 
@@ -243,6 +244,8 @@ ${apiSnippet.trimEnd()}
     [apiSnippet],
   );
 
+  const currentLlmsHref = selectedVersion === latestVersion ? "/llms.txt" : `/${selectedVersion}/llms.txt`;
+
   return (
     <AmbientBackground>
       <HeroAmbient />
@@ -366,6 +369,19 @@ ${apiSnippet.trimEnd()}
                   .
                 </Text>
               </YStack>
+            </YStack>
+
+            <YStack gap="$3" position="relative" mt="$12">
+              <H2 id="llms">AI / LLMs</H2>
+
+              <Text fontSize="$6" color="$color11" opacity={0.85} mb="$2">
+                If you're using openapi2kotlin in your project and want to give an agent or LLM the right context, point it at{" "}
+                <InlineCopyLinkButton
+                  href={currentLlmsHref}
+                  label="llms.txt"
+                />{" "}
+                for the machine-friendly documentation.
+              </Text>
             </YStack>
 
 

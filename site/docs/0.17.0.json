@@ -1,6 +1,6 @@
 {
   "version": "0.17.0",
-  "generatedAt": "2026-03-21T14:24:35.336091+00:00",
+  "generatedAt": "2026-04-04T07:57:59.466056+00:00",
   "clientLibraries": [
     "Ktor",
     "Http4k",
@@ -23,7 +23,7 @@
     },
     {
       "property": "outputDir",
-      "description": "Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path.",
+      "description": "Root directory for generated Kotlin sources, e.g.\nlayout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path.",
       "values": "",
       "default": "",
       "required": true
