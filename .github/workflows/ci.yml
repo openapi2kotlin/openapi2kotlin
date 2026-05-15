@@ -21,8 +21,11 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: gradle
+
+      - name: Show Java version
+        run: java -version
 
       - name: Verify all
         run: ./gradlew --no-daemon clean build all

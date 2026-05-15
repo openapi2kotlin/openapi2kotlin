@@ -22,8 +22,11 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "24"
+          java-version: "25"
           cache: gradle
+
+      - name: Show Java version
+        run: java -version
 
       - name: Resolve version from tag
         id: ver
