@@ -58,6 +58,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNameSingularized = server.methodNameSingularized,
                     methodNamePluralized = server.methodNamePluralized,
                     methodNameFromOperationId = server.methodNameFromOperationId,
+                    apiNameFromTags = server.apiNameFromTags,
                     swagger = swagger,
                 )
             }
@@ -69,6 +70,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNameSingularized = server.methodNameSingularized,
                     methodNamePluralized = server.methodNamePluralized,
                     methodNameFromOperationId = server.methodNameFromOperationId,
+                    apiNameFromTags = server.apiNameFromTags,
                     swagger = swagger,
                 )
             }
@@ -80,6 +82,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNameSingularized = server.methodNameSingularized,
                     methodNamePluralized = server.methodNamePluralized,
                     methodNameFromOperationId = server.methodNameFromOperationId,
+                    apiNameFromTags = server.apiNameFromTags,
                     swagger = swagger,
                 )
             }
@@ -100,6 +103,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNameSingularized = client.methodNameSingularized,
                     methodNamePluralized = client.methodNamePluralized,
                     methodNameFromOperationId = client.methodNameFromOperationId,
+                    apiNameFromTags = client.apiNameFromTags,
                 )
             }
 
@@ -110,6 +114,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNameSingularized = client.methodNameSingularized,
                     methodNamePluralized = client.methodNamePluralized,
                     methodNameFromOperationId = client.methodNameFromOperationId,
+                    apiNameFromTags = client.apiNameFromTags,
                 )
             }
 
@@ -120,6 +125,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNameSingularized = client.methodNameSingularized,
                     methodNamePluralized = client.methodNamePluralized,
                     methodNameFromOperationId = client.methodNameFromOperationId,
+                    apiNameFromTags = client.apiNameFromTags,
                 )
             }
         }

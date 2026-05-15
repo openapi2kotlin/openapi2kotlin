@@ -4,7 +4,6 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
-import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.parameters.RequestBody as OasRequestBody
@@ -55,6 +54,7 @@ internal fun OpenAPI.toRawPaths(): List<RawPathDO> {
 
             val op =
                 RawPathDO.OperationDO(
+                    tags = opTags,
                     operationId = o.operationId,
                     httpMethod = method,
                     path = path,
@@ -160,11 +160,12 @@ private fun Schema<*>?.toRawFieldType(required: Boolean): RawSchemaDO.RawFieldTy
         )
     }
 
-    val nullable = (nullable == true) || !required
+    val effectiveType = effectiveType()
+    val nullable = isNullable(required)
     val refName = `$ref`?.substringAfterLast('/')
 
     return when {
-        this is ArraySchema ->
+        isArraySchemaLike(effectiveType) ->
             RawSchemaDO.RawArrayTypeDO(
                 elementType = items.toRawFieldType(required = true),
                 nullable = nullable,
@@ -178,7 +179,7 @@ private fun Schema<*>?.toRawFieldType(required: Boolean): RawSchemaDO.RawFieldTy
 
         else ->
             RawSchemaDO.RawPrimitiveTypeDO(
-                type = type.toPrimitiveType(),
+                type = effectiveType.toPrimitiveType(),
                 format = format,
                 nullable = nullable,
             )

@@ -48,6 +48,7 @@ fun interface OpenApi2KotlinUseCase {
         val methodNameSingularized: Boolean
         val methodNamePluralized: Boolean
         val methodNameFromOperationId: Boolean
+        val apiNameFromTags: Boolean
 
         sealed interface Client : ApiConfig
 
@@ -57,6 +58,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameSingularized: Boolean = true,
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
+            override val apiNameFromTags: Boolean = false,
         ) : Client
 
         data class ClientHttp4k(
@@ -65,6 +67,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameSingularized: Boolean = true,
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
+            override val apiNameFromTags: Boolean = false,
         ) : Client
 
         data class ClientRestClient(
@@ -73,6 +76,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameSingularized: Boolean = true,
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
+            override val apiNameFromTags: Boolean = false,
         ) : Client
 
         sealed interface Server : ApiConfig {
@@ -85,6 +89,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameSingularized: Boolean = true,
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
+            override val apiNameFromTags: Boolean = false,
             override val swagger: Boolean,
         ) : Server
 
@@ -94,6 +99,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameSingularized: Boolean = true,
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
+            override val apiNameFromTags: Boolean = false,
             override val swagger: Boolean,
         ) : Server
 
@@ -103,6 +109,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNameSingularized: Boolean = true,
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
+            override val apiNameFromTags: Boolean = false,
             override val swagger: Boolean,
         ) : Server
     }

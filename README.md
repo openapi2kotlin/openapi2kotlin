@@ -93,6 +93,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 | `client.methodNameSingularized` | Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`. | true, false | false | true |
 | `client.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |
 | `client.methodNameFromOperationId` | Derives method names from OpenAPI `operationId` instead of URL path. | true, false | false | false |
+| `client.apiNameFromTags` | Groups generated API classes by the first OpenAPI tag instead of the first URL path segment. This changes generated API class names. | true, false | false | false |
 | `server.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.server" |
 | `server.library` | Target server framework used by generated server API. | Ktor, Http4k, Spring | true | - |
 | `server.swagger` | Enables generated Swagger/OpenAPI annotations. | true, false | false | Ktor -> false, Http4k -> false, Spring -> true |
@@ -100,6 +101,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 | `server.methodNameSingularized` | Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`. | true, false | false | true |
 | `server.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |
 | `server.methodNameFromOperationId` | Derives method names from OpenAPI `operationId` instead of URL path. | true, false | false | false |
+| `server.apiNameFromTags` | Groups generated API classes by the first OpenAPI tag instead of the first URL path segment. This changes generated API class names. | true, false | false | false |
 
 ### Requirements
 

@@ -188,6 +188,13 @@ open class OpenApi2KotlinExtension {
          */
         var methodNameFromOperationId: Boolean = false
 
+        /**
+         * description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+         * default: false
+         * values: true, false
+         */
+        var apiNameFromTags: Boolean = false
+
         fun setLibrary(value: String?) {
             library = value?.let { ClientLibrary.fromValue(it) }
         }
@@ -248,6 +255,13 @@ open class OpenApi2KotlinExtension {
          * values: true, false
          */
         var methodNameFromOperationId: Boolean = false
+
+        /**
+         * description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+         * default: false
+         * values: true, false
+         */
+        var apiNameFromTags: Boolean = false
 
         fun setLibrary(value: String?) {
             library = value?.let { ServerLibrary.fromValue(it) }

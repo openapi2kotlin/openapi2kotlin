@@ -1,0 +1,89 @@
+openapi: 3.1.1
+info:
+  title: Translation Fixture
+  version: v1
+paths:
+  /health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: ok
+  /api/v1/productCatalog/products/translate:
+    post:
+      operationId: translateProducts
+      tags:
+        - ProductCatalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationRequest"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationResponse"
+  /api/v1/coupons/translate:
+    post:
+      operationId: translateCoupons
+      tags:
+        - Coupons
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationRequest"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationResponse"
+components:
+  schemas:
+    TranslationRequest:
+      type: object
+      required:
+        - lang
+        - attempts
+        - active
+        - aliases
+        - product
+      properties:
+        lang:
+          type: string
+        attempts:
+          type: integer
+          format: int64
+        active:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        product:
+          $ref: "#/components/schemas/Product"
+        optionalNote:
+          type:
+            - string
+            - "null"
+    TranslationResponse:
+      type: object
+      required:
+        - product
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+    Product:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string

@@ -8,6 +8,7 @@ data class RawPathDO(
     val operations: List<OperationDO>,
 ) {
     data class OperationDO(
+        val tags: List<String>,
         val operationId: String?,
         val httpMethod: HttpMethodDO,
         val path: String,

@@ -30,11 +30,12 @@ internal fun schemaToRawTypeForProperty(
 ): RawFieldTypeDO {
     if (schema == null) return RawPrimitiveTypeDO(RawPrimitiveTypeDO.Type.OBJECT, format = null, nullable = true)
 
-    val nullable = schema.nullable == true || !required
+    val effectiveType = schema.effectiveType()
+    val nullable = schema.isNullable(required)
     val refName = schema.`$ref`?.substringAfterLast('/')
 
     return when {
-        schema is ArraySchema ->
+        schema.isArraySchemaLike(effectiveType) ->
             RawArrayTypeDO(
                 elementType = schemaToRawTypeForProperty(schema.items, required = true),
                 nullable = nullable,
@@ -49,7 +50,7 @@ internal fun schemaToRawTypeForProperty(
 
         else ->
             RawPrimitiveTypeDO(
-                type = schema.type.toRawPrimitiveType(),
+                type = effectiveType.toRawPrimitiveType(),
                 format = schema.format,
                 nullable = nullable,
             )
@@ -106,3 +107,22 @@ private fun String?.toRawPrimitiveType(): RawPrimitiveTypeDO.Type =
         "object" -> RawPrimitiveTypeDO.Type.OBJECT
         else -> RawPrimitiveTypeDO.Type.OBJECT
     }
+
+internal fun Schema<*>.effectiveType(): String? {
+    val parsedTypes = types.orEmpty().filter { it.isNotBlank() }
+    val nonNullTypes = parsedTypes.filterNot { it == "null" }
+
+    return when {
+        type != null -> type
+        nonNullTypes.size == 1 -> nonNullTypes.single()
+        "array" in nonNullTypes -> "array"
+        "object" in nonNullTypes -> "object"
+        else -> nonNullTypes.firstOrNull()
+    }
+}
+
+internal fun Schema<*>.isNullable(required: Boolean): Boolean =
+    nullable == true || types.orEmpty().contains("null") || !required
+
+internal fun Schema<*>.isArraySchemaLike(effectiveType: String? = effectiveType()): Boolean =
+    this is ArraySchema || effectiveType == "array"

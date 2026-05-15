@@ -20,7 +20,8 @@ internal fun prepareApis(
             apiCfg = config.api,
         )
 
-    val apis = rawPaths.toApis(ctx)
+    val preparedRawPaths = rawPaths.groupForApiNaming(apiCfg = config.api)
+    val apis = preparedRawPaths.toApis(ctx)
 
     log.info { "Handling swagger annotations" }
     apis.handleServerSwaggerAnnotations(
@@ -36,3 +37,28 @@ internal data class ApisContext(
     val modelCfg: OpenApi2KotlinUseCase.ModelConfig,
     val apiCfg: OpenApi2KotlinUseCase.ApiConfig?,
 )
+
+private fun List<RawPathDO>.groupForApiNaming(apiCfg: OpenApi2KotlinUseCase.ApiConfig?): List<RawPathDO> {
+    if (apiCfg?.apiNameFromTags != true) return this
+
+    val groupedOperations = linkedMapOf<String, MutableList<RawPathDO.OperationDO>>()
+
+    flatMap { rawPath -> rawPath.operations }
+        .forEach { operation ->
+            val primaryTag = operation.tags.firstOrNull().orEmpty().ifBlank { "Default" }
+            groupedOperations.getOrPut(primaryTag) { mutableListOf() }.add(operation)
+        }
+
+    return groupedOperations.entries
+        .map { (tag, operations) ->
+            RawPathDO(
+                tags = listOf(tag),
+                operations =
+                    operations.sortedWith(
+                        compareBy<RawPathDO.OperationDO> { it.operationId ?: "" }
+                            .thenBy { it.httpMethod.name }
+                            .thenBy { it.path },
+                    ),
+            )
+        }.sortedBy { it.tags.firstOrNull().orEmpty() }
+}
