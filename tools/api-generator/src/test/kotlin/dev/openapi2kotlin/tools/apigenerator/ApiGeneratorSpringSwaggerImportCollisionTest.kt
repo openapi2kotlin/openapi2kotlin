@@ -78,6 +78,7 @@ class ApiGeneratorSpringSwaggerImportCollisionTest {
 
     private fun createUploadFileOperation(): RawPathDO.OperationDO =
         RawPathDO.OperationDO(
+            tags = listOf("pet"),
             operationId = "uploadFile",
             httpMethod = RawPathDO.HttpMethodDO.POST,
             path = "/pet/{petId}/uploadImage",
