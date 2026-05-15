@@ -3,7 +3,7 @@
 > Version-pinned documentation for openapi2kotlin 0.15.0. Use this file when you need links and structured data for this exact release.
 
 Version: 0.15.0
-Latest stable version: 0.17.0
+Latest stable version: 0.18.0
 
 ## Start Here
 - Versioned docs: https://openapi2kotlin.dev/0.15.0

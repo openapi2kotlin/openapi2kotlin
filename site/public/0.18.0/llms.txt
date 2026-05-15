@@ -1,16 +1,16 @@
-# Openapi2kotlin 0.17.0 Documentation
+# Openapi2kotlin 0.18.0 Documentation
 
-> Version-pinned documentation for openapi2kotlin 0.17.0. Use this file when you need links and structured data for this exact release.
+> Version-pinned documentation for openapi2kotlin 0.18.0. Use this file when you need links and structured data for this exact release.
 
-Version: 0.17.0
+Version: 0.18.0
 Latest stable version: 0.18.0
 
 ## Start Here
-- Versioned docs: https://openapi2kotlin.dev/0.17.0
-- Installation: https://openapi2kotlin.dev/0.17.0#installation
-- AI / LLMs: https://openapi2kotlin.dev/0.17.0#llms
-- Under the Hood: https://openapi2kotlin.dev/0.17.0#under-the-hood
-- API Reference: https://openapi2kotlin.dev/0.17.0#api-reference
+- Versioned docs: https://openapi2kotlin.dev/0.18.0
+- Installation: https://openapi2kotlin.dev/0.18.0#installation
+- AI / LLMs: https://openapi2kotlin.dev/0.18.0#llms
+- Under the Hood: https://openapi2kotlin.dev/0.18.0#under-the-hood
+- API Reference: https://openapi2kotlin.dev/0.18.0#api-reference
 
 ## Framework Targets
 - Client libraries: Ktor, Http4k, RestClient
@@ -19,15 +19,6 @@ Latest stable version: 0.18.0
 ## How It Works
 
 Generated sources land under the specified `outputDir` and selected `packageName`.
-
-## Demos:
-
-- petstore3 client http4k: `demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-http4k`
-- petstore3 client ktor: `demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-ktor`
-- petstore3 client restclient: `demo/0.17.0/petstore3/client/openapi2kotlin-demo-0.17.0-petstore3-client-restclient`
-- petstore3 server http4k: `demo/0.17.0/petstore3/server/openapi2kotlin-demo-0.17.0-petstore3-server-http4k`
-- petstore3 server ktor: `demo/0.17.0/petstore3/server/openapi2kotlin-demo-0.17.0-petstore3-server-ktor`
-- petstore3 server spring: `demo/0.17.0/petstore3/server/openapi2kotlin-demo-0.17.0-petstore3-server-spring`
 
 ## Configuration Options
 
@@ -152,6 +143,13 @@ servers:
 - Values: true, false
 - Description: Derives method names from OpenAPI `operationId` instead of URL path.
 
+### `client.apiNameFromTags`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+
 ### `server.packageName`
 
 - Required: false
@@ -209,6 +207,13 @@ servers:
 - Default: false
 - Values: true, false
 - Description: Derives method names from OpenAPI `operationId` instead of URL path.
+
+### `server.apiNameFromTags`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
 
 ## Configuration Snippets
 
