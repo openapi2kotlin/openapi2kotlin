@@ -551,224 +551,41 @@ def fenced(language: str, lines: list[str]) -> list[str]:
     ]
 
 
-def demo_library_dir(version: str, target_kind: str, library: str) -> Path | None:
-    slug = library.lower()
-    path = ROOT / "demo" / version / "petstore3" / target_kind / f"openapi2kotlin-demo-{version}-petstore3-{target_kind}-{slug}"
-    return path if path.exists() else None
-
-
-def generated_file(demo_dir: Path, suffix: str) -> Path | None:
-    matches = sorted((demo_dir / "build/generated/src/main/kotlin").glob(f"**/{suffix}"))
-    return matches[0] if matches else None
-
-
-def code_file_block(path: Path, language: str = "kotlin") -> list[str]:
-    return [
-        f"`{path.relative_to(ROOT)}`:",
-        "",
-        *fenced(language, path.read_text().splitlines()),
-        "",
-    ]
-
-
-def code_excerpt_block(path: Path, title: str, lines: list[str], language: str = "kotlin") -> list[str]:
-    return [
-        f"`{path.relative_to(ROOT)}` {title}:",
-        "",
-        *fenced(language, lines),
-        "",
-    ]
-
-
-def extract_first_matching_block(lines: list[str], contains: str, end_prefix: str | None = None) -> list[str]:
-    for index, line in enumerate(lines):
-        if contains not in line:
-            continue
-
-        start = index
-        for previous in range(index - 1, -1, -1):
-            if lines[previous].strip() == "/**":
-                start = previous
-                break
-            if lines[previous].strip() == "":
-                break
-
-        if end_prefix is None:
-            return lines[start:index + 1]
-
-        end = index
-        while end < len(lines) and not lines[end].startswith(end_prefix):
-            end += 1
-        if end < len(lines):
-            end += 1
-        return lines[start:end]
-    return []
-
-
-def extract_balanced_block(lines: list[str], contains: str) -> list[str]:
-    for index, line in enumerate(lines):
-        if contains not in line:
-            continue
-
-        start = index
-        depth = 0
-        seen_brace = False
-        for end in range(index, len(lines)):
-            depth += lines[end].count("{")
-            if "{" in lines[end]:
-                seen_brace = True
-            depth -= lines[end].count("}")
-            if seen_brace and depth == 0:
-                return lines[start:end + 1]
-    return []
-
-
-def openapi_demo_excerpt(demo_dir: Path) -> list[str]:
-    source = demo_dir / "src/main/resources/openapi.yaml"
-    if not source.exists():
-        return []
-
-    lines = source.read_text().splitlines()
-    route = extract_yaml_section(lines, "  /pet:", stop_indent=2)
-    post = extract_yaml_section(route, "    post:", stop_indent=4)
-    pet = extract_yaml_section(lines, "    Pet:", stop_indent=4)
-    error = extract_yaml_section(lines, "    Error:", stop_indent=4)
-    info = extract_yaml_section(lines, "info:", stop_indent=0)
-
-    return [
-        lines[0],
-        *info,
-        "paths:",
-        "  /pet:",
-        *strip_yaml_xml_blocks(post),
-        "components:",
-        "  schemas:",
-        *strip_yaml_xml_blocks(pet),
-        *strip_yaml_xml_blocks(error),
-    ]
-
-
-def extract_yaml_section(lines: list[str], header: str, stop_indent: int) -> list[str]:
-    try:
-        start = lines.index(header)
-    except ValueError:
-        return []
-
-    section = [lines[start]]
-    for line in lines[start + 1:]:
-        if line.strip() and not line.startswith(" " * (stop_indent + 1)):
-            break
-        section.append(line)
-    return section
-
-
-def strip_yaml_xml_blocks(lines: list[str]) -> list[str]:
-    stripped: list[str] = []
-    skip_indent: int | None = None
-
-    for line in lines:
-        indent = len(line) - len(line.lstrip(" "))
-        if skip_indent is not None:
-            if line.strip() and indent > skip_indent:
-                continue
-            skip_indent = None
-
-        if line.strip() in {"xml:", "application/xml:", "application/x-www-form-urlencoded:"}:
-            skip_indent = indent
-            continue
-
-        stripped.append(line)
-
-    return stripped
-
-
 def render_how_it_works(docs: dict) -> list[str]:
-    version = docs["version"]
-    demo_dirs = [
-        demo_library_dir(version, "client", library)
-        for library in docs["clientLibraries"]
-    ] + [
-        demo_library_dir(version, "server", library)
-        for library in docs["serverLibraries"]
+    return [
+        "## How It Works",
+        "",
+        "Generated sources land under the specified `outputDir` and selected `packageName`.",
+        "",
     ]
-    demo_dirs = [path for path in demo_dirs if path is not None]
+
+
+def demo_label(version: str, path: Path) -> str:
+    relative = path.relative_to(ROOT)
+    parts = relative.parts
+    if len(parts) >= 5 and parts[0] == "demo" and parts[1] == version:
+        spec_name = parts[2]
+        target_kind = parts[3]
+        prefix = f"openapi2kotlin-demo-{version}-{spec_name}-{target_kind}-"
+        library = path.name.removeprefix(prefix)
+        return f"{spec_name} {target_kind} {library}"
+    return path.name
+
+
+def render_demos(docs: dict) -> list[str]:
+    version = docs["version"]
+    demo_root = ROOT / "demo" / version
+    if not demo_root.exists():
+        return []
+
+    demo_dirs = sorted(path for path in demo_root.glob("*/*/openapi2kotlin-demo-*") if path.is_dir())
     if not demo_dirs:
         return []
 
-    openapi_lines = openapi_demo_excerpt(demo_dirs[0])
-    if not openapi_lines:
-        return []
-
-    lines = [
-        "## How It Works",
-        "",
-        f"Examples in this section are extracted from generated demo files for version {version}.",
-        "",
-        "Minimal OpenAPI excerpt based on the petstore3 demo `/pet` POST route; XML metadata is omitted:",
-        "",
-        *fenced("yaml", openapi_lines),
-        "",
-        "Generated sources land under `build/generated/src/main/kotlin`.",
-        "",
-    ]
-
-    lines.extend(render_demo_models(demo_dirs[0]))
-    lines.extend(render_demo_clients(version, docs["clientLibraries"]))
-    lines.extend(render_demo_servers(version, docs["serverLibraries"]))
-    return lines
-
-
-def render_demo_models(demo_dir: Path) -> list[str]:
-    lines = ["### Generated Models", ""]
-    for suffix in ("model/Pet.kt", "model/Error.kt"):
-        path = generated_file(demo_dir, suffix)
-        if path is not None:
-            lines.extend(code_file_block(path))
-    return lines
-
-
-def render_demo_clients(version: str, client_libraries: list[str]) -> list[str]:
-    lines: list[str] = []
-    for library in client_libraries:
-        demo_dir = demo_library_dir(version, "client", library)
-        if demo_dir is None:
-            continue
-        api_path = generated_file(demo_dir, "client/PetApi.kt")
-        impl_path = generated_file(demo_dir, "client/PetApiImpl.kt")
-        if api_path is None or impl_path is None:
-            continue
-
-        if not lines:
-            lines.extend(["### Generated Clients", ""])
-        lines.extend([f"#### {library} Client", ""])
-        api_lines = api_path.read_text().splitlines()
-        impl_lines = impl_path.read_text().splitlines()
-        lines.extend(code_excerpt_block(api_path, "`createPet` excerpt", extract_first_matching_block(api_lines, "createPet(body: Pet)")))
-        lines.extend(code_excerpt_block(impl_path, "`createPet` excerpt", extract_balanced_block(impl_lines, "createPet(body: Pet)")))
-    return lines
-
-
-def render_demo_servers(version: str, server_libraries: list[str]) -> list[str]:
-    lines: list[str] = []
-    for library in server_libraries:
-        demo_dir = demo_library_dir(version, "server", library)
-        if demo_dir is None:
-            continue
-        api_path = generated_file(demo_dir, "server/PetApi.kt")
-        route_path = generated_file(demo_dir, "server/PetRoutes.kt")
-        if api_path is None:
-            continue
-
-        if not lines:
-            lines.extend(["### Generated Servers", ""])
-        lines.extend([f"#### {library} Server", ""])
-        api_lines = api_path.read_text().splitlines()
-        lines.extend(code_excerpt_block(api_path, "`createPet` excerpt", extract_first_matching_block(api_lines, "createPet(")))
-
-        if route_path is not None:
-            route_lines = route_path.read_text().splitlines()
-            route_excerpt = extract_balanced_block(route_lines, "\"/pet\" bind org.http4k.core.Method.POST") if library == "Http4k" else extract_balanced_block(route_lines, "post {")
-            lines.extend(code_excerpt_block(route_path, "`POST /pet` route excerpt", route_excerpt))
+    lines = ["## Demos:", ""]
+    for path in demo_dirs:
+        lines.append(f"- {demo_label(version, path)}: `{path.relative_to(ROOT)}`")
+    lines.append("")
     return lines
 
 
@@ -819,7 +636,13 @@ def build_root_llms(latest_docs: dict, all_versions: list[str]) -> str:
         latest_or_versioned_url = format_latest_doc_link(version, latest_version)
         versioned_url = format_versioned_doc_link(version)
         lines.append(f"- {version}: {latest_or_versioned_url} ({versioned_url}/llms.txt)")
-    lines.extend(["", *render_how_it_works(latest_docs), *render_config_rows(latest_docs["configRows"]), *render_snippets(latest_docs)])
+    lines.extend([
+        "",
+        *render_how_it_works(latest_docs),
+        *render_demos(latest_docs),
+        *render_config_rows(latest_docs["configRows"]),
+        *render_snippets(latest_docs),
+    ])
     lines.extend(
         [
             "## External Links",
@@ -856,6 +679,7 @@ def build_versioned_llms(docs: dict, latest_version: str) -> str:
             f"- Server libraries: {', '.join(docs['serverLibraries'])}",
             "",
             *render_how_it_works(docs),
+            *render_demos(docs),
             *render_config_rows(docs["configRows"]),
             *render_snippets(docs),
             "## External Links",

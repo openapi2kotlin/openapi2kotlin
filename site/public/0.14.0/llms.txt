@@ -16,6 +16,10 @@ Latest stable version: 0.17.0
 - Client libraries: Ktor, RestClient
 - Server libraries: Ktor, Spring
 
+## How It Works
+
+Generated sources land under the specified `outputDir` and selected `packageName`.
+
 ## Configuration Options
 
 ### `inputSpec`
