@@ -401,10 +401,19 @@ tasks.register("prePush") {
     dependsOn("cleanBuildAll")
 }
 
+tasks.register("buildAllProjects") {
+    group = "verification"
+    description = "Runs build for the root project and all Gradle subprojects."
+    dependsOn(
+        tasks.named("build"),
+        subprojects.mapNotNull { project -> project.tasks.findByName("build") },
+    )
+}
+
 tasks.register("cleanBuildAll") {
     group = "verification"
     description = "Runs a clean build for the root project and all standalone demo and test projects."
-    dependsOn("clean", "build", "cleanBuildStandaloneProjects")
+    dependsOn("clean", "buildAllProjects", "cleanBuildStandaloneProjects")
 }
 
 tasks.register("all") {
