@@ -1,15 +1,11 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.extensions.DetektExtension
 import org.gradle.api.attributes.Bundling
 import org.gradle.internal.os.OperatingSystem
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 val javaVersion = providers.gradleProperty("openapi2kotlin.jvm").get().toInt()
-val kotlinJvmTarget = JvmTarget.fromTarget(javaVersion.toString())
-val detektJvmTarget = minOf(javaVersion, 22)
 val ktlintCliVersion = "1.0.1"
 
 plugins {
@@ -61,19 +57,14 @@ subprojects {
     }
     plugins.withId("org.jetbrains.kotlin.jvm") {
         apply(plugin = "org.jlleitschuh.gradle.ktlint")
-        apply(plugin = "io.gitlab.arturbosch.detekt")
+        apply(plugin = "dev.detekt")
 
         if (project.path != ":tools:detekt-tools") {
             dependencies.add("detektPlugins", project(":tools:detekt-tools"))
         }
 
         extensions.configure(KotlinJvmProjectExtension::class.java) {
-            jvmToolchain {
-                languageVersion.set(JavaLanguageVersion.of(javaVersion))
-            }
-        }
-        tasks.withType(KotlinCompile::class.java).configureEach {
-            compilerOptions.jvmTarget.set(kotlinJvmTarget)
+            jvmToolchain(javaVersion)
         }
 
         extensions.configure(KtlintExtension::class.java) {
@@ -93,7 +84,7 @@ subprojects {
             setSource(files(project.projectDir))
             include("**/*.kt", "**/*.kts")
             exclude("**/build/**", "**/generated/**")
-            jvmTarget = detektJvmTarget.toString()
+            jvmTarget = javaVersion.toString()
         }
 
         tasks.matching { task ->
@@ -135,7 +126,7 @@ demoKtlintCli.attributes {
 
 dependencies {
     demoKtlintCli("com.pinterest.ktlint:ktlint-cli:$ktlintCliVersion")
-    demoDetektCli("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
+    demoDetektCli("dev.detekt:detekt-cli:${libs.versions.detekt.get()}")
     demoDetektPlugins(project(":tools:detekt-tools"))
 }
 
@@ -223,7 +214,7 @@ val lintStandaloneDemoProjects =
                 group = "verification"
                 description = "Runs detekt for standalone demo project $path."
                 classpath = demoDetektCli + demoDetektPlugins
-                mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+                mainClass.set("dev.detekt.cli.Main")
                 args(
                     "--build-upon-default-config",
                     "--config",
@@ -235,7 +226,7 @@ val lintStandaloneDemoProjects =
                     "--excludes",
                     "**/build/**,**/generated/**",
                     "--jvm-target",
-                    detektJvmTarget.toString(),
+                    javaVersion.toString(),
                 )
             }
         val lintTask =
@@ -265,7 +256,7 @@ val lintStandaloneTestProjects =
                 group = "verification"
                 description = "Runs detekt for standalone test project $path."
                 classpath = demoDetektCli + demoDetektPlugins
-                mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+                mainClass.set("dev.detekt.cli.Main")
                 args(
                     "--build-upon-default-config",
                     "--config",
@@ -277,7 +268,7 @@ val lintStandaloneTestProjects =
                     "--excludes",
                     "**/build/**,**/generated/**",
                     "--jvm-target",
-                    detektJvmTarget.toString(),
+                    javaVersion.toString(),
                 )
             }
         val lintTask =
@@ -331,7 +322,7 @@ val detektRepoSources =
         group = "verification"
         description = "Runs detekt once over root repo Kotlin sources and Gradle scripts."
         classpath = demoDetektCli + demoDetektPlugins
-        mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+        mainClass.set("dev.detekt.cli.Main")
         args(
             "--build-upon-default-config",
             "--config",
@@ -343,7 +334,7 @@ val detektRepoSources =
             "--excludes",
             "**/build/**,**/generated/**",
             "--jvm-target",
-            detektJvmTarget.toString(),
+            javaVersion.toString(),
         )
     }
 

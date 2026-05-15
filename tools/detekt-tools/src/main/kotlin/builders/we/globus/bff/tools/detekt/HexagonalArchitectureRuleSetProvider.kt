@@ -6,24 +6,25 @@ import builders.we.globus.bff.tools.detekt.rules.TopLevelFunctionFileNameRule
 import builders.we.globus.bff.tools.detekt.rules.UnusedTopLevelDeclarationRule
 import builders.we.globus.bff.tools.detekt.rules.UnusedTopLevelFunctionRule
 import builders.we.globus.bff.tools.detekt.rules.UsecaseDtoSuffixRule
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.RuleSet
-import io.gitlab.arturbosch.detekt.api.RuleSetProvider
+import dev.detekt.api.RuleName
+import dev.detekt.api.RuleSet
+import dev.detekt.api.RuleSetId
+import dev.detekt.api.RuleSetProvider
 
 class HexagonalArchitectureRuleSetProvider : RuleSetProvider {
-    override val ruleSetId: String = "hexagonalArchitecture"
+    override val ruleSetId: RuleSetId = RuleSetId("hexagonalArchitecture")
 
-    override fun instance(config: Config): RuleSet =
+    override fun instance(): RuleSet =
         RuleSet(
-            id = ruleSetId,
+            ruleSetId,
             rules =
-                listOf(
-                    CoreImportBoundaryRule(config),
-                    SuffixAwareTooManyFunctionsRule(config),
-                    TopLevelFunctionFileNameRule(config),
-                    UnusedTopLevelDeclarationRule(config),
-                    UnusedTopLevelFunctionRule(config),
-                    UsecaseDtoSuffixRule(config),
+                mapOf(
+                    RuleName("CoreImportBoundary") to ::CoreImportBoundaryRule,
+                    RuleName("SuffixAwareTooManyFunctions") to ::SuffixAwareTooManyFunctionsRule,
+                    RuleName("TopLevelFunctionFileName") to ::TopLevelFunctionFileNameRule,
+                    RuleName("UnusedTopLevelDeclaration") to ::UnusedTopLevelDeclarationRule,
+                    RuleName("UnusedTopLevelFunction") to ::UnusedTopLevelFunctionRule,
+                    RuleName("UsecaseDtoSuffix") to ::UsecaseDtoSuffixRule,
                 ),
         )
 }

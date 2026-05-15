@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.detekt)
 }
 
-configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+configure<dev.detekt.gradle.extensions.DetektExtension> {
     buildUponDefaultConfig = true
     allRules = false
     config.setFrom(projectDir.resolve("detekt.yml"))

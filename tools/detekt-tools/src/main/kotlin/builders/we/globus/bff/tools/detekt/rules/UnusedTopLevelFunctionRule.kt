@@ -2,13 +2,10 @@ package builders.we.globus.bff.tools.detekt.rules
 
 import builders.we.globus.bff.tools.detekt.ext.cachedRepositoryTextIndex
 import builders.we.globus.bff.tools.detekt.ext.repoRoot
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtFile
@@ -19,15 +16,10 @@ import java.nio.file.Path
 
 class UnusedTopLevelFunctionRule(
     config: Config,
-) : Rule(config) {
-    override val issue: Issue =
-        Issue(
-            id = "UnusedTopLevelFunction",
-            severity = Severity.Defect,
-            description = "Functions with bodies should be referenced somewhere in the repository or removed.",
-            debt = Debt.TWENTY_MINS,
-        )
-
+) : Rule(
+        config,
+        "Functions with bodies should be referenced somewhere in the repository or removed.",
+    ) {
     override fun visitKtFile(file: KtFile) {
         super.visitKtFile(file)
 
@@ -47,9 +39,8 @@ class UnusedTopLevelFunctionRule(
                 if (repositoryIndex.occurrences(functionName) <= 1) {
                     val displayFileName = Path.of(file.name).fileName.toString()
                     report(
-                        CodeSmell(
-                            issue = issue,
-                            entity = Entity.from(function),
+                        Finding(
+                            Entity.from(function),
                             message =
                                 "Function '$functionName' is not referenced outside " +
                                     "'$displayFileName'. Remove it or reference it.",

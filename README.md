@@ -106,7 +106,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 - Gradle 8+
 - Kotlin JVM project
 - OpenAPI 3.x specification (YAML or JSON)
-- Java 21+
+- Java 25+
 
 ---
 

@@ -1,13 +1,10 @@
 package builders.we.globus.bff.tools.detekt.rules
 
 import builders.we.globus.bff.tools.detekt.ext.isOpenApi2KotlinCoreDomainFile
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
@@ -15,15 +12,10 @@ import org.jetbrains.kotlin.psi.KtTypeAlias
 
 class UsecaseDtoSuffixRule(
     config: Config,
-) : Rule(config) {
-    override val issue: Issue =
-        Issue(
-            id = "UsecaseDtoSuffix",
-            severity = Severity.Defect,
-            description = "Openapi2kotlin core domain types must use the DO suffix.",
-            debt = Debt.FIVE_MINS,
-        )
-
+) : Rule(
+        config,
+        "Openapi2kotlin core domain types must use the DO suffix.",
+    ) {
     override fun visitClass(klass: KtClass) {
         super.visitClass(klass)
         reportIfInvalidName(
@@ -69,9 +61,8 @@ class UsecaseDtoSuffixRule(
         }
 
         report(
-            CodeSmell(
-                issue = issue,
-                entity = entity,
+            Finding(
+                entity,
                 message = "Openapi2kotlin core domain type '$typeName' must use the DO suffix.",
             ),
         )

@@ -1,5 +1,5 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import dev.detekt.gradle.Detekt
+import dev.detekt.gradle.extensions.DetektExtension
 import org.gradle.api.tasks.SourceTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
@@ -45,7 +45,6 @@ fun readRepoCoordinate(moduleName: String): String =
 
 val repoRoot = readRepoRoot()
 val repoJvmVersion = readRepoJvmVersion()
-val detektJvmTarget = minOf(repoJvmVersion, 22)
 val detektToolsCoordinate = readRepoCoordinate("detekt-tools")
 
 plugins {
@@ -89,7 +88,7 @@ tasks.withType<Detekt>().configureEach {
     setSource(files(projectDir))
     include("**/*.kt", "**/*.kts")
     exclude("**/build/**", "**/generated/**")
-    jvmTarget = detektJvmTarget.toString()
+    jvmTarget = repoJvmVersion.toString()
 }
 
 tasks.test {

@@ -1,6 +1,6 @@
 package builders.we.globus.bff.tools.detekt.rules
 
-import io.gitlab.arturbosch.detekt.api.Config
+import dev.detekt.api.Config
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals

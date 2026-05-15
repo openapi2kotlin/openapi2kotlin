@@ -1,25 +1,17 @@
 package builders.we.globus.bff.tools.detekt.rules
 
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.psi.KtFile
 
 class TopLevelFunctionFileNameRule(
     config: Config,
-) : Rule(config) {
-    override val issue: Issue =
-        Issue(
-            id = "TopLevelFunctionFileName",
-            severity = Severity.Defect,
-            description = "Single public top-level function files should match the function name.",
-            debt = Debt.FIVE_MINS,
-        )
-
+) : Rule(
+        config,
+        "Single public top-level function files should match the function name.",
+    ) {
     override fun visitKtFile(file: KtFile) {
         super.visitKtFile(file)
 
@@ -60,9 +52,8 @@ class TopLevelFunctionFileNameRule(
 
         if (!matchesFileName) {
             report(
-                CodeSmell(
-                    issue = issue,
-                    entity = Entity.from(file),
+                Finding(
+                    Entity.from(file),
                     message =
                         "File '$actualFileName' should be named '$expectedFileName' to match " +
                             "its single public top-level function '$functionName'.",

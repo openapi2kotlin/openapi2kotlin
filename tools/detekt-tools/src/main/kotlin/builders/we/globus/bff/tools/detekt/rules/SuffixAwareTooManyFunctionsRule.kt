@@ -1,32 +1,23 @@
 package builders.we.globus.bff.tools.detekt.rules
 
-import io.gitlab.arturbosch.detekt.api.CodeSmell
-import io.gitlab.arturbosch.detekt.api.Config
-import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
-import io.gitlab.arturbosch.detekt.api.Issue
-import io.gitlab.arturbosch.detekt.api.Rule
-import io.gitlab.arturbosch.detekt.api.Severity
+import dev.detekt.api.Config
+import dev.detekt.api.Entity
+import dev.detekt.api.Finding
+import dev.detekt.api.Rule
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
 class SuffixAwareTooManyFunctionsRule(
     config: Config,
-) : Rule(config) {
-    override val issue: Issue =
-        Issue(
-            id = "SuffixAwareTooManyFunctions",
-            severity = Severity.Maintainability,
-            description =
-                "Classes should stay reasonably small, while generated-style APIs and controllers " +
-                    "may use a higher function threshold.",
-            debt = Debt.FIVE_MINS,
-        )
-
-    private val defaultThreshold = valueOrDefault("defaultThreshold", DEFAULT_THRESHOLD)
-    private val relaxedThreshold = valueOrDefault("relaxedThreshold", RELAXED_THRESHOLD)
+) : Rule(
+        config,
+        "Classes should stay reasonably small, while generated-style APIs and controllers " +
+            "may use a higher function threshold.",
+    ) {
+    private val defaultThreshold = config.valueOrDefault("defaultThreshold", DEFAULT_THRESHOLD)
+    private val relaxedThreshold = config.valueOrDefault("relaxedThreshold", RELAXED_THRESHOLD)
     private val relaxedSuffixes =
-        valueOrDefault(
+        config.valueOrDefault(
             "relaxedSuffixes",
             listOf("Controller", "ApiImpl", "Api"),
         )
@@ -45,9 +36,8 @@ class SuffixAwareTooManyFunctionsRule(
 
         if (functionCount > threshold) {
             report(
-                CodeSmell(
-                    issue = issue,
-                    entity = Entity.from(klass.nameIdentifier ?: klass),
+                Finding(
+                    Entity.from(klass.nameIdentifier ?: klass),
                     message =
                         "Class '$className' declares $functionCount functions, which exceeds " +
                             "the allowed threshold of $threshold for this class name pattern.",
