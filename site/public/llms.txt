@@ -2,7 +2,7 @@
 
 > Openapi2kotlin generates Kotlin models, clients, and servers from OpenAPI specs for real applications.
 
-Latest stable version: 0.18.0
+Latest stable version: 0.19.0
 
 ## Start Here
 - Overview: https://openapi2kotlin.dev/
@@ -16,7 +16,8 @@ Latest stable version: 0.18.0
 - Server libraries: Ktor, Http4k, Spring
 
 ## Versioned Documentation
-- 0.18.0: https://openapi2kotlin.dev/ (https://openapi2kotlin.dev/0.18.0/llms.txt)
+- 0.19.0: https://openapi2kotlin.dev/ (https://openapi2kotlin.dev/0.19.0/llms.txt)
+- 0.18.0: https://openapi2kotlin.dev/0.18.0 (https://openapi2kotlin.dev/0.18.0/llms.txt)
 - 0.17.0: https://openapi2kotlin.dev/0.17.0 (https://openapi2kotlin.dev/0.17.0/llms.txt)
 - 0.16.0: https://openapi2kotlin.dev/0.16.0 (https://openapi2kotlin.dev/0.16.0/llms.txt)
 - 0.15.0: https://openapi2kotlin.dev/0.15.0 (https://openapi2kotlin.dev/0.15.0/llms.txt)
