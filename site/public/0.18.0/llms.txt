@@ -243,6 +243,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -271,6 +272,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -299,6 +301,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -330,6 +333,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -359,6 +363,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -388,6 +393,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```

@@ -169,9 +169,6 @@ openapi2kotlin {
         packageName = "dev.openapi2kotlin.client"
         library = Ktor
         basePathVar = "basePath"
-        methodNameSingularized = true
-        methodNamePluralized = true
-        methodNameFromOperationId = false
     }
 }
 ```
@@ -197,9 +194,6 @@ openapi2kotlin {
         packageName = "dev.openapi2kotlin.client"
         library = RestClient
         basePathVar = "basePath"
-        methodNameSingularized = true
-        methodNamePluralized = true
-        methodNameFromOperationId = false
     }
 }
 ```
@@ -228,9 +222,6 @@ openapi2kotlin {
         library = Ktor
         swagger = false
         basePathVar = "basePath"
-        methodNameSingularized = true
-        methodNamePluralized = true
-        methodNameFromOperationId = false
     }
 }
 ```
@@ -257,9 +248,6 @@ openapi2kotlin {
         library = Spring
         swagger = true
         basePathVar = "basePath"
-        methodNameSingularized = true
-        methodNamePluralized = true
-        methodNameFromOperationId = false
     }
 }
 ```

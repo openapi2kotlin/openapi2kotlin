@@ -180,48 +180,92 @@ def minimal_config_snippets(client_libraries: list[str], server_libraries: list[
     }
 
 
-def model_config_snippet(serialization: str) -> str:
-    return f"""    model {{
-        packageName = "dev.openapi2kotlin.model"
-        serialization = {serialization}
-        validation = None
-        double2BigDecimal = false
-        float2BigDecimal = false
-        integer2Long = true
-    }}"""
+def row_scope(config_row: dict[str, str]) -> str:
+    property_name = config_row["property"]
+    if "." not in property_name:
+        return ""
+    return property_name.split(".", 1)[0]
 
 
-def target_config_snippet(target_kind: str, library: str, swagger: bool | None = None) -> str:
-    lines = [
-        f"    {target_kind.lower()} {{",
-        f"        packageName = \"dev.openapi2kotlin.{target_kind.lower()}\"",
-        f"        library = {library}",
-    ]
-    if swagger is not None:
-        lines.append(f"        swagger = {str(swagger).lower()}")
+def row_name(config_row: dict[str, str]) -> str:
+    return config_row["property"].split(".")[-1]
+
+
+def rows_for_scope(rows: list[dict[str, str]], scope: str) -> list[dict[str, str]]:
+    return [config_row for config_row in rows if row_scope(config_row) == scope]
+
+
+def snippet_assignments(
+    rows: list[dict[str, str]],
+    overrides: dict[str, str],
+    indent: str,
+) -> list[str]:
+    lines: list[str] = []
+    for config_row in rows:
+        name = row_name(config_row)
+        value = overrides.get(name) or config_row.get("default", "").strip()
+        if not value or value == "-":
+            continue
+        lines.append(f"{indent}{name} = {value}")
+    return lines
+
+
+def model_config_snippet(rows: list[dict[str, str]], serialization: str) -> str:
+    lines = ["    model {"]
     lines.extend(
-        [
-            "        basePathVar = \"basePath\"",
-            "        methodNameSingularized = true",
-            "        methodNamePluralized = true",
-            "        methodNameFromOperationId = false",
-            "    }",
-        ]
+        snippet_assignments(
+            rows,
+            {
+                "packageName": "\"dev.openapi2kotlin.model\"",
+                "serialization": serialization,
+            },
+            "        ",
+        )
     )
+    lines.append("    }")
     return "\n".join(lines)
 
 
-def full_config_snippet(target_kind: str, library: str, serialization: str, swagger: bool | None = None) -> str:
+def target_config_snippet(
+    rows: list[dict[str, str]],
+    target_kind: str,
+    library: str,
+    swagger: bool | None = None,
+) -> str:
+    overrides = {
+        "packageName": f"\"dev.openapi2kotlin.{target_kind.lower()}\"",
+        "library": library,
+    }
+    if swagger is not None:
+        overrides["swagger"] = str(swagger).lower()
+
+    lines = [f"    {target_kind.lower()} {{"]
+    lines.extend(snippet_assignments(rows, overrides, "        "))
+    lines.append("    }")
+    return "\n".join(lines)
+
+
+def full_config_snippet(docs: dict, target_kind: str, library: str, serialization: str, swagger: bool | None = None) -> str:
+    rows = docs["configRows"]
+    root_rows = rows_for_scope(rows, "")
+    model_rows = rows_for_scope(rows, "model")
+    target_rows = rows_for_scope(rows, target_kind.lower())
+
     return "\n".join(
         [
             "openapi2kotlin {",
-            "    inputSpec = \"$projectDir/src/main/resources/openapi.yaml\"",
-            "    outputDir = layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path",
-            "    enabled = true",
+            *snippet_assignments(
+                root_rows,
+                {
+                    "inputSpec": "\"$projectDir/src/main/resources/openapi.yaml\"",
+                    "outputDir": "layout.buildDirectory.dir(\"generated/src/main/kotlin\").get().asFile.path",
+                },
+                "    ",
+            ),
             "",
-            model_config_snippet(serialization),
+            model_config_snippet(model_rows, serialization),
             "",
-            target_config_snippet(target_kind, library, swagger),
+            target_config_snippet(target_rows, target_kind, library, swagger),
             "}",
         ]
     )
@@ -239,24 +283,26 @@ def default_swagger_for_server_library(library: str) -> bool:
     return library == "Spring"
 
 
-def config_snippets(client_libraries: list[str], server_libraries: list[str]) -> dict[str, dict[str, str]]:
+def config_snippets(docs: dict) -> dict[str, dict[str, str]]:
     return {
         "client": {
             library: full_config_snippet(
+                docs,
                 "Client",
                 library,
                 model_serialization_for_client_library(library),
             )
-            for library in client_libraries
+            for library in docs["clientLibraries"]
         },
         "server": {
             library: full_config_snippet(
+                docs,
                 "Server",
                 library,
                 model_serialization_for_server_library(library),
                 swagger=default_swagger_for_server_library(library),
             )
-            for library in server_libraries
+            for library in docs["serverLibraries"]
         },
     }
 
@@ -591,10 +637,7 @@ def render_demos(docs: dict) -> list[str]:
 
 def render_snippets(docs: dict) -> list[str]:
     lines = ["## Configuration Snippets", ""]
-    snippets_by_target = config_snippets(
-        client_libraries=docs["clientLibraries"],
-        server_libraries=docs["serverLibraries"],
-    )
+    snippets_by_target = config_snippets(docs)
     for target_kind, snippets in (("Client", snippets_by_target["client"]), ("Server", snippets_by_target["server"])):
         lines.append(f"### {target_kind}")
         lines.append("")
