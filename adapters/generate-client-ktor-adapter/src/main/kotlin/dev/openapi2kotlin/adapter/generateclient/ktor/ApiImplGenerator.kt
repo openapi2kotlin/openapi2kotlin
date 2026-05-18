@@ -33,6 +33,8 @@ private val M_delete = com.squareup.kotlinpoet.MemberName("io.ktor.client.reques
 private val M_appendPathSegments = com.squareup.kotlinpoet.MemberName("io.ktor.http", "appendPathSegments")
 private val M_parameter = com.squareup.kotlinpoet.MemberName("io.ktor.client.request", "parameter")
 private val M_setBody = com.squareup.kotlinpoet.MemberName("io.ktor.client.request", "setBody")
+private val M_contentType = com.squareup.kotlinpoet.MemberName("io.ktor.http", "contentType")
+private val CONTENT_TYPE_T = ClassName("io.ktor.http", "ContentType")
 
 internal class ApiImplGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
@@ -210,6 +212,9 @@ internal class ApiImplGenerator : GenerateApiPort {
 
     private fun CodeBlock.Builder.addBodyBlock(ep: ApiEndpointDO): CodeBlock.Builder {
         ep.requestBody?.let { body ->
+            ep.rawOperation.requestBody?.mediaType?.let { mediaType ->
+                addStatement("%M(%L)", M_contentType, mediaType.toContentTypeCode())
+            }
             addStatement("%M(%L)", M_setBody, body.generatedName)
         }
         return this
@@ -276,3 +281,5 @@ private fun scalarValueExpression(
 
 private fun FieldTypeDO.queryValueCode(): String =
     if (this is TrivialTypeDO && kind == TrivialTypeDO.Kind.STRING) "it" else "it.toString()"
+
+internal fun String.toContentTypeCode(): CodeBlock = CodeBlock.of("%T.parse(%S)", CONTENT_TYPE_T, this)

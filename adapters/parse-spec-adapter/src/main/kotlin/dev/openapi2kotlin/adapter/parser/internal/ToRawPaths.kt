@@ -121,14 +121,21 @@ private fun Parameter.toParamDO(): RawPathDO.ParamDO? {
 }
 
 private fun OasRequestBody.toRequestBodyDO(): RawPathDO.RequestBodyDO? {
-    val mediaType = content?.get("application/json") ?: content?.values?.firstOrNull()
-    val schema = mediaType?.schema ?: return null
+    val mediaTypeEntry =
+        content
+            ?.entries
+            ?.firstOrNull { (mediaType, _) -> mediaType.equals("application/json", ignoreCase = true) }
+            ?: content
+                ?.entries
+                ?.firstOrNull()
+    val schema = mediaTypeEntry?.value?.schema ?: return null
 
     val required = this.required == true
 
     return RawPathDO.RequestBodyDO(
         required = required,
         type = schema.toRawFieldType(required = required),
+        mediaType = mediaTypeEntry.key,
     )
 }
 

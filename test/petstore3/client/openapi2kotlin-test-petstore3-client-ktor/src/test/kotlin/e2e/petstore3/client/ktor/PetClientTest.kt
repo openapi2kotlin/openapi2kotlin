@@ -3,7 +3,9 @@ package e2e.petstore3.client.ktor
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.ktor.generated.client.PetApiImpl
 import io.ktor.client.HttpClient
@@ -83,5 +85,71 @@ class PetClientTest {
 
             assertEquals(9L, result.id)
             assertEquals("Sparky", result.name)
+        }
+
+    @Test
+    fun `createPet sends json content type for request body`() =
+        runBlocking {
+            server.stubFor(
+                post(urlPathEqualTo("/pet"))
+                    .withHeader("Content-Type", equalTo("application/json"))
+                    .withRequestBody(
+                        equalToJson(
+                            """
+                            {
+                              "id": 2,
+                              "name": "Kitty",
+                              "photoUrls": ["photo"],
+                              "status": "available"
+                            }
+                            """.trimIndent(),
+                        ),
+                    ).willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(
+                                """
+                                {
+                                  "id": 2,
+                                  "name": "Kitty",
+                                  "photoUrls": ["photo"],
+                                  "status": "available"
+                                }
+                                """.trimIndent(),
+                            ),
+                    ),
+            )
+
+            val result =
+                api.createPet(
+                    e2e.petstore3.client.ktor.generated.model.Pet(
+                        id = 2,
+                        name = "Kitty",
+                        photoUrls = listOf("photo"),
+                        status = "available",
+                    ),
+                )
+
+            assertEquals(2L, result.id)
+            assertEquals("Kitty", result.name)
+        }
+
+    @Test
+    fun `createUploadImage sends octet stream content type for binary request body`() =
+        runBlocking {
+            server.stubFor(
+                post(urlPathEqualTo("/pet/7/uploadImage"))
+                    .withHeader("Content-Type", equalTo("application/octet-stream"))
+                    .willReturn(
+                        aResponse()
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("""{"code":200,"type":"success","message":"ok"}"""),
+                    ),
+            )
+
+            val result = api.createUploadImage(7, additionalMetadata = null, body = byteArrayOf(1, 2, 3))
+
+            assertEquals(200, result.code)
+            assertEquals("ok", result.message)
         }
 }

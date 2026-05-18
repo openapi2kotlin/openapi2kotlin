@@ -31,6 +31,7 @@ data class RawPathDO(
     data class RequestBodyDO(
         val required: Boolean,
         val type: RawSchemaDO.RawFieldTypeDO,
+        val mediaType: String?,
     )
 
     data class ResponseDO(
