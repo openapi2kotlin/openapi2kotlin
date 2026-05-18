@@ -8,6 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     permissions:
       contents: read
@@ -42,6 +43,8 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+          # Maven Central can stay in PUBLISHING for longer than the plugin default 900s.
+          ORG_GRADLE_PROJECT_SONATYPE_CLOSE_TIMEOUT_SECONDS: "3600"
         run: |
           ./gradlew --no-daemon \
             -PreleaseVersion=${{ steps.ver.outputs.version }} \
