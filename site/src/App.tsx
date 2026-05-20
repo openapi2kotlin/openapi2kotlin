@@ -1,7 +1,7 @@
 import "./App.css";
 import {useEffect, useLayoutEffect, useMemo, useState} from "react";
 import {H2, Text, Theme, XStack, YStack} from "tamagui";
-import {AlertTriangle, ExternalLink} from "lucide-react";
+import {ExternalLink} from "lucide-react";
 import DockNav from "./components/DockNav";
 import CodeBlock from "./components/CodeBlock";
 import {AmbientBackground} from "./components/AmbientBackground.tsx";
@@ -14,8 +14,9 @@ import SegmentedControl from "./components/SegmentedControl.tsx";
 import PillLink from "./components/PillLink.tsx";
 import Footer from "./components/Footer.tsx";
 import {VERSION_DOCS_BY_VERSION, VERSION_DOCS_LIST} from "./service/version-docs-registry";
-import {Link as RouterLink, useLocation, useNavigate, useParams} from "react-router-dom";
-import InlineCopyLinkButton from "./components/InlineCopyLinkButton.tsx";
+import {useLocation, useNavigate, useParams} from "react-router-dom";
+import LlmsBanner from "./components/LlmsBanner.tsx";
+import OutdatedVersionBanner from "./components/OutdatedVersionBanner.tsx";
 
 type ApiTarget = "Client" | "Server";
 
@@ -294,28 +295,15 @@ ${apiSnippet.trimEnd()}
             <YStack gap="$3" position="relative">
               <H2 id="installation">Installation</H2>
 
+                {selectedVersion !== latestVersion ? (
+                    <Theme name="yellow">
+                        <OutdatedVersionBanner />
+                    </Theme>
+                ) : null}
+
               <Text fontSize="$6" color="$color11" opacity={0.85} mb="$3">
                 Choose which client or server you’d like to generate, then copy the snippets below.
               </Text>
-
-              {selectedVersion !== latestVersion ? (
-                  <Theme name="yellow">
-                    <YStack bg="$color2" borderWidth={1} borderColor="$color6" rounded="$5" px="$4" py="$3" mt="$3" mb="$3">
-                      <XStack items="flex-start" gap="$2">
-                        <YStack pt={2}>
-                          <AlertTriangle size={14} />
-                        </YStack>
-                        <Text color="$color12" fontSize="$3" lineHeight="$3">
-                          You are viewing an older version of the documentation. For the latest features and updates, see the current version{" "}
-                          <Text asChild color="$color12" textDecorationLine="underline" fontWeight="700">
-                            <RouterLink to="/">here</RouterLink>
-                          </Text>
-                          .
-                        </Text>
-                      </XStack>
-                    </YStack>
-                  </Theme>
-              ) : null}
 
               <YStack gap="$4">
                 <Theme name="pink">
@@ -371,19 +359,7 @@ ${apiSnippet.trimEnd()}
               </YStack>
             </YStack>
 
-            <YStack gap="$3" position="relative" mt="$12">
-              <H2 id="llms">AI / LLMs</H2>
-
-              <Text fontSize="$6" color="$color11" opacity={0.85} mb="$2">
-                If you're using openapi2kotlin in your project and want to give an agent or LLM the right context, point it at{" "}
-                <InlineCopyLinkButton
-                  href={currentLlmsHref}
-                  label="llms.txt"
-                />{" "}
-                for the machine-friendly documentation.
-              </Text>
-            </YStack>
-
+            <LlmsBanner currentLlmsHref={currentLlmsHref} />
 
             <H2 id="under-the-hood" mt="$15" mb="$3">Under the Hood</H2>
             <YStack gap="$3" mb="$8">
