@@ -27,29 +27,59 @@ internal fun List<ModelDO>.handleFields(cfg: OpenApi2KotlinUseCase.ModelConfig) 
     val byNameAfter = associateBy { it.rawSchema.originalName }
 
     forEach { component ->
-        val parentName =
-            when (val shape = component.modelShape) {
-                is ModelShapeDO.DataClass -> shape.extend
-                is ModelShapeDO.EmptyClass -> shape.extend
-                is ModelShapeDO.OpenClass -> shape.extend
-                else -> null
-            } ?: return@forEach
-
-        val parent = byNameAfter[parentName] ?: return@forEach
+        val parents = component.resolveFieldParents(byNameAfter)
+        if (parents.isEmpty()) return@forEach
 
         component.fields =
             component.fields
                 .map { field ->
-                    val parentField = parent.fields.firstOrNull { it.generatedName == field.generatedName }
+                    val parentField = parents.firstNotNullOfOrNull { parent ->
+                        parent.fields.firstOrNull { it.generatedName == field.generatedName }
+                    }
 
                     val parentRequired = parentField?.required ?: false
                     val finalRequired = parentRequired || field.required
                     val finalType = field.type.withNullability(nullable = !finalRequired)
 
                     // requiredness pass must not rewrite docs; docs were resolved in the first pass
-                    field.copy(type = finalType, required = finalRequired)
+                    field.copy(
+                        overridden = field.overridden || parentField != null,
+                        type = finalType,
+                        required = finalRequired,
+                    )
                 }.toMutableList()
     }
+}
+
+private fun ModelDO.resolveFieldParents(byName: Map<String, ModelDO>): List<ModelDO> {
+    val parentNames =
+        buildList {
+            when (val shape = modelShape) {
+                is ModelShapeDO.DataClass -> {
+                    shape.extend?.let(::add)
+                    addAll(shape.implements)
+                }
+
+                is ModelShapeDO.EmptyClass -> {
+                    shape.extend?.let(::add)
+                    addAll(shape.implements)
+                }
+
+                is ModelShapeDO.OpenClass -> {
+                    shape.extend?.let(::add)
+                    addAll(shape.implements)
+                }
+
+                is ModelShapeDO.SealedInterface -> addAll(shape.extends)
+
+                is ModelShapeDO.EnumClass,
+                is ModelShapeDO.TypeAlias,
+                is ModelShapeDO.Undecided,
+                -> Unit
+            }
+        }
+
+    return parentNames.mapNotNull(byName::get)
 }
 
 private fun ModelDO.resolveParentPropertySchemas(

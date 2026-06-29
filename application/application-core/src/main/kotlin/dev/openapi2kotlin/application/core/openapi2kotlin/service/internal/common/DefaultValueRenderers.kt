@@ -12,7 +12,13 @@ internal fun renderDefaultForFinalType(
     when (finalType) {
         is TrivialTypeDO -> renderTrivialDefault(finalType.kind, rawDefault)
         is RefTypeDO -> rawDefault
-        is ListTypeDO -> rawDefault
+        is ListTypeDO -> renderListDefault(rawDefault)
+    }
+
+private fun renderListDefault(rawDefault: String): String =
+    when (rawDefault.trim()) {
+        "[]" -> "emptyList()"
+        else -> rawDefault
     }
 
 private fun renderTrivialDefault(
