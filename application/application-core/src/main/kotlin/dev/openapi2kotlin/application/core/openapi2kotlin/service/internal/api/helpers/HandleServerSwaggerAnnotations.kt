@@ -131,6 +131,7 @@ private fun buildContentCode(
     when (type) {
         is RawSchemaDO.RawRefTypeDO -> buildRefContentCode(type.schemaName, ctx)
         is RawSchemaDO.RawArrayTypeDO -> buildArrayContentCode(type, ctx)
+        is RawSchemaDO.RawMapTypeDO -> buildMapContentCode(type, ctx)
         is RawSchemaDO.RawPrimitiveTypeDO -> null
     }
 
@@ -152,6 +153,18 @@ private fun buildArrayContentCode(
     return model?.let {
         val fqcn = "${it.packageName}.${it.generatedName}"
         "$CONTENT(array = $ARRAY_SCHEMA(schema = $SCHEMA(implementation = $fqcn::class)))"
+    }
+}
+
+private fun buildMapContentCode(
+    type: RawSchemaDO.RawMapTypeDO,
+    ctx: ApisContext,
+): String? {
+    val value = type.valueType as? RawSchemaDO.RawRefTypeDO
+    val model = value?.let { ctx.modelsBySchemaName[it.schemaName] }
+    return model?.let {
+        val fqcn = "${it.packageName}.${it.generatedName}"
+        "$CONTENT(schema = $SCHEMA(additionalPropertiesSchema = $fqcn::class))"
     }
 }
 

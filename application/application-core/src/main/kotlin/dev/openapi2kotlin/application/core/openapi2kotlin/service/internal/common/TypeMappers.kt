@@ -2,6 +2,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.comm
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
@@ -12,6 +13,7 @@ internal fun FieldTypeDO.withNullability(nullable: Boolean): FieldTypeDO =
         is TrivialTypeDO -> copy(nullable = nullable)
         is RefTypeDO -> copy(nullable = nullable)
         is ListTypeDO -> copy(nullable = nullable)
+        is MapTypeDO -> copy(nullable = nullable)
     }
 
 internal fun RawSchemaDO.RawFieldTypeDO.toFinalType(cfg: OpenApi2KotlinUseCase.ModelConfig): FieldTypeDO =
@@ -23,6 +25,13 @@ internal fun RawSchemaDO.RawFieldTypeDO.toFinalType(cfg: OpenApi2KotlinUseCase.M
         is RawSchemaDO.RawArrayTypeDO -> {
             ListTypeDO(
                 elementType = elementType.toFinalType(cfg),
+                nullable = nullable,
+            )
+        }
+
+        is RawSchemaDO.RawMapTypeDO -> {
+            MapTypeDO(
+                valueType = valueType.toFinalType(cfg),
                 nullable = nullable,
             )
         }

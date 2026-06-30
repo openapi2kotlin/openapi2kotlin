@@ -68,6 +68,7 @@ open class OpenApi2KotlinExtension {
 
         return OpenApi2KotlinUseCase.ModelConfig(
             packageName = model.packageName,
+            classNameSuffix = model.classNameSuffix,
             serialization = effectiveSerialization,
             validation = effectiveValidation,
             double2BigDecimal = model.double2BigDecimal,
@@ -102,6 +103,13 @@ open class OpenApi2KotlinExtension {
          * default: "dev.openapi2kotlin.model"
          */
         var packageName: String = DEFAULT_MODEL_PACKAGE_NAME
+
+        /**
+         * description: Suffix appended to every generated model class/interface/enum name.
+         * default: ""
+         * example: "Dto"
+         */
+        var classNameSuffix: String = ""
 
         /**
          * description: Serialization annotation family for generated model classes.

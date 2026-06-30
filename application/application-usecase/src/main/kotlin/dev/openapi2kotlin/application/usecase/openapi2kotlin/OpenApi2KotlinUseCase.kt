@@ -14,6 +14,7 @@ fun interface OpenApi2KotlinUseCase {
 
     data class ModelConfig(
         val packageName: String,
+        val classNameSuffix: String = "",
         val serialization: Serialization? = null,
         val validation: Validation? = null,
         val double2BigDecimal: Boolean,

@@ -69,10 +69,25 @@ components:
             type: string
         product:
           $ref: "#/components/schemas/Product"
+        action:
+          allOf:
+            - $ref: "#/components/schemas/ItemAction"
+        style:
+          anyOf:
+            - $ref: "#/components/schemas/WidgetStyle"
+        display:
+          type: string
+          enum:
+            - compact
+            - expanded
         optionalNote:
           type:
             - string
             - "null"
+        slots:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Layout"
     TranslationResponse:
       type: object
       required:
@@ -86,4 +101,15 @@ components:
         - id
       properties:
         id:
+          type: string
+    ItemAction:
+      type: object
+    WidgetStyle:
+      type: object
+    Layout:
+      type: object
+      required:
+        - type
+      properties:
+        type:
           type: string

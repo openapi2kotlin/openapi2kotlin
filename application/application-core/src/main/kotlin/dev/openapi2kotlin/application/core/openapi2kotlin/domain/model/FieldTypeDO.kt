@@ -35,3 +35,8 @@ data class ListTypeDO(
     val elementType: FieldTypeDO,
     override val nullable: Boolean,
 ) : FieldTypeDO
+
+data class MapTypeDO(
+    val valueType: FieldTypeDO,
+    override val nullable: Boolean,
+) : FieldTypeDO

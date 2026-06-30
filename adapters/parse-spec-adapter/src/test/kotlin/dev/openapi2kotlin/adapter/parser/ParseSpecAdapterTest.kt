@@ -40,11 +40,32 @@ class ParseSpecAdapterTest {
         assertEquals("Product", productType.schemaName)
         assertEquals(false, productType.nullable)
 
+        val actionType = assertIs<RawSchemaDO.RawRefTypeDO>(properties.getValue("action").type)
+        assertEquals("ItemAction", actionType.schemaName)
+        assertEquals(true, actionType.nullable)
+
+        val styleType = assertIs<RawSchemaDO.RawRefTypeDO>(properties.getValue("style").type)
+        assertEquals("WidgetStyle", styleType.schemaName)
+        assertEquals(true, styleType.nullable)
+
+        val displayType = assertIs<RawSchemaDO.RawRefTypeDO>(properties.getValue("display").type)
+        assertEquals("TranslationRequestDisplay", displayType.schemaName)
+        assertEquals(true, displayType.nullable)
+
+        val slotsType = assertIs<RawSchemaDO.RawMapTypeDO>(properties.getValue("slots").type)
+        assertEquals(true, slotsType.nullable)
+        val slotValueType = assertIs<RawSchemaDO.RawRefTypeDO>(slotsType.valueType)
+        assertEquals("Layout", slotValueType.schemaName)
+        assertEquals(false, slotValueType.nullable)
+
         assertPrimitive(
             properties.getValue("optionalNote").type,
             RawSchemaDO.RawPrimitiveTypeDO.Type.STRING,
             nullable = true,
         )
+
+        val displayEnum = result.rawSchemas.single { it.originalName == "TranslationRequestDisplay" }
+        assertEquals(listOf("compact", "expanded"), displayEnum.enumValues)
     }
 
     @Test

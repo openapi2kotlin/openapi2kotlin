@@ -2,6 +2,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.comm
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 
@@ -13,11 +14,18 @@ internal fun renderDefaultForFinalType(
         is TrivialTypeDO -> renderTrivialDefault(finalType.kind, rawDefault)
         is RefTypeDO -> rawDefault
         is ListTypeDO -> renderListDefault(rawDefault)
+        is MapTypeDO -> renderMapDefault(rawDefault)
     }
 
 private fun renderListDefault(rawDefault: String): String =
     when (rawDefault.trim()) {
         "[]" -> "emptyList()"
+        else -> rawDefault
+    }
+
+private fun renderMapDefault(rawDefault: String): String =
+    when (rawDefault.trim()) {
+        "{}" -> "emptyMap()"
         else -> rawDefault
     }
 

@@ -14,7 +14,7 @@ internal fun List<ModelDO>.handleDefaultValues(cfg: OpenApi2KotlinUseCase.ModelC
 
 internal fun ModelDO.findNearestDiscriminatorParent(bySchemaName: Map<String, ModelDO>): ModelDO? {
     val visited = mutableSetOf<String>()
-    val queue = ArrayDeque(rawSchema.allOfParents)
+    val queue = ArrayDeque(rawSchema.allOfParents + parentOneOf)
 
     while (queue.isNotEmpty()) {
         val parentName = queue.removeFirst()
@@ -69,8 +69,14 @@ private fun ModelDO.applyDiscriminatorDefault(bySchemaName: Map<String, ModelDO>
 private fun ModelDO.discriminatorName(parentWithDisc: ModelDO?): String? =
     rawSchema.discriminatorPropertyName ?: parentWithDisc?.rawSchema?.discriminatorPropertyName
 
-private fun ModelDO.discriminatorValue(parentWithDisc: ModelDO?): String =
+internal fun ModelDO.discriminatorValue(parentWithDisc: ModelDO?): String =
     selfDiscriminatorValueFromOwnMapping()
+        ?: parentWithDisc
+            ?.rawSchema
+            ?.discriminatorMapping
+            ?.entries
+            ?.firstOrNull { (_, ref) -> ref.substringAfterLast('/') == rawSchema.originalName }
+            ?.key
         ?: parentWithDisc
             ?.polymorphism
             ?.schemaNameToDiscriminatorValue

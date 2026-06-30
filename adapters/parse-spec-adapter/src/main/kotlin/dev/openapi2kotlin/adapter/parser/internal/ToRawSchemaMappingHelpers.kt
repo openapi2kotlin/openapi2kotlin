@@ -38,6 +38,7 @@ internal fun OpenAPI.collectUsedInPathsNames(): Set<String> =
 internal fun Map.Entry<String, Schema<*>>.toRawSchema(
     usedAsPropertyNames: Set<String>,
     usedInPathsNames: Set<String>,
+    inlineEnumNames: Map<String, String> = emptyMap(),
 ): RawSchemaDO {
     val name = key
     val schema = value
@@ -51,7 +52,7 @@ internal fun Map.Entry<String, Schema<*>>.toRawSchema(
         isArraySchema = schema.type == "array",
         arrayItemType = schema.arrayItemType(),
         constraints = schemaToConstraints(schema),
-        ownProperties = schema.collectOwnProperties(),
+        ownProperties = schema.collectOwnProperties(inlineEnumNames),
         discriminatorPropertyName = schema.discriminator?.propertyName,
         discriminatorMapping = discriminatorMapping,
         isDiscriminatorSelfMapped =
@@ -64,21 +65,30 @@ internal fun Map.Entry<String, Schema<*>>.toRawSchema(
     )
 }
 
-private fun Schema<*>.collectOwnProperties(): MutableMap<String, RawSchemaDO.SchemaPropertyDO> {
+private fun Schema<*>.collectOwnProperties(
+    inlineEnumNames: Map<String, String>,
+): MutableMap<String, RawSchemaDO.SchemaPropertyDO> {
     val ownProps = mutableMapOf<String, RawSchemaDO.SchemaPropertyDO>()
-    mergePropertiesInto(ownProps)
+    mergePropertiesInto(ownProps, inlineEnumNames)
     allOf
         ?.filter { it.`$ref` == null }
-        ?.forEach { inlineSchema -> inlineSchema.mergePropertiesInto(ownProps) }
+        ?.forEach { inlineSchema -> inlineSchema.mergePropertiesInto(ownProps, inlineEnumNames) }
     return ownProps
 }
 
-private fun Schema<*>.mergePropertiesInto(target: MutableMap<String, RawSchemaDO.SchemaPropertyDO>) {
+private fun Schema<*>.mergePropertiesInto(
+    target: MutableMap<String, RawSchemaDO.SchemaPropertyDO>,
+    inlineEnumNames: Map<String, String>,
+) {
     val requiredNames = required?.toSet().orEmpty()
     properties.orEmpty().forEach { (propName, propSchema) ->
         target.merge(
             propName,
-            propSchema.toSchemaProperty(propName, propName in requiredNames),
+            propSchema.toSchemaProperty(
+                propName = propName,
+                required = propName in requiredNames,
+                inlineEnumName = inlineEnumNames[propName],
+            ),
             ::mergeSchemaProperty,
         )
     }
@@ -87,10 +97,14 @@ private fun Schema<*>.mergePropertiesInto(target: MutableMap<String, RawSchemaDO
 private fun Schema<*>.toSchemaProperty(
     propName: String,
     required: Boolean,
+    inlineEnumName: String? = null,
 ): RawSchemaDO.SchemaPropertyDO =
     RawSchemaDO.SchemaPropertyDO(
         name = propName,
-        type = schemaToRawTypeForProperty(this, required),
+        type =
+            inlineEnumName
+                ?.let { RawSchemaDO.RawRefTypeDO(schemaName = it, nullable = isNullable(required)) }
+                ?: schemaToRawTypeForProperty(this, required),
         required = required,
         defaultValue = default?.toString(),
         description = description,

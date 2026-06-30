@@ -3,6 +3,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.mode
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.EnumValueDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
@@ -25,6 +26,10 @@ private fun RawSchemaDO.RawFieldTypeDO.toFieldTypeDO(): FieldTypeDO =
 
         is RawSchemaDO.RawArrayTypeDO -> {
             ListTypeDO(elementType = elementType.toFieldTypeDO(), nullable = nullable)
+        }
+
+        is RawSchemaDO.RawMapTypeDO -> {
+            MapTypeDO(valueType = valueType.toFieldTypeDO(), nullable = nullable)
         }
 
         is RawSchemaDO.RawPrimitiveTypeDO -> {

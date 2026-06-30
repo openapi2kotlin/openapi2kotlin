@@ -145,6 +145,11 @@ data class RawSchemaDO(
         val elementConstraints: ConstraintsDO = ConstraintsDO(),
     ) : RawFieldTypeDO
 
+    data class RawMapTypeDO(
+        val valueType: RawFieldTypeDO,
+        override val nullable: Boolean,
+    ) : RawFieldTypeDO
+
     data class RawPrimitiveTypeDO(
         val type: Type,
         val format: String? = null,

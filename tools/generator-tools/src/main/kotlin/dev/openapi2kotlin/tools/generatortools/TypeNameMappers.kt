@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
@@ -18,6 +19,7 @@ private val BOOLEAN = ClassName("kotlin", "Boolean")
 private val ANY = ClassName("kotlin", "Any")
 private val BYTE_ARRAY = ClassName("kotlin", "ByteArray")
 private val LIST = ClassName("kotlin.collections", "List")
+private val MAP = ClassName("kotlin.collections", "Map")
 private val JSON_ELEMENT = ClassName("kotlinx.serialization.json", "JsonElement")
 
 private val BIG_DECIMAL = ClassName("java.math", "BigDecimal")
@@ -58,6 +60,7 @@ fun FieldTypeDO.toTypeName(ctx: TypeNameContext): TypeName =
         is TrivialTypeDO -> kind.typeName().copy(nullable = nullable)
         is RefTypeDO -> resolveRefTypeName(ctx)
         is ListTypeDO -> LIST.parameterizedBy(elementType.toTypeName(ctx)).copy(nullable = nullable)
+        is MapTypeDO -> MAP.parameterizedBy(STRING, valueType.toTypeName(ctx)).copy(nullable = nullable)
     }
 
 private fun RefTypeDO.resolveRefTypeName(ctx: TypeNameContext): TypeName {

@@ -184,6 +184,12 @@ private fun Schema<*>?.toRawFieldType(required: Boolean): RawSchemaDO.RawFieldTy
                 nullable = nullable,
             )
 
+        additionalProperties is Schema<*> ->
+            RawSchemaDO.RawMapTypeDO(
+                valueType = (additionalProperties as Schema<*>).toRawFieldType(required = true),
+                nullable = nullable,
+            )
+
         else ->
             RawSchemaDO.RawPrimitiveTypeDO(
                 type = effectiveType.toPrimitiveType(),

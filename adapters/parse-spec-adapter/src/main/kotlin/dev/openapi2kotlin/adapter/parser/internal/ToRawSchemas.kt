@@ -3,6 +3,7 @@ package dev.openapi2kotlin.adapter.parser.internal
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawArrayTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawFieldTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawMapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawPrimitiveTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawRefTypeDO
 import io.swagger.v3.oas.models.OpenAPI
@@ -14,14 +15,20 @@ internal fun OpenAPI.toRawSchemas(): List<RawSchemaDO> {
     val schemas: Map<String, Schema<*>> = components?.schemas.orEmpty()
     val usedAsPropertyNames = schemas.collectUsedAsPropertyNames()
     val usedInPathsNames = collectUsedInPathsNames()
+    val inlineEnums = schemas.collectInlineEnumSchemas()
 
-    return schemas.entries
-        .map { entry ->
+    return (
+        schemas.entries.map { entry ->
             entry.toRawSchema(
                 usedAsPropertyNames = usedAsPropertyNames,
                 usedInPathsNames = usedInPathsNames,
+                inlineEnumNames =
+                    inlineEnums
+                        .filter { it.ownerSchemaName == entry.key }
+                        .associate { it.propertyName to it.schemaName },
             )
-        }.sortedBy { it.originalName }
+        } + inlineEnums.map { it.toRawSchema() }
+    ).sortedBy { it.originalName }
 }
 
 internal fun schemaToRawTypeForProperty(
@@ -32,7 +39,7 @@ internal fun schemaToRawTypeForProperty(
 
     val effectiveType = schema.effectiveType()
     val nullable = schema.isNullable(required)
-    val refName = schema.`$ref`?.substringAfterLast('/')
+    val refName = schema.`$ref`?.substringAfterLast('/') ?: schema.singleComposedRefName()
 
     return when {
         schema.isArraySchemaLike(effectiveType) ->
@@ -45,6 +52,12 @@ internal fun schemaToRawTypeForProperty(
         refName != null ->
             RawRefTypeDO(
                 schemaName = refName,
+                nullable = nullable,
+            )
+
+        schema.additionalProperties is Schema<*> ->
+            RawMapTypeDO(
+                valueType = schemaToRawTypeForProperty(schema.additionalProperties as Schema<*>, required = true),
                 nullable = nullable,
             )
 
@@ -126,3 +139,76 @@ internal fun Schema<*>.isNullable(required: Boolean): Boolean =
 
 internal fun Schema<*>.isArraySchemaLike(effectiveType: String? = effectiveType()): Boolean =
     this is ArraySchema || effectiveType == "array"
+
+private data class InlineEnumSchema(
+    val ownerSchemaName: String,
+    val propertyName: String,
+    val schemaName: String,
+    val values: List<String>,
+    val description: String?,
+)
+
+private fun Map<String, Schema<*>>.collectInlineEnumSchemas(): List<InlineEnumSchema> {
+    val existingSchemaNames = keys
+
+    return flatMap { (ownerName, ownerSchema) ->
+        ownerSchema.properties.orEmpty().mapNotNull { (propertyName, propertySchema) ->
+            val values = propertySchema.enum?.map { it.toString() }.orEmpty()
+            val discriminatorPropertyName = ownerSchema.discriminator?.propertyName
+            if (values.isEmpty() || propertyName == discriminatorPropertyName) return@mapNotNull null
+
+            val preferredName = ownerName.inlineEnumOwnerName() + propertyName.toPascalCase()
+            val schemaName =
+                preferredName.takeUnless { it in existingSchemaNames }
+                    ?: ownerName + propertyName.toPascalCase()
+
+            InlineEnumSchema(
+                ownerSchemaName = ownerName,
+                propertyName = propertyName,
+                schemaName = schemaName,
+                values = values,
+                description = propertySchema.description,
+            )
+        }
+    }
+}
+
+private fun InlineEnumSchema.toRawSchema(): RawSchemaDO =
+    RawSchemaDO(
+        originalName = schemaName,
+        allOfParents = emptyList(),
+        oneOfChildren = emptyList(),
+        enumValues = values,
+        constraints = RawSchemaDO.ConstraintsDO(),
+        ownProperties = emptyMap(),
+        discriminatorPropertyName = null,
+        discriminatorMapping = emptyMap(),
+        isDiscriminatorSelfMapped = false,
+        usedInPaths = false,
+        usedAsProperty = true,
+        description = description,
+    )
+
+private fun String.inlineEnumOwnerName(): String =
+    removeSuffix("Widget")
+        .removeSuffix("Dto")
+
+private fun String.toPascalCase(): String =
+    split(Regex("[^A-Za-z0-9]+"))
+        .filter { it.isNotBlank() }
+        .joinToString("") { token ->
+            token.replaceFirstChar { char ->
+                if (char.isLowerCase()) char.titlecase() else char.toString()
+            }
+        }
+
+private fun Schema<*>.singleComposedRefName(): String? =
+    singleComposedRef()
+        ?.`$ref`
+        ?.substringAfterLast('/')
+
+private fun Schema<*>.singleComposedRef(): Schema<*>? {
+    val children = allOf ?: anyOf ?: oneOf ?: return null
+    return children.singleOrNull { it.`$ref` != null }
+        ?.takeIf { children.size == 1 }
+}

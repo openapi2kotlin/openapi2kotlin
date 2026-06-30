@@ -32,7 +32,7 @@ internal fun prepareModels(
                         basePackage = config.model.packageName,
                         originalSchemaName = it.originalName,
                     ),
-                generatedName = cleanSchemaNameHandler(it.originalName),
+                generatedName = cleanSchemaNameHandler(it.originalName) + config.model.classNameSuffix,
             )
         }
 

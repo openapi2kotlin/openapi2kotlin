@@ -11,6 +11,8 @@ private const val SERIAL_NAME = "kotlinx.serialization.SerialName"
 internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.ModelConfig) {
     if (cfg.serialization != OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX) return
 
+    val bySchemaName: Map<String, ModelDO> = associateBy { it.rawSchema.originalName }
+
     if (cfg.kotlinxSerializable) {
         forEach { model ->
             model.annotations +=
@@ -19,6 +21,8 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
                 )
         }
     }
+
+    applyKotlinxPolymorphicSerialNames(bySchemaName)
 
     forEach { model ->
         model.fields =
@@ -35,6 +39,20 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
                         )
                     }
                 }.toMutableList()
+    }
+}
+
+private fun List<ModelDO>.applyKotlinxPolymorphicSerialNames(bySchemaName: Map<String, ModelDO>) {
+    forEach { model ->
+        val parentWithDisc = model.findNearestDiscriminatorParent(bySchemaName) ?: return@forEach
+        val discriminatorValue = model.discriminatorValue(parentWithDisc)
+        if (discriminatorValue == model.rawSchema.originalName) return@forEach
+
+        model.annotations +=
+            ModelAnnotationDO(
+                fqName = SERIAL_NAME,
+                argsCode = listOf("\"$discriminatorValue\""),
+            )
     }
 }
 

@@ -3,6 +3,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.mode
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
@@ -19,7 +20,7 @@ internal fun List<ModelDO>.handleFields(cfg: OpenApi2KotlinUseCase.ModelConfig) 
         component.kdoc = component.rawSchema.description
         val parentPropSchemas = component.resolveParentPropertySchemas(byName, cfg)
         val fields = parentPropSchemas.toInheritedFields()
-        component.mergeOwnPropertyFields(fields, parentPropSchemas, cfg)
+        component.mergeOwnPropertyFields(fields, parentPropSchemas, cfg, byName)
         component.prependDiscriminatorFieldIfMissing(fields)
         component.fields = fields.toMutableList()
     }
@@ -33,9 +34,10 @@ internal fun List<ModelDO>.handleFields(cfg: OpenApi2KotlinUseCase.ModelConfig) 
         component.fields =
             component.fields
                 .map { field ->
-                    val parentField = parents.firstNotNullOfOrNull { parent ->
-                        parent.fields.firstOrNull { it.generatedName == field.generatedName }
-                    }
+                    val parentField =
+                        parents.firstNotNullOfOrNull { parent ->
+                            parent.fields.firstOrNull { it.generatedName == field.generatedName }
+                        }
 
                     val parentRequired = parentField?.required ?: false
                     val finalRequired = parentRequired || field.required
@@ -49,6 +51,21 @@ internal fun List<ModelDO>.handleFields(cfg: OpenApi2KotlinUseCase.ModelConfig) 
                     )
                 }.toMutableList()
     }
+
+    if (cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX) {
+        forEach { component ->
+            component.removeKotlinxPolymorphicDiscriminatorField(byNameAfter)
+        }
+    }
+}
+
+private fun ModelDO.removeKotlinxPolymorphicDiscriminatorField(byName: Map<String, ModelDO>) {
+    val discriminatorName =
+        rawSchema.discriminatorPropertyName
+            ?: findNearestDiscriminatorParent(byName)?.rawSchema?.discriminatorPropertyName
+            ?: return
+
+    fields = fields.filterNot { it.originalName == discriminatorName }.toMutableList()
 }
 
 private fun ModelDO.resolveFieldParents(byName: Map<String, ModelDO>): List<ModelDO> {
@@ -115,13 +132,14 @@ private fun ModelDO.mergeOwnPropertyFields(
     fields: MutableList<FieldDO>,
     parentPropSchemas: Map<String, PropInfo>,
     cfg: OpenApi2KotlinUseCase.ModelConfig,
+    byName: Map<String, ModelDO>,
 ) {
     rawSchema.ownProperties.forEach { (propName, prop) ->
         val ownInfo =
             PropInfo(
                 type = prop.type.toFinalType(cfg),
                 required = prop.required,
-                defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it) },
+                defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it, byName) },
                 kdoc = prop.description,
             )
         val mergedField = createMergedField(propName, ownInfo, parentPropSchemas[propName])
@@ -197,6 +215,10 @@ private fun FieldTypeDO.canBeOverriddenBy(child: FieldTypeDO): Boolean =
         is ListTypeDO -> {
             child is ListTypeDO && elementType.canBeOverriddenBy(child.elementType)
         }
+
+        is MapTypeDO -> {
+            child is MapTypeDO && valueType.canBeOverriddenBy(child.valueType)
+        }
     }
 
 private data class PropInfo(
@@ -221,7 +243,7 @@ private fun collectAllPropertiesFromSchema(
             PropInfo(
                 type = prop.type.toFinalType(cfg),
                 required = prop.required,
-                defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it) },
+                defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it, schemas) },
                 kdoc = prop.description,
             )
         into.merge(prop.name, info) { a, b ->
@@ -239,3 +261,24 @@ private fun collectAllPropertiesFromSchema(
         collectAllPropertiesFromSchema(parentName, schemas, into, visited, cfg)
     }
 }
+
+private fun renderDefault(
+    rawType: dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawFieldTypeDO,
+    cfg: OpenApi2KotlinUseCase.ModelConfig,
+    rawDefault: String,
+    schemas: Map<String, ModelDO>,
+): String =
+    when (rawType) {
+        is dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO.RawRefTypeDO -> {
+            val enumModel = schemas[rawType.schemaName]
+            val enumShape = enumModel?.modelShape as? ModelShapeDO.EnumClass
+            val enumValue = enumShape?.values?.firstOrNull { it.originalValue == rawDefault }
+            if (enumValue != null) {
+                "${enumModel.generatedName}.${enumValue.generatedValue}"
+            } else {
+                renderDefault(rawType, cfg, rawDefault)
+            }
+        }
+
+        else -> renderDefault(rawType, cfg, rawDefault)
+    }

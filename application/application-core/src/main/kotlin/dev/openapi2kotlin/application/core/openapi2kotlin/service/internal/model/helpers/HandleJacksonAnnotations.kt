@@ -2,6 +2,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.mode
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
@@ -165,6 +166,13 @@ private fun FieldDO.findWrapperSchemaNameReferenced(wrapperSchemaNames: Set<Stri
         is ListTypeDO -> {
             when (val e = t.elementType) {
                 is RefTypeDO -> e.schemaName.takeIf { it in wrapperSchemaNames }
+                else -> null
+            }
+        }
+
+        is MapTypeDO -> {
+            when (val v = t.valueType) {
+                is RefTypeDO -> v.schemaName.takeIf { it in wrapperSchemaNames }
                 else -> null
             }
         }

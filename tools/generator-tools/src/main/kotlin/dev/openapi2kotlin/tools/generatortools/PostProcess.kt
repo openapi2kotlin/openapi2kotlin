@@ -13,6 +13,7 @@ fun File.postProcess() {
                     .replace("public ", "")
                     // KotlinPoet escapes this package segment; we prefer the normal form.
                     .replace(".`annotation`.", ".annotation.")
+                    .removeRedundantIdentifierBackticks()
                     // KotlinPoet emits invalid bare imports for aliased annotation symbols in the default package.
                     .replace(Regex("""(?m)^import\s+[A-Z][A-Za-z0-9_]*\s*$\n?"""), ""),
             )
@@ -22,6 +23,51 @@ fun File.postProcess() {
             )
         }
 }
+
+private fun String.removeRedundantIdentifierBackticks(): String =
+    lineSequence()
+        .joinToString("\n") { line ->
+            if (line.trimStart().startsWith("*")) {
+                line
+            } else {
+                line.replace(Regex("""`([A-Za-z_][A-Za-z0-9_]*)`""")) { match ->
+                    val identifier = match.groupValues[1]
+                    if (identifier in KOTLIN_KEYWORDS) match.value else identifier
+                }
+            }
+        }
+
+private val KOTLIN_KEYWORDS =
+    setOf(
+        "as",
+        "break",
+        "class",
+        "continue",
+        "do",
+        "else",
+        "false",
+        "for",
+        "fun",
+        "if",
+        "in",
+        "interface",
+        "is",
+        "null",
+        "object",
+        "package",
+        "return",
+        "super",
+        "this",
+        "throw",
+        "true",
+        "try",
+        "typealias",
+        "typeof",
+        "val",
+        "var",
+        "when",
+        "while",
+    )
 
 private fun String.withSortedImports(): String {
     val lines = lines()

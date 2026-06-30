@@ -2,6 +2,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.mode
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
@@ -35,10 +36,20 @@ internal fun shouldAddValidForList(
         bySchemaName[elementType.schemaName]?.rawSchema?.enumValues?.isEmpty() != false
 }
 
+internal fun shouldAddValidForMap(
+    mapType: MapTypeDO,
+    bySchemaName: Map<String, ModelDO>,
+): Boolean {
+    val valueType = mapType.valueType as? RefTypeDO
+    return valueType != null &&
+        bySchemaName[valueType.schemaName]?.rawSchema?.enumValues?.isEmpty() != false
+}
+
 internal fun FieldDO.shouldAddValid(bySchemaName: Map<String, ModelDO>): Boolean =
     when (val currentType = type) {
         is RefTypeDO -> bySchemaName[currentType.schemaName]?.rawSchema?.enumValues?.isEmpty() != false
         is ListTypeDO -> shouldAddValidForList(currentType, bySchemaName)
+        is MapTypeDO -> shouldAddValidForMap(currentType, bySchemaName)
         else -> false
     }
 
