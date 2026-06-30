@@ -11,7 +11,7 @@ set -euo pipefail
 #       openapi2kotlin = "x.y.z" (inside the TOML snippet under libs.versions.toml)
 #   - Commits documentation changes, including generated llms.txt files
 #   - Creates annotated git tag vX.Y.Z
-#   - Pushes commit and tag to origin
+#   - Pushes commit and tag to origin without running git hooks
 
 VERSION="${1:-}"
 
@@ -109,11 +109,11 @@ git --no-pager diff -- "${SITE_ENV}" "${README}" "./site/docs" "./site/public/ll
 echo
 
 git add "${SITE_ENV}" "${README}" "./site/docs" "./site/public/llms.txt" "./site/public"
-git commit -m "chore(release): ${TAG}"
+git commit --no-verify -m "chore(release): ${TAG}"
 
 git tag -a "${TAG}" -m "${TAG}"
 
-git push origin HEAD
-git push origin "${TAG}"
+git push --no-verify origin HEAD
+git push --no-verify origin "${TAG}"
 
 echo "Release ${TAG} completed successfully."
