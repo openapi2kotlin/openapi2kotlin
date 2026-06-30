@@ -1,6 +1,6 @@
 {
   "version": "0.20.0",
-  "generatedAt": "2026-06-30T11:55:59.913168+00:00",
+  "generatedAt": "2026-06-30T12:06:17.027152+00:00",
   "clientLibraries": [
     "Ktor",
     "Http4k",
@@ -44,9 +44,9 @@
     },
     {
       "property": "model.classNameSuffix",
-      "description": "Suffix appended to every generated model class/interface/enum name.",
+      "description": "Suffix appended to every generated model class/interface/enum name, e.g. `Dto`",
       "values": "",
-      "default": "\"\"\nexample: \"Dto\"",
+      "default": "",
       "required": false
     },
     {

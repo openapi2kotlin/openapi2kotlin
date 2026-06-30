@@ -60,13 +60,9 @@ layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
 ### `model.classNameSuffix`
 
 - Required: false
-- Default:
-```kotlin
-""
-example: "Dto"
-```
+- Default: -
 - Values: -
-- Description: Suffix appended to every generated model class/interface/enum name.
+- Description: Suffix appended to every generated model class/interface/enum name, e.g. `Dto`
 
 ### `model.serialization`
 
@@ -240,8 +236,6 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
-        classNameSuffix = ""
-example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -271,8 +265,6 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
-        classNameSuffix = ""
-example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -302,8 +294,6 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
-        classNameSuffix = ""
-example: "Dto"
         serialization = Jackson
         validation = None
         double2BigDecimal = false
@@ -335,8 +325,6 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
-        classNameSuffix = ""
-example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -367,8 +355,6 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
-        classNameSuffix = ""
-example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -399,8 +385,6 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
-        classNameSuffix = ""
-example: "Dto"
         serialization = Jackson
         validation = None
         double2BigDecimal = false

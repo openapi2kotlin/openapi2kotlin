@@ -105,9 +105,7 @@ open class OpenApi2KotlinExtension {
         var packageName: String = DEFAULT_MODEL_PACKAGE_NAME
 
         /**
-         * description: Suffix appended to every generated model class/interface/enum name.
-         * default: ""
-         * example: "Dto"
+         * description: Suffix appended to every generated model class/interface/enum name, e.g. `Dto`
          */
         var classNameSuffix: String = ""
 
