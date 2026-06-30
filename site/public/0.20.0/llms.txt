@@ -1,20 +1,20 @@
-# Openapi2kotlin 0.16.0 Documentation
+# Openapi2kotlin 0.20.0 Documentation
 
-> Version-pinned documentation for openapi2kotlin 0.16.0. Use this file when you need links and structured data for this exact release.
+> Version-pinned documentation for openapi2kotlin 0.20.0. Use this file when you need links and structured data for this exact release.
 
-Version: 0.16.0
+Version: 0.20.0
 Latest stable version: 0.20.0
 
 ## Start Here
-- Versioned docs: https://openapi2kotlin.dev/0.16.0
-- Installation: https://openapi2kotlin.dev/0.16.0#installation
-- AI / LLMs: https://openapi2kotlin.dev/0.16.0#llms
-- Under the Hood: https://openapi2kotlin.dev/0.16.0#under-the-hood
-- API Reference: https://openapi2kotlin.dev/0.16.0#api-reference
+- Versioned docs: https://openapi2kotlin.dev/0.20.0
+- Installation: https://openapi2kotlin.dev/0.20.0#installation
+- AI / LLMs: https://openapi2kotlin.dev/0.20.0#llms
+- Under the Hood: https://openapi2kotlin.dev/0.20.0#under-the-hood
+- API Reference: https://openapi2kotlin.dev/0.20.0#api-reference
 
 ## Framework Targets
-- Client libraries: Ktor, RestClient
-- Server libraries: Ktor, Spring
+- Client libraries: Ktor, Http4k, RestClient
+- Server libraries: Ktor, Http4k, Spring
 
 ## How It Works
 
@@ -39,7 +39,8 @@ Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources
 - Values: -
 - Description:
 ```kotlin
-Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
+Root directory for generated Kotlin sources, e.g.
+layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
 ```
 
 ### `enabled`
@@ -56,10 +57,21 @@ Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("gen
 - Values: -
 - Description: Package name for generated model classes.
 
+### `model.classNameSuffix`
+
+- Required: false
+- Default:
+```kotlin
+""
+example: "Dto"
+```
+- Values: -
+- Description: Suffix appended to every generated model class/interface/enum name.
+
 ### `model.serialization`
 
 - Required: false
-- Default: Ktor -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
+- Default: Ktor -> KotlinX, Http4k -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
 - Values: KotlinX, Jackson
 - Description: Serialization annotation family for generated model classes.
 
@@ -102,7 +114,7 @@ Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("gen
 
 - Required: true
 - Default: -
-- Values: Ktor, RestClient
+- Values: Ktor, Http4k, RestClient
 - Description: Target HTTP client library used by generated client API.
 
 ### `client.basePathVar`
@@ -142,6 +154,13 @@ servers:
 - Values: true, false
 - Description: Derives method names from OpenAPI `operationId` instead of URL path.
 
+### `client.apiNameFromTags`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+
 ### `server.packageName`
 
 - Required: false
@@ -153,13 +172,13 @@ servers:
 
 - Required: true
 - Default: -
-- Values: Ktor, Spring
+- Values: Ktor, Http4k, Spring
 - Description: Target server framework used by generated server API.
 
 ### `server.swagger`
 
 - Required: false
-- Default: Ktor -> false, Spring -> true
+- Default: Ktor -> false, Http4k -> false, Spring -> true
 - Values: true, false
 - Description: Enables generated Swagger/OpenAPI annotations.
 
@@ -200,6 +219,13 @@ servers:
 - Values: true, false
 - Description: Derives method names from OpenAPI `operationId` instead of URL path.
 
+### `server.apiNameFromTags`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+
 ## Configuration Snippets
 
 ### Client
@@ -214,6 +240,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -228,6 +256,38 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
+    }
+}
+```
+
+#### Http4k
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = Http4k
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -242,6 +302,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = Jackson
         validation = None
         double2BigDecimal = false
@@ -256,6 +318,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -272,6 +335,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -287,6 +352,39 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
+    }
+}
+```
+
+#### Http4k
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Http4k
+        swagger = false
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```
@@ -301,6 +399,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = Jackson
         validation = None
         double2BigDecimal = false
@@ -316,6 +416,7 @@ openapi2kotlin {
         methodNameSingularized = true
         methodNamePluralized = true
         methodNameFromOperationId = false
+        apiNameFromTags = false
     }
 }
 ```

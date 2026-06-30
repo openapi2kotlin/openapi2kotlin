@@ -42,7 +42,7 @@ The plugin is published to [Maven Central](https://central.sonatype.com/artifact
 
 ```toml
 [versions]
-openapi2kotlin = "0.19.0"
+openapi2kotlin = "0.20.0"
 
 [plugins]
 openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }
@@ -82,6 +82,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 | `outputDir` | Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path. | - | true | - |
 | `enabled` | Enables or disables code generation for the current Gradle run. | true, false | false | true |
 | `model.packageName` | Package name for generated model classes. | - | false | "dev.openapi2kotlin.model" |
+| `model.classNameSuffix` | Suffix appended to every generated model class/interface/enum name. | - | false | ""<br>example: "Dto" |
 | `model.serialization` | Serialization annotation family for generated model classes. | KotlinX, Jackson | false | Ktor -> KotlinX, Http4k -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson |
 | `model.validation` | Validation annotations namespace used in generated models. | None, Jakarta, JavaX | false | None |
 | `model.double2BigDecimal` | Maps OpenAPI number/double to BigDecimal instead of Double. | true, false | false | false |

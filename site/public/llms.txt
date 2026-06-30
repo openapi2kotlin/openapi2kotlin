@@ -2,7 +2,7 @@
 
 > Openapi2kotlin generates Kotlin models, clients, and servers from OpenAPI specs for real applications.
 
-Latest stable version: 0.19.0
+Latest stable version: 0.20.0
 
 ## Start Here
 - Overview: https://openapi2kotlin.dev/
@@ -16,7 +16,8 @@ Latest stable version: 0.19.0
 - Server libraries: Ktor, Http4k, Spring
 
 ## Versioned Documentation
-- 0.19.0: https://openapi2kotlin.dev/ (https://openapi2kotlin.dev/0.19.0/llms.txt)
+- 0.20.0: https://openapi2kotlin.dev/ (https://openapi2kotlin.dev/0.20.0/llms.txt)
+- 0.19.0: https://openapi2kotlin.dev/0.19.0 (https://openapi2kotlin.dev/0.19.0/llms.txt)
 - 0.18.0: https://openapi2kotlin.dev/0.18.0 (https://openapi2kotlin.dev/0.18.0/llms.txt)
 - 0.17.0: https://openapi2kotlin.dev/0.17.0 (https://openapi2kotlin.dev/0.17.0/llms.txt)
 - 0.16.0: https://openapi2kotlin.dev/0.16.0 (https://openapi2kotlin.dev/0.16.0/llms.txt)
@@ -63,6 +64,17 @@ layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
 - Default: "dev.openapi2kotlin.model"
 - Values: -
 - Description: Package name for generated model classes.
+
+### `model.classNameSuffix`
+
+- Required: false
+- Default:
+```kotlin
+""
+example: "Dto"
+```
+- Values: -
+- Description: Suffix appended to every generated model class/interface/enum name.
 
 ### `model.serialization`
 
@@ -236,6 +248,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -265,6 +279,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -294,6 +310,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = Jackson
         validation = None
         double2BigDecimal = false
@@ -325,6 +343,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -355,6 +375,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = KotlinX
         validation = None
         double2BigDecimal = false
@@ -385,6 +407,8 @@ openapi2kotlin {
 
     model {
         packageName = "dev.openapi2kotlin.model"
+        classNameSuffix = ""
+example: "Dto"
         serialization = Jackson
         validation = None
         double2BigDecimal = false
