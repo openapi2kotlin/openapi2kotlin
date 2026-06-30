@@ -3,9 +3,9 @@ package dev.openapi2kotlin.demo.petstore3.server.http4k.controller
 import dev.openapi2kotlin.demo.model.ApiResponse
 import dev.openapi2kotlin.demo.model.Category
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.model.Tag
 import dev.openapi2kotlin.demo.server.PetApi
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.http4k.core.Response
 import org.http4k.core.Status
@@ -117,7 +117,7 @@ class PetController : PetApi {
             category = Category(id = 1, name = "demo"),
             photoUrls = listOf("https://petstore3.demo/$name.png"),
             tags = listOf(Tag(id = 1, name = "featured")),
-            status = status,
+            status = PetStatus.fromValue(status),
         )
 
     private companion object {

@@ -2,6 +2,7 @@ package e2e.petstore3.server.ktor
 
 import e2e.petstore3.server.ktor.generated.model.Order
 import e2e.petstore3.server.ktor.generated.model.Pet
+import e2e.petstore3.server.ktor.generated.model.PetStatus
 import e2e.petstore3.server.ktor.generated.server.PetApi
 import e2e.petstore3.server.ktor.generated.server.StoreApi
 import e2e.petstore3.server.ktor.generated.server.petRoutes
@@ -15,8 +16,6 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -45,14 +44,19 @@ class PetstoreServerTest {
                                         id = 1,
                                         name = "Doggie",
                                         photoUrls = listOf("photo"),
-                                        status = status ?: "available",
+                                        status = status?.let(PetStatus::fromValue) ?: PetStatus.AVAILABLE,
                                     ),
                                 )
 
                             override suspend fun listFindByTags(tags: List<String>?): List<Pet> = emptyList()
 
                             override suspend fun retrievePet(petId: Long): Pet =
-                                Pet(id = petId, name = "Doggie", photoUrls = listOf("photo"), status = "available")
+                                Pet(
+                                    id = petId,
+                                    name = "Doggie",
+                                    photoUrls = listOf("photo"),
+                                    status = PetStatus.AVAILABLE,
+                                )
 
                             override suspend fun updatePet(body: Pet): Pet = body
 
@@ -65,7 +69,7 @@ class PetstoreServerTest {
                                     id = petId,
                                     name = name ?: "Doggie",
                                     photoUrls = listOf("photo"),
-                                    status = status,
+                                    status = status?.let(PetStatus::fromValue),
                                 )
 
                             override suspend fun createUploadImage(
@@ -99,7 +103,7 @@ class PetstoreServerTest {
                         object : StoreApi {
                             override suspend fun deleteStore(orderId: Long) = Unit
 
-                            override suspend fun retrieveInventory() = buildJsonObject { put("available", 3) }
+                            override suspend fun retrieveInventory(): Map<String, Long> = mapOf("available" to 3L)
 
                             override suspend fun retrieveStore(orderId: Long): Order = Order(id = orderId)
 

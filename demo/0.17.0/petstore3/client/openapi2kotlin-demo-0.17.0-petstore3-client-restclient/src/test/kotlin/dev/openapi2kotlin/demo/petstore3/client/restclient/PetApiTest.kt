@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import dev.openapi2kotlin.demo.client.PetApi
 import dev.openapi2kotlin.demo.model.ApiResponse
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.petstore3.client.restclient.tools.assertJsonEquals
 import dev.openapi2kotlin.demo.petstore3.client.restclient.tools.jsonResponse
 import dev.openapi2kotlin.demo.petstore3.client.restclient.tools.objectMapper
@@ -32,8 +33,8 @@ class PetApiTest {
 
     @Test
     fun `createPet posts pet and maps response dto`() {
-        val requestBody = pet(id = 10, name = "Sparky", status = "pending")
-        val responseBody = requestBody.copy(status = "available")
+        val requestBody = pet(id = 10, name = "Sparky", status = PetStatus.PENDING)
+        val responseBody = requestBody.copy(status = PetStatus.AVAILABLE)
 
         server.stubFor(
             post(urlPathEqualTo("/pet"))
@@ -65,8 +66,8 @@ class PetApiTest {
     fun `listFindByStatus requests status query and maps pets`() {
         val responseBody =
             listOf(
-                pet(id = 1, name = "Doggie", status = "available"),
-                pet(id = 2, name = "Kitty", status = "available"),
+                pet(id = 1, name = "Doggie", status = PetStatus.AVAILABLE),
+                pet(id = 2, name = "Kitty", status = PetStatus.AVAILABLE),
             )
 
         server.stubFor(
@@ -82,7 +83,7 @@ class PetApiTest {
 
     @Test
     fun `listFindByTags repeats query params and maps pets`() {
-        val responseBody = listOf(pet(id = 3, name = "Birdie", status = "pending"))
+        val responseBody = listOf(pet(id = 3, name = "Birdie", status = PetStatus.PENDING))
 
         server.stubFor(
             get(urlPathEqualTo("/pet/findByTags"))
@@ -98,7 +99,7 @@ class PetApiTest {
 
     @Test
     fun `retrievePet maps response dto`() {
-        val responseBody = pet(id = 4, name = "Nemo", status = "sold")
+        val responseBody = pet(id = 4, name = "Nemo", status = PetStatus.SOLD)
 
         server.stubFor(
             get(urlPathEqualTo("/pet/4"))
@@ -112,8 +113,8 @@ class PetApiTest {
 
     @Test
     fun `updatePet puts body and maps response dto`() {
-        val requestBody = pet(id = 5, name = "Rex", status = "pending")
-        val responseBody = requestBody.copy(status = "available")
+        val requestBody = pet(id = 5, name = "Rex", status = PetStatus.PENDING)
+        val responseBody = requestBody.copy(status = PetStatus.AVAILABLE)
 
         server.stubFor(
             put(urlPathEqualTo("/pet"))
@@ -127,7 +128,7 @@ class PetApiTest {
 
     @Test
     fun `createPet form variant sends query params and maps response dto`() {
-        val responseBody = pet(id = 6, name = "Milo", status = "sold")
+        val responseBody = pet(id = 6, name = "Milo", status = PetStatus.SOLD)
 
         server.stubFor(
             post(urlPathEqualTo("/pet/6"))
@@ -168,7 +169,7 @@ class PetApiTest {
 
     @Test
     fun `listFindByStatusWithHttpInfo exposes status headers and body`() {
-        val responseBody = listOf(pet(id = 8, name = "Bunny", status = "available"))
+        val responseBody = listOf(pet(id = 8, name = "Bunny", status = PetStatus.AVAILABLE))
 
         server.stubFor(
             get(urlPathEqualTo("/pet/findByStatus"))

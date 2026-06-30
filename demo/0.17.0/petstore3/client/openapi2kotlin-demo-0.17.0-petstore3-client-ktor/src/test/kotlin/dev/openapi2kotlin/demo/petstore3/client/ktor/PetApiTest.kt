@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.petstore3.client.ktor.tools.AbstractApiTest
 import dev.openapi2kotlin.demo.petstore3.client.ktor.tools.apiResponse
 import dev.openapi2kotlin.demo.petstore3.client.ktor.tools.jsonResponse
@@ -19,8 +20,8 @@ class PetApiTest : AbstractApiTest() {
     fun `createPet posts pet and maps response dto`() =
         withApiTest {
             val petApi = resolvePetApi()
-            val requestBody = pet(id = 10, name = "Sparky", status = "pending")
-            val responseBody = requestBody.copy(status = "available")
+            val requestBody = pet(id = 10, name = "Sparky", status = PetStatus.PENDING)
+            val responseBody = requestBody.copy(status = PetStatus.AVAILABLE)
 
             server.stubFor(
                 post(urlPathEqualTo("/pet"))
@@ -56,8 +57,8 @@ class PetApiTest : AbstractApiTest() {
             val petApi = resolvePetApi()
             val responseBody =
                 listOf(
-                    pet(id = 1, name = "Doggie", status = "available"),
-                    pet(id = 2, name = "Kitty", status = "available"),
+                    pet(id = 1, name = "Doggie", status = PetStatus.AVAILABLE),
+                    pet(id = 2, name = "Kitty", status = PetStatus.AVAILABLE),
                 )
 
             server.stubFor(
@@ -75,7 +76,7 @@ class PetApiTest : AbstractApiTest() {
     fun `listFindByTags repeats query params and maps pets`() =
         withApiTest {
             val petApi = resolvePetApi()
-            val responseBody = listOf(pet(id = 3, name = "Birdie", status = "pending"))
+            val responseBody = listOf(pet(id = 3, name = "Birdie", status = PetStatus.PENDING))
 
             server.stubFor(
                 get(urlPathEqualTo("/pet/findByTags"))
@@ -93,7 +94,7 @@ class PetApiTest : AbstractApiTest() {
     fun `retrievePet maps response dto`() =
         withApiTest {
             val petApi = resolvePetApi()
-            val responseBody = pet(id = 4, name = "Nemo", status = "sold")
+            val responseBody = pet(id = 4, name = "Nemo", status = PetStatus.SOLD)
 
             server.stubFor(
                 get(urlPathEqualTo("/pet/4"))
@@ -109,8 +110,8 @@ class PetApiTest : AbstractApiTest() {
     fun `updatePet puts body and maps response dto`() =
         withApiTest {
             val petApi = resolvePetApi()
-            val requestBody = pet(id = 5, name = "Rex", status = "pending")
-            val responseBody = requestBody.copy(status = "available")
+            val requestBody = pet(id = 5, name = "Rex", status = PetStatus.PENDING)
+            val responseBody = requestBody.copy(status = PetStatus.AVAILABLE)
 
             server.stubFor(
                 put(urlPathEqualTo("/pet"))
@@ -126,7 +127,7 @@ class PetApiTest : AbstractApiTest() {
     fun `createPet form variant sends query params and maps response dto`() =
         withApiTest {
             val petApi = resolvePetApi()
-            val responseBody = pet(id = 6, name = "Milo", status = "sold")
+            val responseBody = pet(id = 6, name = "Milo", status = PetStatus.SOLD)
 
             server.stubFor(
                 post(urlPathEqualTo("/pet/6"))

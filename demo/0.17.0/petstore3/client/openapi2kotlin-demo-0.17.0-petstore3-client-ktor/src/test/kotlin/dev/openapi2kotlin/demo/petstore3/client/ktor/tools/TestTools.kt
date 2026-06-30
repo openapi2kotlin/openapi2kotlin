@@ -5,7 +5,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import dev.openapi2kotlin.demo.model.ApiResponse
 import dev.openapi2kotlin.demo.model.Category
 import dev.openapi2kotlin.demo.model.Order
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.model.Tag
 import dev.openapi2kotlin.demo.model.User
 import kotlinx.serialization.json.Json
@@ -20,7 +22,7 @@ inline fun <reified T> jsonResponse(body: T): ResponseDefinitionBuilder =
 fun pet(
     id: Long,
     name: String,
-    status: String,
+    status: PetStatus,
 ): Pet =
     Pet(
         id = id,
@@ -35,7 +37,7 @@ fun order(
     id: Long,
     petId: Long,
     quantity: Int,
-    status: String,
+    status: OrderStatus,
     complete: Boolean,
 ): Order =
     Order(

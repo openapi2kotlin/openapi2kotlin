@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.restclient.generated.client.PetApiImpl
 import e2e.petstore3.client.restclient.generated.model.Pet
+import e2e.petstore3.client.restclient.generated.model.PetStatus
 import org.springframework.http.MediaType
 import org.springframework.web.client.RestClient
 import kotlin.test.AfterTest
@@ -70,7 +71,7 @@ class PetClientTest {
 
         val result =
             api.createPet(
-                Pet(id = 9, name = "Sparky", photoUrls = listOf("photo"), status = "pending"),
+                Pet(id = 9, name = "Sparky", photoUrls = listOf("photo"), status = PetStatus.PENDING),
             )
 
         assertEquals(9L, result.id)

@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.http4k.generated.client.PetApiImpl
 import e2e.petstore3.client.http4k.generated.model.Pet
+import e2e.petstore3.client.http4k.generated.model.PetStatus
 import org.http4k.core.HttpHandler
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -47,7 +48,7 @@ class PetClientTest {
                     aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(
-                            "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
+                            "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}]",
                         ),
                 ),
         )
@@ -68,7 +69,7 @@ class PetClientTest {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withHeader("X-Pet", "9")
-                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}"),
+                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"SOLD\"}"),
                 ),
         )
 
@@ -86,18 +87,18 @@ class PetClientTest {
         server.stubFor(
             post(urlPathEqualTo("/pet"))
                 .withRequestBody(
-                    equalTo("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"),
+                    equalTo("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}"),
                 )
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"),
+                        .withBody("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}"),
                 ),
         )
 
         val result =
             api.createPet(
-                Pet(id = 7, name = "Nina", photoUrls = listOf("photo"), status = "available"),
+                Pet(id = 7, name = "Nina", photoUrls = listOf("photo"), status = PetStatus.AVAILABLE),
             )
 
         assertEquals(7L, result.id)

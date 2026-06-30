@@ -69,6 +69,56 @@ class PrepareModelTest {
     }
 
     @Test
+    fun `prepareModels removes kotlinx discriminator fields from allOf ancestors`() {
+        val models =
+            prepareModels(
+                schemas =
+                    listOf(
+                        rawSchema(
+                            originalName = "Extensible",
+                            ownProperties =
+                                mapOf(
+                                    "@type" to
+                                        property(
+                                            name = "@type",
+                                            type = rawString(nullable = false),
+                                            required = true,
+                                        ),
+                                ),
+                        ),
+                        rawSchema(
+                            originalName = "EntityRef",
+                            allOfParents = listOf("Extensible"),
+                            discriminatorPropertyName = "@type",
+                        ),
+                        rawSchema(
+                            originalName = "ProductOfferingRef",
+                            allOfParents = listOf("EntityRef"),
+                            discriminatorPropertyName = "@type",
+                            discriminatorMapping =
+                                mapOf(
+                                    "ProductOfferingRef" to "#/components/schemas/ProductOfferingRef",
+                                ),
+                        ),
+                    ),
+                config = config(),
+            )
+
+        fun assertAtTypeRemoved(originalName: String) {
+            assertFalse(
+                models
+                    .single { it.rawSchema.originalName == originalName }
+                    .fields
+                    .any { it.generatedName == "atType" },
+            )
+        }
+
+        assertAtTypeRemoved("Extensible")
+        assertAtTypeRemoved("EntityRef")
+        assertAtTypeRemoved("ProductOfferingRef")
+    }
+
+    @Test
     fun `prepareModels renders empty array defaults as emptyList`() {
         val models =
             prepareModels(

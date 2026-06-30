@@ -2,6 +2,7 @@ package dev.openapi2kotlin.demo.petstore3.server.spring
 
 import dev.openapi2kotlin.demo.model.ApiResponse
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.petstore3.server.spring.tools.apiClient
 import dev.openapi2kotlin.demo.petstore3.server.spring.tools.assertJsonEquals
 import dev.openapi2kotlin.demo.petstore3.server.spring.tools.objectMapper
@@ -30,7 +31,7 @@ class PetApiTest {
                 .orEmpty()
                 .toList()
 
-        assertJsonEquals(listOf(pet(id = 1, name = "Doggie", status = "available")), result)
+        assertJsonEquals(listOf(pet(id = 1, name = "Doggie", status = PetStatus.AVAILABLE)), result)
     }
 
     @Test
@@ -42,7 +43,7 @@ class PetApiTest {
                 .retrieve()
                 .body<Pet>()
 
-        assertJsonEquals(pet(id = 9, name = "Doggie", status = "available"), result)
+        assertJsonEquals(pet(id = 9, name = "Doggie", status = PetStatus.AVAILABLE), result)
     }
 
     @Test
@@ -62,7 +63,7 @@ class PetApiTest {
 
     @Test
     fun `updatePet echoes body`() {
-        val requestBody = pet(id = 5, name = "Rex", status = "pending")
+        val requestBody = pet(id = 5, name = "Rex", status = PetStatus.PENDING)
 
         val result =
             apiClient(port)

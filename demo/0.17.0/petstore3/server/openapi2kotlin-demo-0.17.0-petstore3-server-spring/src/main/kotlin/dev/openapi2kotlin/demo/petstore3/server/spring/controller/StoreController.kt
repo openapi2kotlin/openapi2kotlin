@@ -1,6 +1,7 @@
 package dev.openapi2kotlin.demo.petstore3.server.spring.controller
 
 import dev.openapi2kotlin.demo.model.Order
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.server.StoreApi
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -10,7 +11,7 @@ import java.time.OffsetDateTime
 class StoreController : StoreApi {
     override fun deleteStore(orderId: Long): ResponseEntity<Void> = ResponseEntity.noContent().build()
 
-    override fun retrieveInventory(): ResponseEntity<Any> =
+    override fun retrieveInventory(): ResponseEntity<Map<String, Long>> =
         ResponseEntity.ok(
             mapOf(
                 "available" to AVAILABLE_INVENTORY,
@@ -29,13 +30,13 @@ class StoreController : StoreApi {
             petId = 101,
             quantity = 1,
             shipDate = OffsetDateTime.parse("2026-03-28T12:00:00Z"),
-            status = "placed",
+            status = OrderStatus.PLACED,
             complete = false,
         )
 
     private companion object {
-        const val AVAILABLE_INVENTORY = 3
-        const val PENDING_INVENTORY = 1
-        const val SOLD_INVENTORY = 2
+        const val AVAILABLE_INVENTORY = 3L
+        const val PENDING_INVENTORY = 1L
+        const val SOLD_INVENTORY = 2L
     }
 }

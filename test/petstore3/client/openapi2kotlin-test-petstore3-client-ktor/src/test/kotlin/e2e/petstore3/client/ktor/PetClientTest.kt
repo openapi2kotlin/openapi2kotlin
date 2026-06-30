@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.ktor.generated.client.PetApiImpl
+import e2e.petstore3.client.ktor.generated.model.PetStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -57,7 +58,7 @@ class PetClientTest {
                         aResponse()
                             .withHeader("Content-Type", "application/json")
                             .withBody(
-                                "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
+                                "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}]",
                             ),
                     ),
             )
@@ -77,7 +78,7 @@ class PetClientTest {
                     .willReturn(
                         aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}"),
+                            .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"SOLD\"}"),
                     ),
             )
 
@@ -100,7 +101,7 @@ class PetClientTest {
                               "id": 2,
                               "name": "Kitty",
                               "photoUrls": ["photo"],
-                              "status": "available"
+                              "status": "AVAILABLE"
                             }
                             """.trimIndent(),
                         ),
@@ -113,7 +114,7 @@ class PetClientTest {
                                   "id": 2,
                                   "name": "Kitty",
                                   "photoUrls": ["photo"],
-                                  "status": "available"
+                                  "status": "AVAILABLE"
                                 }
                                 """.trimIndent(),
                             ),
@@ -126,7 +127,7 @@ class PetClientTest {
                         id = 2,
                         name = "Kitty",
                         photoUrls = listOf("photo"),
-                        status = "available",
+                        status = PetStatus.AVAILABLE,
                     ),
                 )
 

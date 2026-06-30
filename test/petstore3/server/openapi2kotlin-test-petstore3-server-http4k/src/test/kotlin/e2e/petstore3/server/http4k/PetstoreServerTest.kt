@@ -2,14 +2,13 @@ package e2e.petstore3.server.http4k
 
 import e2e.petstore3.server.http4k.generated.model.Order
 import e2e.petstore3.server.http4k.generated.model.Pet
+import e2e.petstore3.server.http4k.generated.model.PetStatus
 import e2e.petstore3.server.http4k.generated.server.PetApi
 import e2e.petstore3.server.http4k.generated.server.StoreApi
 import e2e.petstore3.server.http4k.generated.server.petRoutes
 import e2e.petstore3.server.http4k.generated.server.storeRoutes
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -42,7 +41,7 @@ class PetstoreServerTest {
                                 id = 1,
                                 name = "Doggie",
                                 photoUrls = listOf("photo"),
-                                status = status ?: "available",
+                                status = status?.let(PetStatus::fromValue) ?: PetStatus.AVAILABLE,
                             ),
                         )
 
@@ -65,7 +64,7 @@ class PetstoreServerTest {
                             id = petId,
                             name = "Doggie",
                             photoUrls = listOf("photo"),
-                            status = "available",
+                            status = PetStatus.AVAILABLE,
                         )
 
                     override fun retrievePetWithHttpInfo(petId: Long): Response =
@@ -77,7 +76,7 @@ class PetstoreServerTest {
                                         id = petId,
                                         name = "Doggie",
                                         photoUrls = listOf("photo"),
-                                        status = "available",
+                                        status = PetStatus.AVAILABLE,
                                     ),
                                 ),
                             )
@@ -86,7 +85,13 @@ class PetstoreServerTest {
                         petId: Long,
                         name: String?,
                         status: String?,
-                    ): Pet = Pet(id = petId, name = name ?: "Doggie", photoUrls = listOf("photo"), status = status)
+                    ): Pet =
+                        Pet(
+                            id = petId,
+                            name = name ?: "Doggie",
+                            photoUrls = listOf("photo"),
+                            status = status?.let(PetStatus::fromValue),
+                        )
 
                     override fun createPetWithHttpInfo(
                         petId: Long,
@@ -101,7 +106,7 @@ class PetstoreServerTest {
                                     id = petId,
                                     name = name ?: "Doggie",
                                     photoUrls = listOf("photo"),
-                                    status = status,
+                                    status = status?.let(PetStatus::fromValue),
                                 ),
                             ),
                         )
@@ -147,7 +152,7 @@ class PetstoreServerTest {
         val app =
             storeRoutes(
                 object : StoreApi {
-                    override fun retrieveInventory() = buildJsonObject { put("available", 3) }
+                    override fun retrieveInventory(): Map<String, Long> = mapOf("available" to 3L)
 
                     override fun retrieveInventoryWithHttpInfo(): Response =
                         Response(Status.OK)
@@ -207,7 +212,7 @@ class PetstoreServerTest {
                                 id = petId,
                                 name = "Sparky",
                                 photoUrls = listOf("photo"),
-                                status = "sold",
+                                status = PetStatus.SOLD,
                             )
 
                         override fun retrievePetWithHttpInfo(petId: Long): Response =
@@ -217,7 +222,7 @@ class PetstoreServerTest {
                                         id = petId,
                                         name = "Sparky",
                                         photoUrls = listOf("photo"),
-                                        status = "sold",
+                                        status = PetStatus.SOLD,
                                     ),
                                 ),
                             )
@@ -231,7 +236,7 @@ class PetstoreServerTest {
                                 id = petId,
                                 name = name ?: "Sparky",
                                 photoUrls = listOf("photo"),
-                                status = status,
+                                status = status?.let(PetStatus::fromValue),
                             )
 
                         override fun createPetWithHttpInfo(
@@ -270,7 +275,7 @@ class PetstoreServerTest {
                 ),
                 storeRoutes(
                     object : StoreApi {
-                        override fun retrieveInventory() = buildJsonObject { put("available", 3) }
+                        override fun retrieveInventory(): Map<String, Long> = mapOf("available" to 3L)
 
                         override fun retrieveInventoryWithHttpInfo(): Response =
                             Response(Status.OK).body("{\"available\":3}")

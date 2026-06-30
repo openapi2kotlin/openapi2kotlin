@@ -2,6 +2,7 @@ package dev.openapi2kotlin.demo.petstore3.server.ktor
 
 import dev.openapi2kotlin.demo.model.ApiResponse
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.petstore3.server.ktor.tools.AbstractApiTest
 import dev.openapi2kotlin.demo.petstore3.server.ktor.tools.apiResponse
 import dev.openapi2kotlin.demo.petstore3.server.ktor.tools.pet
@@ -23,7 +24,7 @@ class PetApiTest : AbstractApiTest() {
             val response = client.get("/pet/findByStatus?status=available")
 
             assertEquals(HttpStatusCode.OK, response.status)
-            assertEquals(listOf(pet(id = 1, name = "Doggie", status = "available")), response.body<List<Pet>>())
+            assertEquals(listOf(pet(id = 1, name = "Doggie", status = PetStatus.AVAILABLE)), response.body<List<Pet>>())
         }
 
     @Test
@@ -32,7 +33,7 @@ class PetApiTest : AbstractApiTest() {
             val response = client.get("/pet/9")
 
             assertEquals(HttpStatusCode.OK, response.status)
-            assertEquals(pet(id = 9, name = "Doggie", status = "available"), response.body<Pet>())
+            assertEquals(pet(id = 9, name = "Doggie", status = PetStatus.AVAILABLE), response.body<Pet>())
         }
 
     @Test
@@ -51,7 +52,7 @@ class PetApiTest : AbstractApiTest() {
     @Test
     fun `updatePet echoes body`() =
         withApiTest {
-            val requestBody = pet(id = 5, name = "Rex", status = "pending")
+            val requestBody = pet(id = 5, name = "Rex", status = PetStatus.PENDING)
             val response =
                 client.put("/pet") {
                     contentType(ContentType.Application.Json)
@@ -68,6 +69,6 @@ class PetApiTest : AbstractApiTest() {
             val response = client.post("/pet/6?name=Milo&status=sold")
 
             assertEquals(HttpStatusCode.OK, response.status)
-            assertEquals(pet(id = 6, name = "Milo", status = "sold"), response.body<Pet>())
+            assertEquals(pet(id = 6, name = "Milo", status = PetStatus.SOLD), response.body<Pet>())
         }
 }

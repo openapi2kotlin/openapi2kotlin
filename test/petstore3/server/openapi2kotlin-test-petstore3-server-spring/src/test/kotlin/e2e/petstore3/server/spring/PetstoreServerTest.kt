@@ -2,6 +2,7 @@ package e2e.petstore3.server.spring
 
 import e2e.petstore3.server.spring.generated.model.Order
 import e2e.petstore3.server.spring.generated.model.Pet
+import e2e.petstore3.server.spring.generated.model.PetStatus
 import e2e.petstore3.server.spring.generated.server.PetApi
 import e2e.petstore3.server.spring.generated.server.StoreApi
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -73,13 +74,27 @@ class PetstoreServerTest {
 
         override fun listFindByStatus(status: String?): ResponseEntity<List<Pet>> =
             ResponseEntity.ok(
-                listOf(Pet(id = 1, name = "Doggie", photoUrls = listOf("photo"), status = status ?: "available")),
+                listOf(
+                    Pet(
+                        id = 1,
+                        name = "Doggie",
+                        photoUrls = listOf("photo"),
+                        status = status?.let(PetStatus::fromValue) ?: PetStatus.AVAILABLE,
+                    ),
+                ),
             )
 
         override fun listFindByTags(tags: List<String>?): ResponseEntity<List<Pet>> = ResponseEntity.ok(emptyList())
 
         override fun retrievePet(petId: Long): ResponseEntity<Pet> =
-            ResponseEntity.ok(Pet(id = petId, name = "Doggie", photoUrls = listOf("photo"), status = "available"))
+            ResponseEntity.ok(
+                Pet(
+                    id = petId,
+                    name = "Doggie",
+                    photoUrls = listOf("photo"),
+                    status = PetStatus.AVAILABLE,
+                ),
+            )
 
         override fun updatePet(body: Pet): ResponseEntity<Pet> = ResponseEntity.ok(body)
 
@@ -93,7 +108,7 @@ class PetstoreServerTest {
                     id = petId,
                     name = name ?: "Doggie",
                     photoUrls = listOf("photo"),
-                    status = status,
+                    status = status?.let(PetStatus::fromValue),
                 ),
             )
 
@@ -112,7 +127,8 @@ class PetstoreServerTest {
     open class TestStoreApi : StoreApi {
         override fun deleteStore(orderId: Long): ResponseEntity<Void> = ResponseEntity.noContent().build()
 
-        override fun retrieveInventory(): ResponseEntity<Any> = ResponseEntity.ok(mapOf("available" to 3))
+        override fun retrieveInventory(): ResponseEntity<Map<String, Long>> =
+            ResponseEntity.ok(mapOf("available" to 3L))
 
         override fun retrieveStore(orderId: Long): ResponseEntity<Order> = ResponseEntity.ok(Order(id = orderId))
 

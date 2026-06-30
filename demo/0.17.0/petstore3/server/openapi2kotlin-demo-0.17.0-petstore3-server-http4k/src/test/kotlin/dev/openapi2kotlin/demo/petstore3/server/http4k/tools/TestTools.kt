@@ -3,7 +3,9 @@ package dev.openapi2kotlin.demo.petstore3.server.http4k.tools
 import dev.openapi2kotlin.demo.model.ApiResponse
 import dev.openapi2kotlin.demo.model.Category
 import dev.openapi2kotlin.demo.model.Order
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.model.Tag
 import dev.openapi2kotlin.demo.model.User
 import kotlinx.serialization.json.Json
@@ -14,7 +16,7 @@ val json = Json { ignoreUnknownKeys = true }
 fun pet(
     id: Long,
     name: String,
-    status: String,
+    status: PetStatus,
 ): Pet =
     Pet(
         id = id,
@@ -29,7 +31,7 @@ fun order(
     id: Long,
     petId: Long = 101,
     quantity: Long = 1,
-    status: String = "placed",
+    status: OrderStatus = OrderStatus.PLACED,
     complete: Boolean = false,
 ): Order =
     Order(

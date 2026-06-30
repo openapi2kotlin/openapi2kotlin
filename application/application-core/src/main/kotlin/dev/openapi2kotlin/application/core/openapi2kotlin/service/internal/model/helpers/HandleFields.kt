@@ -53,19 +53,17 @@ internal fun List<ModelDO>.handleFields(cfg: OpenApi2KotlinUseCase.ModelConfig) 
     }
 
     if (cfg.serialization == OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX) {
+        val discriminatorNames = mapNotNull { it.rawSchema.discriminatorPropertyName }.toSet()
         forEach { component ->
-            component.removeKotlinxPolymorphicDiscriminatorField(byNameAfter)
+            component.removeKotlinxPolymorphicDiscriminatorFields(discriminatorNames)
         }
     }
 }
 
-private fun ModelDO.removeKotlinxPolymorphicDiscriminatorField(byName: Map<String, ModelDO>) {
-    val discriminatorName =
-        rawSchema.discriminatorPropertyName
-            ?: findNearestDiscriminatorParent(byName)?.rawSchema?.discriminatorPropertyName
-            ?: return
+private fun ModelDO.removeKotlinxPolymorphicDiscriminatorFields(discriminatorNames: Set<String>) {
+    if (discriminatorNames.isEmpty()) return
 
-    fields = fields.filterNot { it.originalName == discriminatorName }.toMutableList()
+    fields = fields.filterNot { it.originalName in discriminatorNames }.toMutableList()
 }
 
 private fun ModelDO.resolveFieldParents(byName: Map<String, ModelDO>): List<ModelDO> {

@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import dev.openapi2kotlin.demo.client.StoreApi
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.petstore3.client.restclient.tools.assertJsonEquals
 import dev.openapi2kotlin.demo.petstore3.client.restclient.tools.jsonResponse
 import dev.openapi2kotlin.demo.petstore3.client.restclient.tools.objectMapper
@@ -29,8 +30,8 @@ class StoreApiTest {
 
     @Test
     fun `createOrder posts body and maps response dto`() {
-        val requestBody = order(id = 1, petId = 10, quantity = 2, status = "placed", complete = false)
-        val responseBody = requestBody.copy(status = "approved")
+        val requestBody = order(id = 1, petId = 10, quantity = 2, status = OrderStatus.PLACED, complete = false)
+        val responseBody = requestBody.copy(status = OrderStatus.APPROVED)
 
         server.stubFor(
             post(urlPathEqualTo("/store/order"))
@@ -56,7 +57,7 @@ class StoreApiTest {
 
     @Test
     fun `retrieveInventory maps response body and exposes headers`() {
-        val responseBody = mapOf("available" to 3, "pending" to 1)
+        val responseBody = mapOf("available" to 3L, "pending" to 1L)
 
         server.stubFor(
             get(urlPathEqualTo("/store/inventory"))
@@ -78,7 +79,7 @@ class StoreApiTest {
 
     @Test
     fun `retrieveStore maps response dto`() {
-        val responseBody = order(id = 12, petId = 22, quantity = 1, status = "placed", complete = true)
+        val responseBody = order(id = 12, petId = 22, quantity = 1, status = OrderStatus.PLACED, complete = true)
 
         server.stubFor(
             get(urlPathEqualTo("/store/order/12"))

@@ -6,10 +6,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.petstore3.client.ktor.tools.AbstractApiTest
 import dev.openapi2kotlin.demo.petstore3.client.ktor.tools.jsonResponse
 import dev.openapi2kotlin.demo.petstore3.client.ktor.tools.order
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -18,8 +18,8 @@ class StoreApiTest : AbstractApiTest() {
     fun `createOrder posts body and maps response dto`() =
         withApiTest {
             val storeApi = resolveStoreApi()
-            val requestBody = order(id = 1, petId = 10, quantity = 2, status = "placed", complete = false)
-            val responseBody = requestBody.copy(status = "approved")
+            val requestBody = order(id = 1, petId = 10, quantity = 2, status = OrderStatus.PLACED, complete = false)
+            val responseBody = requestBody.copy(status = OrderStatus.APPROVED)
 
             server.stubFor(
                 post(urlPathEqualTo("/store/order"))
@@ -49,7 +49,7 @@ class StoreApiTest : AbstractApiTest() {
     fun `retrieveInventory maps response body`() =
         withApiTest {
             val storeApi = resolveStoreApi()
-            val responseBody = Json.parseToJsonElement("{\"available\":3,\"pending\":1}")
+            val responseBody = mapOf("available" to 3L, "pending" to 1L)
 
             server.stubFor(
                 get(urlPathEqualTo("/store/inventory"))
@@ -70,7 +70,7 @@ class StoreApiTest : AbstractApiTest() {
     fun `retrieveStore maps response dto`() =
         withApiTest {
             val storeApi = resolveStoreApi()
-            val responseBody = order(id = 12, petId = 22, quantity = 1, status = "placed", complete = true)
+            val responseBody = order(id = 12, petId = 22, quantity = 1, status = OrderStatus.PLACED, complete = true)
 
             server.stubFor(
                 get(urlPathEqualTo("/store/order/12"))

@@ -2,6 +2,7 @@ package dev.openapi2kotlin.demo.petstore3.server.http4k
 
 import dev.openapi2kotlin.demo.model.ApiResponse
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.petstore3.server.http4k.tools.apiResponse
 import dev.openapi2kotlin.demo.petstore3.server.http4k.tools.json
 import dev.openapi2kotlin.demo.petstore3.server.http4k.tools.pet
@@ -18,7 +19,7 @@ class PetApiTest {
 
         assertEquals(Status.OK, response.status)
         assertEquals(
-            listOf(pet(id = 1, name = "Doggie", status = "available")),
+            listOf(pet(id = 1, name = "Doggie", status = PetStatus.AVAILABLE)),
             json.decodeFromString<List<Pet>>(response.bodyString()),
         )
     }
@@ -29,7 +30,7 @@ class PetApiTest {
 
         assertEquals(Status.OK, response.status)
         assertEquals(
-            pet(id = 9, name = "Doggie", status = "available"),
+            pet(id = 9, name = "Doggie", status = PetStatus.AVAILABLE),
             json.decodeFromString<Pet>(response.bodyString()),
         )
     }
@@ -51,7 +52,7 @@ class PetApiTest {
 
     @Test
     fun `updatePet echoes body`() {
-        val requestBody = pet(id = 5, name = "Rex", status = "pending")
+        val requestBody = pet(id = 5, name = "Rex", status = PetStatus.PENDING)
         val response =
             application()(
                 Request(Method.PUT, "/pet")
@@ -68,6 +69,9 @@ class PetApiTest {
         val response = application()(Request(Method.POST, "/pet/6?name=Milo&status=sold"))
 
         assertEquals(Status.OK, response.status)
-        assertEquals(pet(id = 6, name = "Milo", status = "sold"), json.decodeFromString<Pet>(response.bodyString()))
+        assertEquals(
+            pet(id = 6, name = "Milo", status = PetStatus.SOLD),
+            json.decodeFromString<Pet>(response.bodyString()),
+        )
     }
 }

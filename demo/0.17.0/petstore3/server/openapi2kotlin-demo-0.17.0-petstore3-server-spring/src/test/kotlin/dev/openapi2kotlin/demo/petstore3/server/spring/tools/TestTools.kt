@@ -2,7 +2,9 @@ package dev.openapi2kotlin.demo.petstore3.server.spring.tools
 
 import dev.openapi2kotlin.demo.model.Category
 import dev.openapi2kotlin.demo.model.Order
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.model.Tag
 import dev.openapi2kotlin.demo.model.User
 import org.springframework.web.client.RestClient
@@ -32,7 +34,7 @@ fun assertJsonEquals(
 fun pet(
     id: Long,
     name: String,
-    status: String,
+    status: PetStatus,
 ) = Pet(
     id = id,
     name = name,
@@ -46,7 +48,7 @@ fun order(
     id: Long,
     petId: Long,
     quantity: Int,
-    status: String,
+    status: OrderStatus,
     complete: Boolean,
 ) = Order(
     id = id,

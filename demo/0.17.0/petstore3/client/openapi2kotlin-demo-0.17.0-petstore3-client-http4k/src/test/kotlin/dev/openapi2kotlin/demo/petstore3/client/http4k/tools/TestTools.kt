@@ -4,10 +4,11 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import dev.openapi2kotlin.demo.model.Category
 import dev.openapi2kotlin.demo.model.Order
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.model.Pet
+import dev.openapi2kotlin.demo.model.PetStatus
 import dev.openapi2kotlin.demo.model.Tag
 import dev.openapi2kotlin.demo.model.User
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Instant
 
@@ -21,7 +22,7 @@ inline fun <reified T> jsonResponse(body: T): ResponseDefinitionBuilder =
 fun pet(
     id: Long,
     name: String,
-    status: String,
+    status: PetStatus,
 ): Pet =
     Pet(
         id = id,
@@ -36,7 +37,7 @@ fun order(
     id: Long,
     petId: Long = 101,
     quantity: Long = 1,
-    status: String = "placed",
+    status: OrderStatus = OrderStatus.PLACED,
     complete: Boolean = false,
 ): Order =
     Order(

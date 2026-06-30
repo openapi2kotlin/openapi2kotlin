@@ -1,6 +1,7 @@
 package dev.openapi2kotlin.demo.petstore3.server.ktor
 
 import dev.openapi2kotlin.demo.model.Order
+import dev.openapi2kotlin.demo.model.OrderStatus
 import dev.openapi2kotlin.demo.petstore3.server.ktor.tools.AbstractApiTest
 import dev.openapi2kotlin.demo.petstore3.server.ktor.tools.order
 import io.ktor.client.call.body
@@ -10,7 +11,6 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -21,7 +21,7 @@ class StoreApiTest : AbstractApiTest() {
             val response = client.get("/store/inventory")
 
             assertEquals(HttpStatusCode.OK, response.status)
-            assertEquals(3, response.body<JsonObject>()["available"]?.toString()?.toInt())
+            assertEquals(3L, response.body<Map<String, Long>>()["available"])
         }
 
     @Test
@@ -36,7 +36,7 @@ class StoreApiTest : AbstractApiTest() {
     @Test
     fun `createOrder returns echoed order`() =
         withApiTest {
-            val requestBody = order(id = 77, petId = 3, quantity = 2, status = "approved", complete = true)
+            val requestBody = order(id = 77, petId = 3, quantity = 2, status = OrderStatus.APPROVED, complete = true)
             val response =
                 client.post("/store/order") {
                     contentType(ContentType.Application.Json)
