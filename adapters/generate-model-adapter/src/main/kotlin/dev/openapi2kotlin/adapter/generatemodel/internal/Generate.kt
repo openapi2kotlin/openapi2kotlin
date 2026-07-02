@@ -125,6 +125,7 @@ private fun buildEnumFile(
         val enumConst =
             TypeSpec
                 .anonymousClassBuilder()
+                .applyAnnotations(ev.annotations)
                 .addSuperclassConstructorParameter("%S", ev.originalValue)
                 .build()
 

@@ -3,6 +3,7 @@ package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.mode
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 private const val SERIALIZABLE = "kotlinx.serialization.Serializable"
@@ -23,6 +24,7 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
     }
 
     applyKotlinxPolymorphicSerialNames(bySchemaName)
+    applyKotlinxEnumSerialNames()
 
     forEach { model ->
         model.fields =
@@ -39,6 +41,30 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
                         )
                     }
                 }.toMutableList()
+    }
+}
+
+private fun List<ModelDO>.applyKotlinxEnumSerialNames() {
+    forEach { model ->
+        val shape = model.modelShape as? ModelShapeDO.EnumClass ?: return@forEach
+        model.modelShape =
+            shape.copy(
+                values =
+                    shape.values.map { enumValue ->
+                        if (enumValue.originalValue == enumValue.generatedValue) {
+                            enumValue
+                        } else {
+                            enumValue.copy(
+                                annotations =
+                                    enumValue.annotations +
+                                        ModelAnnotationDO(
+                                            fqName = SERIAL_NAME,
+                                            argsCode = listOf("\"${enumValue.originalValue}\""),
+                                        ),
+                            )
+                        }
+                    },
+            )
     }
 }
 

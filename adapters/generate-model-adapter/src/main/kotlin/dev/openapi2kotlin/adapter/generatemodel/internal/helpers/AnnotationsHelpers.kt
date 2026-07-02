@@ -96,6 +96,18 @@ internal fun PropertySpec.Builder.applyAnnotations(annotations: List<ModelAnnota
 }
 
 /**
+ * Applies arbitrary annotations to a TypeSpec.Builder.
+ *
+ * Used for enum constants (e.g. @SerialName).
+ */
+internal fun TypeSpec.Builder.applyAnnotations(annotations: List<ModelAnnotationDO>): TypeSpec.Builder {
+    for (a: ModelAnnotationDO in annotations) {
+        addAnnotationWithMetadata(a)
+    }
+    return this
+}
+
+/**
  * Applies arbitrary annotations to a FunSpec.Builder.
  *
  * Used for enum-specific factory method annotations (e.g. @JsonCreator).
