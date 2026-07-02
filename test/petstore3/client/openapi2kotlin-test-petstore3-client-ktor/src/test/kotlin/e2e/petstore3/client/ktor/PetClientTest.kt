@@ -58,7 +58,7 @@ class PetClientTest {
                         aResponse()
                             .withHeader("Content-Type", "application/json")
                             .withBody(
-                                "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}]",
+                                "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
                             ),
                     ),
             )
@@ -78,7 +78,7 @@ class PetClientTest {
                     .willReturn(
                         aResponse()
                             .withHeader("Content-Type", "application/json")
-                            .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"SOLD\"}"),
+                            .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}"),
                     ),
             )
 
@@ -101,7 +101,7 @@ class PetClientTest {
                               "id": 2,
                               "name": "Kitty",
                               "photoUrls": ["photo"],
-                              "status": "AVAILABLE"
+                              "status": "available"
                             }
                             """.trimIndent(),
                         ),
@@ -114,7 +114,7 @@ class PetClientTest {
                                   "id": 2,
                                   "name": "Kitty",
                                   "photoUrls": ["photo"],
-                                  "status": "AVAILABLE"
+                                  "status": "available"
                                 }
                                 """.trimIndent(),
                             ),

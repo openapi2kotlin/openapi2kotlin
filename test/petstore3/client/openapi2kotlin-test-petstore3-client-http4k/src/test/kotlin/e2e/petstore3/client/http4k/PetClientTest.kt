@@ -48,7 +48,7 @@ class PetClientTest {
                     aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(
-                            "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}]",
+                            "[{\"id\":1,\"name\":\"Doggie\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}]",
                         ),
                 ),
         )
@@ -69,7 +69,7 @@ class PetClientTest {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withHeader("X-Pet", "9")
-                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"SOLD\"}"),
+                        .withBody("{\"id\":9,\"name\":\"Sparky\",\"photoUrls\":[\"photo\"],\"status\":\"sold\"}"),
                 ),
         )
 
@@ -87,12 +87,12 @@ class PetClientTest {
         server.stubFor(
             post(urlPathEqualTo("/pet"))
                 .withRequestBody(
-                    equalTo("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}"),
+                    equalTo("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"),
                 )
                 .willReturn(
                     aResponse()
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"AVAILABLE\"}"),
+                        .withBody("{\"id\":7,\"name\":\"Nina\",\"photoUrls\":[\"photo\"],\"status\":\"available\"}"),
                 ),
         )
 
