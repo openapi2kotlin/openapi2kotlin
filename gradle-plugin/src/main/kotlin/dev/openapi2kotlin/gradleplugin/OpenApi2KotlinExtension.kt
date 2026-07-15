@@ -201,6 +201,13 @@ open class OpenApi2KotlinExtension {
          */
         var apiNameFromTags: Boolean = false
 
+        /**
+         * description: Percent-encodes slashes in path parameters rather than treating them as path separators.
+         * default: false
+         * values: true, false
+         */
+        var encodePathParameterSlashes: Boolean = false
+
         fun setLibrary(value: String?) {
             library = value?.let { ClientLibrary.fromValue(it) }
         }

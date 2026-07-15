@@ -51,7 +51,9 @@ fun interface OpenApi2KotlinUseCase {
         val methodNameFromOperationId: Boolean
         val apiNameFromTags: Boolean
 
-        sealed interface Client : ApiConfig
+        sealed interface Client : ApiConfig {
+            val encodePathParameterSlashes: Boolean
+        }
 
         data class ClientKtor(
             override val packageName: String,
@@ -60,6 +62,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
             override val apiNameFromTags: Boolean = false,
+            override val encodePathParameterSlashes: Boolean = false,
         ) : Client
 
         data class ClientHttp4k(
@@ -69,6 +72,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
             override val apiNameFromTags: Boolean = false,
+            override val encodePathParameterSlashes: Boolean = false,
         ) : Client
 
         data class ClientRestClient(
@@ -78,6 +82,7 @@ fun interface OpenApi2KotlinUseCase {
             override val methodNamePluralized: Boolean = true,
             override val methodNameFromOperationId: Boolean = false,
             override val apiNameFromTags: Boolean = false,
+            override val encodePathParameterSlashes: Boolean = false,
         ) : Client
 
         sealed interface Server : ApiConfig {

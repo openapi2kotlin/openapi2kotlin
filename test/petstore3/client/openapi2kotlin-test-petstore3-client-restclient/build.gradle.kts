@@ -112,6 +112,7 @@ openapi2kotlin {
     client {
         packageName = "e2e.petstore3.client.restclient.generated.client"
         library = RestClient
+        encodePathParameterSlashes = true
     }
 }
 

@@ -113,6 +113,7 @@ openapi2kotlin {
     client {
         packageName = "e2e.petstore3.client.http4k.generated.client"
         library = Http4k
+        encodePathParameterSlashes = true
     }
 }
 

@@ -13,7 +13,6 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
-import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
@@ -26,6 +25,13 @@ private val REQUEST_T = ClassName("org.http4k.core", "Request")
 private val METHOD_T = ClassName("org.http4k.core", "Method")
 private val BODY_T = ClassName("org.http4k.core", "Body")
 
+private data class ClientGenerationContext(
+    val apiPackageName: String,
+    val basePath: String,
+    val typeNames: TypeNameContext,
+    val encodePathParameterSlashes: Boolean,
+)
+
 internal class Http4kClientApiImplGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
@@ -35,9 +41,15 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
                     it.rawSchema.originalName
                 }
         val ctx =
-            TypeNameContext(
-                modelPackageName = command.modelPackageName,
-                bySchemaName = bySchemaName,
+            ClientGenerationContext(
+                apiPackageName = command.packageName,
+                basePath = command.apiContext.basePath,
+                typeNames =
+                    TypeNameContext(
+                        modelPackageName = command.modelPackageName,
+                        bySchemaName = bySchemaName,
+                    ),
+                encodePathParameterSlashes = command.encodePathParameterSlashes,
             )
 
         command.apiContext.apis.forEach { api ->
@@ -45,8 +57,12 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
                 .builder(command.packageName, "${api.generatedName}Impl")
                 .indent("    ")
                 .addImport("org.http4k.format.KotlinxSerialization", "auto")
-                .addType(generateApiImpl(api, command.packageName, command.apiContext.basePath, ctx))
-                .build()
+                .addType(
+                    generateApiImpl(
+                        api = api,
+                        ctx = ctx,
+                    ),
+                ).build()
                 .writeTo(outDir)
         }
 
@@ -54,12 +70,10 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
     }
 
     private fun generateApiImpl(
-        api: dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO,
-        apiPackageName: String,
-        basePath: String,
-        ctx: TypeNameContext,
+        api: ApiDO,
+        ctx: ClientGenerationContext,
     ): TypeSpec {
-        val apiType = ClassName(apiPackageName, api.generatedName)
+        val apiType = ClassName(ctx.apiPackageName, api.generatedName)
 
         return TypeSpec
             .classBuilder("${api.generatedName}Impl")
@@ -77,7 +91,7 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
             ).addProperty(
                 PropertySpec
                     .builder("basePath", String::class, KModifier.PRIVATE)
-                    .initializer("%S", basePath)
+                    .initializer("%S", ctx.basePath)
                     .build(),
             ).addFunction(
                 FunSpec
@@ -105,13 +119,13 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
             ).apply {
                 api.endpoints.forEach { endpoint ->
                     addFunction(generateRawMethod(endpoint, ctx))
-                    addFunction(generateBodyMethod(endpoint, ctx))
+                    addFunction(generateBodyMethod(endpoint, ctx.typeNames))
                 }
             }.build()
     }
 
     private fun generateBodyMethod(
-        ep: dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO,
+        ep: ApiEndpointDO,
         ctx: TypeNameContext,
     ): FunSpec {
         val returnType = Http4kClientApiPolicy.bodyReturnType(ep, ctx)
@@ -147,9 +161,9 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
 
     private fun generateRawMethod(
         ep: ApiEndpointDO,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): FunSpec =
-        overrideFunBuilder(ep, ctx, suffix = "WithHttpInfo")
+        overrideFunBuilder(ep, ctx.typeNames, suffix = "WithHttpInfo")
             .returns(Http4kClientApiPolicy.httpInfoReturnType())
             .addCode(buildRawMethodCode(ep, ctx))
             .build()
@@ -204,11 +218,11 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
 
     private fun buildRawMethodCode(
         ep: ApiEndpointDO,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): CodeBlock {
         val builder = CodeBlock.builder()
         builder.addStatement("var resolvedPath = resolvePath(%S)", ep.rawOperation.path)
-        builder.addPathParams(ep)
+        builder.addPathParams(ep, ctx)
         builder.addStatement(
             "var request = %T(%T.%L, resolvedPath)",
             REQUEST_T,
@@ -217,7 +231,7 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
         )
         builder.addQueryParams(ep)
         builder.addHeaderParams(ep)
-        builder.addRequestBody(ep, ctx)
+        builder.addRequestBody(ep, ctx.typeNames)
 
         builder.addStatement("return client(request)")
         return builder.build()
@@ -233,15 +247,24 @@ private fun RawPathDO.HttpMethodDO.http4kMethodName(): String =
         RawPathDO.HttpMethodDO.DELETE -> "DELETE"
     }
 
-private fun CodeBlock.Builder.addPathParams(ep: ApiEndpointDO) {
+private fun CodeBlock.Builder.addPathParams(
+    ep: ApiEndpointDO,
+    ctx: ClientGenerationContext,
+) {
     ep.params
         .filter { it.rawParam.location == RawPathDO.ParamLocationDO.PATH }
         .forEach { param ->
-            val pathValue =
+            val rawPathValue =
                 if ((param.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.STRING) {
                     CodeBlock.of("%L", param.generatedName)
                 } else {
                     CodeBlock.of("%L.toString()", param.generatedName)
+                }
+            val pathValue =
+                if (ctx.encodePathParameterSlashes) {
+                    CodeBlock.of("%L.replace(%S, %S)", rawPathValue, "/", "%2F")
+                } else {
+                    rawPathValue
                 }
             addStatement(
                 "resolvedPath = resolvedPath.replace(%S, %L)",

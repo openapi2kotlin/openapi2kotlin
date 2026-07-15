@@ -45,6 +45,8 @@ class OpenApi2KotlinService(
                 modelPackageName = config.model.packageName,
                 outputDirPath = config.outputDirPath,
                 models = models,
+                encodePathParameterSlashes =
+                    (config.api as? OpenApi2KotlinUseCase.ApiConfig.Client)?.encodePathParameterSlashes ?: false,
             ),
         )
     }

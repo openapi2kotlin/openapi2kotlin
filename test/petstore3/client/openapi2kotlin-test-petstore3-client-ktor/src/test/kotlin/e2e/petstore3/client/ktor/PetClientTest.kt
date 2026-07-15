@@ -2,12 +2,14 @@ package e2e.petstore3.client.ktor
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.ktor.generated.client.PetApiImpl
+import e2e.petstore3.client.ktor.generated.client.UserApiImpl
 import e2e.petstore3.client.ktor.generated.model.PetStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -25,6 +27,7 @@ class PetClientTest {
     private lateinit var server: WireMockServer
     private lateinit var client: HttpClient
     private lateinit var api: PetApiImpl
+    private lateinit var userApi: UserApiImpl
 
     @BeforeTest
     fun setUp() {
@@ -40,6 +43,7 @@ class PetClientTest {
                 }
             }
         api = PetApiImpl(client)
+        userApi = UserApiImpl(client)
     }
 
     @AfterTest
@@ -86,6 +90,17 @@ class PetClientTest {
 
             assertEquals(9L, result.id)
             assertEquals("Sparky", result.name)
+        }
+
+    @Test
+    fun `path parameter slash is percent encoded`() =
+        runBlocking {
+            server.stubFor(
+                delete(urlPathEqualTo("/user/parent%2Fchild"))
+                    .willReturn(aResponse().withStatus(200)),
+            )
+
+            userApi.deleteUser("parent/child")
         }
 
     @Test

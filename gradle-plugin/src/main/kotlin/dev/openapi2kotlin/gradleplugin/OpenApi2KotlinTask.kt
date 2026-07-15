@@ -104,6 +104,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNamePluralized = client.methodNamePluralized,
                     methodNameFromOperationId = client.methodNameFromOperationId,
                     apiNameFromTags = client.apiNameFromTags,
+                    encodePathParameterSlashes = client.encodePathParameterSlashes,
                 )
             }
 
@@ -115,6 +116,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNamePluralized = client.methodNamePluralized,
                     methodNameFromOperationId = client.methodNameFromOperationId,
                     apiNameFromTags = client.apiNameFromTags,
+                    encodePathParameterSlashes = client.encodePathParameterSlashes,
                 )
             }
 
@@ -126,6 +128,7 @@ abstract class OpenApi2KotlinTask : DefaultTask() {
                     methodNamePluralized = client.methodNamePluralized,
                     methodNameFromOperationId = client.methodNameFromOperationId,
                     apiNameFromTags = client.apiNameFromTags,
+                    encodePathParameterSlashes = client.encodePathParameterSlashes,
                 )
             }
         }

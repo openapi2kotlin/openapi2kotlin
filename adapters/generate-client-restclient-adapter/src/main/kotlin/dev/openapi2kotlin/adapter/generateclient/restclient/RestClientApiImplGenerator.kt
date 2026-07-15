@@ -26,21 +26,39 @@ private val HTTP_METHOD_T = ClassName("org.springframework.http", "HttpMethod")
 private val PARAMETERIZED_TYPE_REFERENCE_T =
     ClassName("org.springframework.core", "ParameterizedTypeReference")
 
+private data class ClientGenerationContext(
+    val apiPackageName: String,
+    val basePath: String,
+    val typeNames: TypeNameContext,
+    val encodePathParameterSlashes: Boolean,
+)
+
 internal class RestClientApiImplGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
         val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
         val ctx =
-            TypeNameContext(
-                modelPackageName = command.modelPackageName,
-                bySchemaName = bySchemaName,
+            ClientGenerationContext(
+                apiPackageName = command.packageName,
+                basePath = command.apiContext.basePath,
+                typeNames =
+                    TypeNameContext(
+                        modelPackageName = command.modelPackageName,
+                        bySchemaName = bySchemaName,
+                    ),
+                encodePathParameterSlashes = command.encodePathParameterSlashes,
             )
 
         command.apiContext.apis.forEach { api ->
             FileSpec
                 .builder(command.packageName, "${api.generatedName}Impl")
                 .indent("    ")
-                .addType(generateApiImpl(api, command.packageName, command.apiContext.basePath, ctx))
+                .addType(
+                    generateApiImpl(
+                        api = api,
+                        ctx = ctx,
+                    ),
+                )
                 .build()
                 .writeTo(outDir)
         }
@@ -50,11 +68,9 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
 
     private fun generateApiImpl(
         api: ApiDO,
-        apiPackageName: String,
-        basePath: String,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): TypeSpec {
-        val apiType = ClassName(apiPackageName, api.generatedName)
+        val apiType = ClassName(ctx.apiPackageName, api.generatedName)
 
         return TypeSpec
             .classBuilder("${api.generatedName}Impl")
@@ -72,7 +88,7 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             ).addProperty(
                 PropertySpec
                     .builder("basePath", String::class, KModifier.PRIVATE)
-                    .initializer("%S", basePath)
+                    .initializer("%S", ctx.basePath)
                     .build(),
             ).addFunction(
                 FunSpec
@@ -100,16 +116,16 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
             ).apply {
                 api.endpoints.forEach { endpoint ->
                     addFunction(generateRequestSpecFun(endpoint, ctx))
-                    addFunction(generateBodyMethod(endpoint, ctx))
-                    addFunction(generateHttpInfoMethod(endpoint, ctx))
-                    addFunction(generateResponseSpecMethod(endpoint, ctx))
+                    addFunction(generateBodyMethod(endpoint, ctx.typeNames))
+                    addFunction(generateHttpInfoMethod(endpoint, ctx.typeNames))
+                    addFunction(generateResponseSpecMethod(endpoint, ctx.typeNames))
                 }
             }.build()
     }
 
     private fun generateRequestSpecFun(
         ep: ApiEndpointDO,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): FunSpec {
         val builder =
             FunSpec
@@ -118,10 +134,14 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
                 .returns(RESPONSE_SPEC_T)
 
         ep.params.forEach { param ->
-            builder.addParameter(ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build())
+            builder.addParameter(
+                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx.typeNames)).build(),
+            )
         }
         ep.requestBody?.let { body ->
-            builder.addParameter(ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build())
+            builder.addParameter(
+                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx.typeNames)).build(),
+            )
         }
 
         builder.addCode(buildRequestSpecCode(ep, ctx))
@@ -234,24 +254,47 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
 
     private fun buildRequestSpecCode(
         ep: ApiEndpointDO,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): CodeBlock {
         val builder = CodeBlock.builder()
         val methodRef = httpMethodRef(ep)
 
+        if (!ctx.encodePathParameterSlashes) {
+            builder.addStatement("var resolvedPath = resolvePath(%S)", ep.rawOperation.path)
+            ep.params
+                .filter { it.rawParam.location == RawPathDO.ParamLocationDO.PATH }
+                .forEach { param ->
+                    val value =
+                        if ((param.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.STRING) {
+                            CodeBlock.of("%L", param.generatedName)
+                        } else {
+                            CodeBlock.of("%L.toString()", param.generatedName)
+                        }
+                    builder.addStatement(
+                        "resolvedPath = resolvedPath.replace(%S, %L)",
+                        "{${param.rawParam.name}}",
+                        value,
+                    )
+                }
+        }
+
         builder.addStatement("val request = restClient.method(%T.%L)", HTTP_METHOD_T, methodRef)
         builder.add("request.uri { builder ->\n")
         builder.indent()
-        builder.addStatement("builder.path(resolvePath(%S))", ep.rawOperation.path)
+        if (ctx.encodePathParameterSlashes) {
+            builder.addStatement("builder.path(resolvePath(%S))", ep.rawOperation.path)
+        } else {
+            builder.addStatement("builder.path(resolvedPath)")
+        }
         addQueryParams(builder, ep)
-        addPathBuild(builder, ep)
+        addPathBuild(builder, ep, ctx)
         builder.unindent()
         builder.add("}\n")
 
         addHeaderParams(builder, ep)
 
         ep.requestBody?.let { body ->
-            val bodyType = body.type.toTypeName(ctx)
+            val bodyType = body.type.toTypeName(ctx.typeNames)
             if (bodyType.isNullable) {
                 builder.addStatement("%L?.let(request::body)", body.generatedName)
             } else {
@@ -361,9 +404,10 @@ private fun addScalarQueryParam(
 private fun addPathBuild(
     builder: CodeBlock.Builder,
     ep: ApiEndpointDO,
+    ctx: ClientGenerationContext,
 ) {
     val pathParams = ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.PATH }
-    if (pathParams.isEmpty()) {
+    if (pathParams.isEmpty() || !ctx.encodePathParameterSlashes) {
         builder.addStatement("builder.build()")
         return
     }
@@ -372,7 +416,13 @@ private fun addPathBuild(
     builder.indent()
     pathParams.forEachIndexed { index, param ->
         val suffix = if (index == pathParams.lastIndex) "" else ","
-        builder.add("%S to %L$suffix\n", param.rawParam.name, param.generatedName)
+        val value =
+            if ((param.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.STRING) {
+                CodeBlock.of("%L", param.generatedName)
+            } else {
+                CodeBlock.of("%L.toString()", param.generatedName)
+            }
+        builder.add("%S to %L$suffix\n", param.rawParam.name, value)
     }
     builder.unindent()
     builder.add("))\n")

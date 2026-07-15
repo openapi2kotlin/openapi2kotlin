@@ -36,17 +36,33 @@ private val M_setBody = com.squareup.kotlinpoet.MemberName("io.ktor.client.reque
 private val M_contentType = com.squareup.kotlinpoet.MemberName("io.ktor.http", "contentType")
 private val CONTENT_TYPE_T = ClassName("io.ktor.http", "ContentType")
 
+private data class ClientGenerationContext(
+    val apiPackageName: String,
+    val typeNames: TypeNameContext,
+    val encodePathParameterSlashes: Boolean,
+)
+
 internal class ApiImplGenerator : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
         val bySchemaName: Map<String, ModelDO> = command.models.associateBy { it.rawSchema.originalName }
-        val ctx = TypeNameContext(modelPackageName = command.modelPackageName, bySchemaName = bySchemaName)
+        val ctx =
+            ClientGenerationContext(
+                apiPackageName = command.packageName,
+                typeNames = TypeNameContext(modelPackageName = command.modelPackageName, bySchemaName = bySchemaName),
+                encodePathParameterSlashes = command.encodePathParameterSlashes,
+            )
 
         command.apiContext.apis.forEach { api ->
             FileSpec
                 .builder(command.packageName, "${api.generatedName}Impl")
                 .indent("    ")
-                .addType(generateApiImpl(api, command.packageName, ctx))
+                .addType(
+                    generateApiImpl(
+                        api = api,
+                        ctx = ctx,
+                    ),
+                )
                 .build()
                 .writeTo(outDir)
         }
@@ -56,10 +72,9 @@ internal class ApiImplGenerator : GenerateApiPort {
 
     private fun generateApiImpl(
         api: ApiDO,
-        apiPackageName: String,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): TypeSpec {
-        val apiType = ClassName(apiPackageName, api.generatedName)
+        val apiType = ClassName(ctx.apiPackageName, api.generatedName)
 
         return TypeSpec
             .classBuilder("${api.generatedName}Impl")
@@ -75,15 +90,17 @@ internal class ApiImplGenerator : GenerateApiPort {
                     .initializer("client")
                     .build(),
             ).apply {
-                api.endpoints.forEach { addFunction(generateEndpointFun(it, ctx)) }
+                api.endpoints.forEach {
+                    addFunction(generateEndpointFun(it, ctx))
+                }
             }.build()
     }
 
     private fun generateEndpointFun(
         ep: ApiEndpointDO,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): FunSpec {
-        val returnType = ApiPolicy.Default.returnType(ep, ctx)
+        val returnType = ApiPolicy.Default.returnType(ep, ctx.typeNames)
         val requestCall = buildRequestCall(ep, ctx)
         val methodBuilder =
             FunSpec
@@ -93,13 +110,13 @@ internal class ApiImplGenerator : GenerateApiPort {
 
         ep.params.forEach { param ->
             methodBuilder.addParameter(
-                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build(),
+                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx.typeNames)).build(),
             )
         }
 
         ep.requestBody?.let { body ->
             methodBuilder.addParameter(
-                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx)).build(),
+                ParameterSpec.builder(body.generatedName, body.type.toTypeName(ctx.typeNames)).build(),
             )
         }
 
@@ -114,7 +131,7 @@ internal class ApiImplGenerator : GenerateApiPort {
 
     private fun buildRequestCall(
         ep: ApiEndpointDO,
-        ctx: TypeNameContext,
+        ctx: ClientGenerationContext,
     ): CodeBlock {
         val httpMethod =
             when (ep.rawOperation.httpMethod) {
@@ -129,7 +146,7 @@ internal class ApiImplGenerator : GenerateApiPort {
             .builder()
             .add("client.%M {\n", httpMethod)
             .indent()
-            .addPathBlock(ep)
+            .addPathBlock(ep, ctx)
             .addQueryBlock(ep)
             .addHeaderBlock(ep)
             .addBodyBlock(ep)
@@ -137,12 +154,15 @@ internal class ApiImplGenerator : GenerateApiPort {
             .add("}")
             .apply {
                 ep.successResponse?.type?.let { successType ->
-                    add(".%M<%T>()", M_body, successType.toTypeName(ctx))
+                    add(".%M<%T>()", M_body, successType.toTypeName(ctx.typeNames))
                 }
             }.build()
     }
 
-    private fun CodeBlock.Builder.addPathBlock(ep: ApiEndpointDO): CodeBlock.Builder {
+    private fun CodeBlock.Builder.addPathBlock(
+        ep: ApiEndpointDO,
+        ctx: ClientGenerationContext,
+    ): CodeBlock.Builder {
         val segments =
             ep.rawOperation.path
                 .trim('/')
@@ -161,9 +181,9 @@ internal class ApiImplGenerator : GenerateApiPort {
             if (pathParam != null) {
                 val trivialType = pathParam.type as? TrivialTypeDO
                 if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                    addStatement("%M(%L)", M_appendPathSegments, pathParam.generatedName)
+                    addPathParameter(pathParam.generatedName, ctx)
                 } else {
-                    addStatement("%M(%L.toString())", M_appendPathSegments, pathParam.generatedName)
+                    addPathParameter("${pathParam.generatedName}.toString()", ctx)
                 }
             } else {
                 addStatement("%M(%S)", M_appendPathSegments, segment)
@@ -172,6 +192,17 @@ internal class ApiImplGenerator : GenerateApiPort {
         unindent()
         add("}\n")
         return this
+    }
+
+    private fun CodeBlock.Builder.addPathParameter(
+        value: String,
+        ctx: ClientGenerationContext,
+    ) {
+        if (ctx.encodePathParameterSlashes) {
+            addStatement("%M(%L, encodeSlash = true)", M_appendPathSegments, value)
+        } else {
+            addStatement("%M(%L)", M_appendPathSegments, value)
+        }
     }
 
     private fun CodeBlock.Builder.addQueryBlock(ep: ApiEndpointDO): CodeBlock.Builder {

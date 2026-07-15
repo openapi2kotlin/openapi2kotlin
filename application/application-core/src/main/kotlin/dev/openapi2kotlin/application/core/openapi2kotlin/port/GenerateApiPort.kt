@@ -13,5 +13,6 @@ fun interface GenerateApiPort {
         val modelPackageName: String,
         val outputDirPath: Path,
         val models: List<ModelDO>,
+        val encodePathParameterSlashes: Boolean = false,
     )
 }

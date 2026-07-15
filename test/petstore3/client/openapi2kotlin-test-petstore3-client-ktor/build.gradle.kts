@@ -113,6 +113,7 @@ openapi2kotlin {
     client {
         packageName = "e2e.petstore3.client.ktor.generated.client"
         library = Ktor
+        encodePathParameterSlashes = true
     }
 }
 

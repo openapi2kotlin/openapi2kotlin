@@ -2,11 +2,13 @@ package e2e.petstore3.client.restclient
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import e2e.petstore3.client.restclient.generated.client.PetApiImpl
+import e2e.petstore3.client.restclient.generated.client.UserApiImpl
 import e2e.petstore3.client.restclient.generated.model.Pet
 import e2e.petstore3.client.restclient.generated.model.PetStatus
 import org.springframework.http.MediaType
@@ -19,6 +21,7 @@ import kotlin.test.assertEquals
 class PetClientTest {
     private lateinit var server: WireMockServer
     private lateinit var api: PetApiImpl
+    private lateinit var userApi: UserApiImpl
 
     @BeforeTest
     fun setUp() {
@@ -26,6 +29,12 @@ class PetClientTest {
         server.start()
         api =
             PetApiImpl(
+                RestClient.builder()
+                    .baseUrl(server.baseUrl())
+                    .build(),
+            )
+        userApi =
+            UserApiImpl(
                 RestClient.builder()
                     .baseUrl(server.baseUrl())
                     .build(),
@@ -76,5 +85,15 @@ class PetClientTest {
 
         assertEquals(9L, result.id)
         assertEquals("Sparky", result.name)
+    }
+
+    @Test
+    fun `path parameter slash is percent encoded`() {
+        server.stubFor(
+            delete(urlPathEqualTo("/user/parent%2Fchild"))
+                .willReturn(aResponse().withStatus(200)),
+        )
+
+        userApi.deleteUser("parent/child")
     }
 }
