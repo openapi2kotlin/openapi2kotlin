@@ -42,7 +42,7 @@ The plugin is published to [Maven Central](https://central.sonatype.com/artifact
 
 ```toml
 [versions]
-openapi2kotlin = "0.21.0"
+openapi2kotlin = "0.22.0"
 
 [plugins]
 openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }
@@ -95,6 +95,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 | `client.methodNamePluralized` | Pluralizes method names for collection endpoints, e.g. `listQuotes`. | true, false | false | true |
 | `client.methodNameFromOperationId` | Derives method names from OpenAPI `operationId` instead of URL path. | true, false | false | false |
 | `client.apiNameFromTags` | Groups generated API classes by the first OpenAPI tag instead of the first URL path segment. | true, false | false | false |
+| `client.encodePathParameterSlashes` | Percent-encodes slashes in path parameters rather than treating them as path separators. | true, false | false | false |
 | `server.packageName` | Base package for generated API classes. | - | false | "dev.openapi2kotlin.server" |
 | `server.library` | Target server framework used by generated server API. | Ktor, Http4k, Spring | true | - |
 | `server.swagger` | Enables generated Swagger/OpenAPI annotations. | true, false | false | Ktor -> false, Http4k -> false, Spring -> true |
