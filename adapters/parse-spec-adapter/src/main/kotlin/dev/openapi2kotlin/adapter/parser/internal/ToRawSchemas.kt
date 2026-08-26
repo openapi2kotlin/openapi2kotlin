@@ -111,7 +111,7 @@ internal fun mergeSchemaProperty(
         constraints = mergeConstraints(a.constraints, b.constraints),
     )
 
-private fun String?.toRawPrimitiveType(): RawPrimitiveTypeDO.Type =
+internal fun String?.toRawPrimitiveType(): RawPrimitiveTypeDO.Type =
     when (this) {
         "string" -> RawPrimitiveTypeDO.Type.STRING
         "number" -> RawPrimitiveTypeDO.Type.NUMBER
@@ -145,6 +145,7 @@ private data class InlineEnumSchema(
     val propertyName: String,
     val schemaName: String,
     val values: List<String>,
+    val type: RawPrimitiveTypeDO,
     val description: String?,
 )
 
@@ -167,6 +168,7 @@ private fun Map<String, Schema<*>>.collectInlineEnumSchemas(): List<InlineEnumSc
                 propertyName = propertyName,
                 schemaName = schemaName,
                 values = values,
+                type = checkNotNull(propertySchema.enumType()),
                 description = propertySchema.description,
             )
         }
@@ -179,6 +181,7 @@ private fun InlineEnumSchema.toRawSchema(): RawSchemaDO =
         allOfParents = emptyList(),
         oneOfChildren = emptyList(),
         enumValues = values,
+        enumType = type,
         constraints = RawSchemaDO.ConstraintsDO(),
         ownProperties = emptyMap(),
         discriminatorPropertyName = null,

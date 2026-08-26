@@ -490,29 +490,7 @@
         <compositeConfiguration>
           <compositeBuild compositeDefinitionSource="SCRIPT">
             <builds>
-              <build path="$PROJECT_DIR$" name="openapi2kotlin">
-                <projects>
-                  <project path="$PROJECT_DIR$" />
-                  <project path="$PROJECT_DIR$/adapters" />
-                  <project path="$PROJECT_DIR$/adapters/generate-client-http4k-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/generate-client-ktor-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/generate-client-restclient-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/generate-model-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/generate-server-http4k-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/generate-server-ktor-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/generate-server-spring-adapter" />
-                  <project path="$PROJECT_DIR$/adapters/parse-spec-adapter" />
-                  <project path="$PROJECT_DIR$/application" />
-                  <project path="$PROJECT_DIR$/application/application-core" />
-                  <project path="$PROJECT_DIR$/application/application-usecase" />
-                  <project path="$PROJECT_DIR$/configuration" />
-                  <project path="$PROJECT_DIR$/gradle-plugin" />
-                  <project path="$PROJECT_DIR$/tools" />
-                  <project path="$PROJECT_DIR$/tools/api-generator" />
-                  <project path="$PROJECT_DIR$/tools/detekt-tools" />
-                  <project path="$PROJECT_DIR$/tools/generator-tools" />
-                </projects>
-              </build>
+              <build path="$PROJECT_DIR$" name="openapi2kotlin" />
             </builds>
           </compositeBuild>
         </compositeConfiguration>

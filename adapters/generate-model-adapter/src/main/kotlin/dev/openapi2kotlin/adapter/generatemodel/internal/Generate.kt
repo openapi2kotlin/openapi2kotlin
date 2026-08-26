@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeAliasSpec
 import com.squareup.kotlinpoet.TypeSpec
@@ -12,6 +13,7 @@ import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyModelAnnot
 import dev.openapi2kotlin.adapter.generatemodel.internal.helpers.applyPropertyAnnotations
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.postProcess
 import dev.openapi2kotlin.tools.generatortools.toTypeName
@@ -20,6 +22,12 @@ import java.nio.file.Path
 
 private val log = KotlinLogging.logger {}
 private const val KOTLINX_SERIALIZABLE = "kotlinx.serialization.Serializable"
+private val KOTLINX_SERIALIZER = ClassName("kotlinx.serialization", "KSerializer")
+private val SERIAL_DESCRIPTOR = ClassName("kotlinx.serialization.descriptors", "SerialDescriptor")
+private val PRIMITIVE_SERIAL_DESCRIPTOR = ClassName("kotlinx.serialization.descriptors", "PrimitiveSerialDescriptor")
+private val PRIMITIVE_KIND = ClassName("kotlinx.serialization.descriptors", "PrimitiveKind")
+private val ENCODER = ClassName("kotlinx.serialization.encoding", "Encoder")
+private val DECODER = ClassName("kotlinx.serialization.encoding", "Decoder")
 
 /**
  * Final pass – generate Kotlin files.
@@ -97,6 +105,7 @@ private fun buildEnumFile(
     schema: ModelDO,
     shape: ModelShapeDO.EnumClass,
 ): FileSpec {
+    val valueType = shape.valueType.toTypeName(TypeNameContext(schema.packageName))
     val typeBuilder =
         TypeSpec
             .enumBuilder(schema.generatedName)
@@ -109,34 +118,65 @@ private fun buildEnumFile(
     val ctor =
         FunSpec
             .constructorBuilder()
-            .addParameter("value", String::class)
+            .addParameter("value", valueType)
             .build()
     typeBuilder.primaryConstructor(ctor)
 
     typeBuilder.addProperty(
         PropertySpec
-            .builder("value", String::class)
+            .builder("value", valueType)
             .initializer("value")
             .applyAnnotations(schema.enumValueAnnotations)
             .build(),
     )
 
+    typeBuilder.addEnumValues(shape)
+    typeBuilder.addType(buildEnumCompanion(schema, shape))
+
+    if (
+        shape.valueType.kind != TrivialTypeDO.Kind.STRING &&
+        schema.annotations.any { it.fqName == KOTLINX_SERIALIZABLE }
+    ) {
+        typeBuilder.addType(buildNumericEnumSerializer(schema, shape.valueType.kind))
+    }
+
+    return FileSpec
+        .builder(schema.packageName, schema.generatedName)
+        .indent("    ")
+        .addType(typeBuilder.build())
+        .build()
+}
+
+private fun TypeSpec.Builder.addEnumValues(shape: ModelShapeDO.EnumClass) {
     shape.values.forEach { ev ->
         val enumConst =
             TypeSpec
                 .anonymousClassBuilder()
                 .applyAnnotations(ev.annotations)
-                .addSuperclassConstructorParameter("%S", ev.originalValue)
+                .apply {
+                    when (shape.valueType.kind) {
+                        TrivialTypeDO.Kind.STRING -> addSuperclassConstructorParameter("%S", ev.originalValue)
+                        TrivialTypeDO.Kind.INT -> addSuperclassConstructorParameter("%L", ev.originalValue)
+                        TrivialTypeDO.Kind.LONG -> addSuperclassConstructorParameter("%L", "${ev.originalValue}L")
+                        else -> error("Unsupported enum value type: ${shape.valueType.kind}")
+                    }
+                }
                 .build()
 
-        typeBuilder.addEnumConstant(ev.generatedValue, enumConst)
+        addEnumConstant(ev.generatedValue, enumConst)
     }
+}
 
+private fun buildEnumCompanion(
+    schema: ModelDO,
+    shape: ModelShapeDO.EnumClass,
+): TypeSpec {
+    val valueType = shape.valueType.toTypeName(TypeNameContext(schema.packageName))
     val fromValueFun =
         FunSpec
             .builder("fromValue")
             .returns(schema.className())
-            .addParameter("v", String::class)
+            .addParameter("v", valueType)
             .applyAnnotations(schema.enumFromValueAnnotations)
             .addCode(
                 """
@@ -145,19 +185,55 @@ private fun buildEnumFile(
                 """.trimIndent(),
             ).build()
 
-    val companion =
-        TypeSpec
-            .companionObjectBuilder()
-            .addFunction(fromValueFun)
-            .build()
-
-    typeBuilder.addType(companion)
-
-    return FileSpec
-        .builder(schema.packageName, schema.generatedName)
-        .indent("    ")
-        .addType(typeBuilder.build())
+    return TypeSpec
+        .companionObjectBuilder()
+        .addFunction(fromValueFun)
         .build()
+}
+
+private fun buildNumericEnumSerializer(
+    schema: ModelDO,
+    valueKind: TrivialTypeDO.Kind,
+): TypeSpec {
+    val (primitiveKind, encodeFunction, decodeFunction) =
+        when (valueKind) {
+            TrivialTypeDO.Kind.INT -> Triple("INT", "encodeInt", "decodeInt")
+            TrivialTypeDO.Kind.LONG -> Triple("LONG", "encodeLong", "decodeLong")
+            else -> error("Unsupported numeric enum value type: $valueKind")
+        }
+
+    return TypeSpec
+        .objectBuilder("Serializer")
+        .addSuperinterface(KOTLINX_SERIALIZER.parameterizedBy(schema.className()))
+        .addProperty(
+            PropertySpec
+                .builder("descriptor", SERIAL_DESCRIPTOR)
+                .addModifiers(KModifier.OVERRIDE)
+                .initializer(
+                    "%T(%S, %T.%L)",
+                    PRIMITIVE_SERIAL_DESCRIPTOR,
+                    schema.generatedName,
+                    PRIMITIVE_KIND,
+                    primitiveKind,
+                )
+                .build(),
+        ).addFunction(
+            FunSpec
+                .builder("serialize")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("encoder", ENCODER)
+                .addParameter("value", schema.className())
+                .addStatement("encoder.%L(value.value)", encodeFunction)
+                .build(),
+        ).addFunction(
+            FunSpec
+                .builder("deserialize")
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("decoder", DECODER)
+                .returns(schema.className())
+                .addStatement("return %T.fromValue(decoder.%L())", schema.className(), decodeFunction)
+                .build(),
+        ).build()
 }
 
 // ---------- SEALED INTERFACE ----------

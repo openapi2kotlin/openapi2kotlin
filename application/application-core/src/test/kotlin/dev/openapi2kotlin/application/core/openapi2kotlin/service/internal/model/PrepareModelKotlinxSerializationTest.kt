@@ -1,6 +1,7 @@
 package dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.model
 
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 import java.nio.file.Paths
@@ -146,6 +147,30 @@ class PrepareModelKotlinxSerializationTest {
         )
     }
 
+    @Test
+    fun `prepareModels configures numeric enum serializer without string SerialNames`() {
+        val model =
+            prepareModels(
+                schemas =
+                    listOf(
+                        rawSchema(
+                            originalName = "ContractDurationMonths",
+                            enumValues = listOf("24", "36", "48"),
+                            enumType = rawInteger(),
+                        ),
+                    ),
+                config = config(),
+            ).single()
+
+        val shape = assertIs<ModelShapeDO.EnumClass>(model.modelShape)
+        assertEquals(TrivialTypeDO.Kind.LONG, shape.valueType.kind)
+        assertEquals(
+            listOf("with = ContractDurationMonths.Serializer::class"),
+            model.annotations.single { it.fqName == "kotlinx.serialization.Serializable" }.argsCode,
+        )
+        assertEquals(emptyList(), shape.values.flatMap { it.annotations })
+    }
+
     private fun config(): OpenApi2KotlinUseCase.Config =
         OpenApi2KotlinUseCase.Config(
             inputSpecPath = Paths.get("openapi.yaml"),
@@ -166,6 +191,7 @@ class PrepareModelKotlinxSerializationTest {
         allOfParents: List<String> = emptyList(),
         oneOfChildren: List<String> = emptyList(),
         enumValues: List<String> = emptyList(),
+        enumType: RawSchemaDO.RawPrimitiveTypeDO? = null,
         ownProperties: Map<String, RawSchemaDO.SchemaPropertyDO> = emptyMap(),
         discriminatorPropertyName: String? = null,
         discriminatorMapping: Map<String, String> = emptyMap(),
@@ -175,6 +201,7 @@ class PrepareModelKotlinxSerializationTest {
             allOfParents = allOfParents,
             oneOfChildren = oneOfChildren,
             enumValues = enumValues,
+            enumType = enumType,
             ownProperties = ownProperties,
             discriminatorPropertyName = discriminatorPropertyName,
             usedInPaths = true,
@@ -198,5 +225,11 @@ class PrepareModelKotlinxSerializationTest {
         RawSchemaDO.RawPrimitiveTypeDO(
             type = RawSchemaDO.RawPrimitiveTypeDO.Type.STRING,
             nullable = nullable,
+        )
+
+    private fun rawInteger(): RawSchemaDO.RawPrimitiveTypeDO =
+        RawSchemaDO.RawPrimitiveTypeDO(
+            type = RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER,
+            nullable = false,
         )
 }

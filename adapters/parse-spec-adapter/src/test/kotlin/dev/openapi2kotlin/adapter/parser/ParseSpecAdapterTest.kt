@@ -66,6 +66,17 @@ class ParseSpecAdapterTest {
 
         val displayEnum = result.rawSchemas.single { it.originalName == "TranslationRequestDisplay" }
         assertEquals(listOf("compact", "expanded"), displayEnum.enumValues)
+
+        val inlineIntegerEnum =
+            result.rawSchemas.single { it.originalName == "TranslationRequestContractDurationMonths" }
+        assertEquals(listOf("24", "36", "48"), inlineIntegerEnum.enumValues)
+        assertEquals(RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER, inlineIntegerEnum.enumType?.type)
+        assertEquals(null, inlineIntegerEnum.enumType?.format)
+
+        val componentIntegerEnum = result.rawSchemas.single { it.originalName == "ContractDurationMonths" }
+        assertEquals(listOf("24", "36", "48"), componentIntegerEnum.enumValues)
+        assertEquals(RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER, componentIntegerEnum.enumType?.type)
+        assertEquals("int64", componentIntegerEnum.enumType?.format)
     }
 
     @Test

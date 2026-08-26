@@ -9,6 +9,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShap
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.service.internal.common.toFinalType
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 internal fun List<ModelDO>.handleModelShape(cfg: OpenApi2KotlinUseCase.ModelConfig) {
@@ -120,7 +121,7 @@ private fun List<ModelDO>.markDiscriminatorChildren() {
 }
 
 private fun ModelDO.resolveInitialShape(cfg: OpenApi2KotlinUseCase.ModelConfig): ModelShapeDO {
-    val immediateShape = toArrayAliasShape() ?: toEnumShape()
+    val immediateShape = toArrayAliasShape() ?: toEnumShape(cfg)
     if (immediateShape != null) return immediateShape
 
     val hasOneOf = rawSchema.oneOfChildren.isNotEmpty()
@@ -154,7 +155,7 @@ private fun ModelDO.toArrayAliasShape(): ModelShapeDO.TypeAlias? {
     }
 }
 
-private fun ModelDO.toEnumShape(): ModelShapeDO.EnumClass? {
+private fun ModelDO.toEnumShape(cfg: OpenApi2KotlinUseCase.ModelConfig): ModelShapeDO.EnumClass? {
     if (rawSchema.enumValues.isEmpty()) return null
     return ModelShapeDO.EnumClass(
         values =
@@ -164,6 +165,9 @@ private fun ModelDO.toEnumShape(): ModelShapeDO.EnumClass? {
                     generatedValue = original.toEnumConstName(),
                 )
             },
+        valueType =
+            (rawSchema.enumType?.toFinalType(cfg) as? TrivialTypeDO)
+                ?: TrivialTypeDO(TrivialTypeDO.Kind.STRING, nullable = false),
     )
 }
 

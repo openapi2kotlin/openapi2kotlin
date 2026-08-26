@@ -28,6 +28,10 @@ data class RawSchemaDO(
      */
     val enumValues: List<String> = emptyList(),
     /**
+     * Primitive wire type of enum values. Null for non-enum schemas and legacy callers that only provide values.
+     */
+    val enumType: RawPrimitiveTypeDO? = null,
+    /**
      * Whether this schema is an array schema (items defined).
      */
     val isArraySchema: Boolean = false,

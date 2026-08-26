@@ -49,6 +49,7 @@ internal fun Map.Entry<String, Schema<*>>.toRawSchema(
         allOfParents = schema.refChildren(schema.allOf),
         oneOfChildren = schema.refChildren(schema.oneOf),
         enumValues = schema.enum?.map { it.toString() }.orEmpty(),
+        enumType = schema.enumType(),
         isArraySchema = schema.type == "array",
         arrayItemType = schema.arrayItemType(),
         constraints = schemaToConstraints(schema),
@@ -64,6 +65,22 @@ internal fun Map.Entry<String, Schema<*>>.toRawSchema(
         description = schema.schemaDescription(),
     )
 }
+
+internal fun Schema<*>.enumType(): RawSchemaDO.RawPrimitiveTypeDO? =
+    enum
+        ?.takeIf { it.isNotEmpty() }
+        ?.let {
+            val rawType = effectiveType().toRawPrimitiveType()
+            RawSchemaDO.RawPrimitiveTypeDO(
+                // Numeric enum support is intentionally limited to OpenAPI integer enums.
+                // Other enum kinds retain the generator's established string behavior.
+                type =
+                    rawType.takeIf { it == RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER }
+                        ?: RawSchemaDO.RawPrimitiveTypeDO.Type.STRING,
+                format = format.takeIf { rawType == RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER },
+                nullable = false,
+            )
+        }
 
 private fun Schema<*>.collectOwnProperties(
     inlineEnumNames: Map<String, String>,

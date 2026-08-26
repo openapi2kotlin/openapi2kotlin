@@ -5,6 +5,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.MapTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawSchemaDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 import java.nio.file.Paths
@@ -136,6 +137,34 @@ class PrepareModelTest {
     }
 
     @Test
+    fun `prepareModels retains integer enum wire type for Jackson`() {
+        val model =
+            prepareModels(
+                schemas =
+                    listOf(
+                        rawSchema(
+                            originalName = "ContractDurationMonths",
+                            enumValues = listOf("24", "36", "48"),
+                            enumType =
+                                RawSchemaDO.RawPrimitiveTypeDO(
+                                    type = RawSchemaDO.RawPrimitiveTypeDO.Type.INTEGER,
+                                    nullable = false,
+                                ),
+                        ),
+                    ),
+                config = config(OpenApi2KotlinUseCase.ModelConfig.Serialization.JACKSON),
+            ).single()
+
+        val shape = assertIs<ModelShapeDO.EnumClass>(model.modelShape)
+        assertEquals(
+            TrivialTypeDO.Kind.LONG,
+            shape.valueType.kind,
+        )
+        assertEquals("com.fasterxml.jackson.annotation.JsonValue", model.enumValueAnnotations.single().fqName)
+        assertEquals("com.fasterxml.jackson.annotation.JsonCreator", model.enumFromValueAnnotations.single().fqName)
+    }
+
+    @Test
     fun `prepareModels moves wider oneOf parent to narrower interface`() {
         val models =
             prepareModels(
@@ -180,14 +209,17 @@ class PrepareModelTest {
         assertEquals(listOf("Widget"), textShape.implements)
     }
 
-    private fun config(): OpenApi2KotlinUseCase.Config =
+    private fun config(
+        serialization: OpenApi2KotlinUseCase.ModelConfig.Serialization =
+            OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX,
+    ): OpenApi2KotlinUseCase.Config =
         OpenApi2KotlinUseCase.Config(
             inputSpecPath = Paths.get("openapi.yaml"),
             outputDirPath = Paths.get("build/generated"),
             model =
                 OpenApi2KotlinUseCase.ModelConfig(
                     packageName = "dev.openapi2kotlin.model",
-                    serialization = OpenApi2KotlinUseCase.ModelConfig.Serialization.KOTLINX,
+                    serialization = serialization,
                     validation = null,
                     double2BigDecimal = false,
                     float2BigDecimal = false,
@@ -200,6 +232,7 @@ class PrepareModelTest {
         allOfParents: List<String> = emptyList(),
         oneOfChildren: List<String> = emptyList(),
         enumValues: List<String> = emptyList(),
+        enumType: RawSchemaDO.RawPrimitiveTypeDO? = null,
         ownProperties: Map<String, RawSchemaDO.SchemaPropertyDO> = emptyMap(),
         discriminatorPropertyName: String? = null,
         discriminatorMapping: Map<String, String> = emptyMap(),
@@ -209,6 +242,7 @@ class PrepareModelTest {
             allOfParents = allOfParents,
             oneOfChildren = oneOfChildren,
             enumValues = enumValues,
+            enumType = enumType,
             ownProperties = ownProperties,
             discriminatorPropertyName = discriminatorPropertyName,
             usedInPaths = true,

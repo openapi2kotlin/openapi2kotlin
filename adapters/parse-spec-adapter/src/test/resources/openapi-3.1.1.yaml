@@ -80,6 +80,12 @@ components:
           enum:
             - compact
             - expanded
+        contractDurationMonths:
+          type: integer
+          enum:
+            - 24
+            - 36
+            - 48
         optionalNote:
           type:
             - string
@@ -106,6 +112,13 @@ components:
       type: object
     WidgetStyle:
       type: object
+    ContractDurationMonths:
+      type: integer
+      format: int64
+      enum:
+        - 24
+        - 36
+        - 48
     Layout:
       type: object
       required:

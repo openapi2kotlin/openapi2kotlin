@@ -4,6 +4,7 @@ import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelAnnotationDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.usecase.openapi2kotlin.OpenApi2KotlinUseCase
 
 private const val SERIALIZABLE = "kotlinx.serialization.Serializable"
@@ -16,9 +17,15 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
 
     if (cfg.kotlinxSerializable) {
         forEach { model ->
+            val enumShape = model.modelShape as? ModelShapeDO.EnumClass
+            val serializerArg =
+                enumShape
+                    ?.takeUnless { it.valueType.kind == TrivialTypeDO.Kind.STRING }
+                    ?.let { "with = ${model.generatedName}.Serializer::class" }
             model.annotations +=
                 ModelAnnotationDO(
                     fqName = SERIALIZABLE,
+                    argsCode = serializerArg?.let(::listOf).orEmpty(),
                 )
         }
     }
@@ -47,6 +54,7 @@ internal fun List<ModelDO>.handleKotlinxAnnotations(cfg: OpenApi2KotlinUseCase.M
 private fun List<ModelDO>.applyKotlinxEnumSerialNames() {
     forEach { model ->
         val shape = model.modelShape as? ModelShapeDO.EnumClass ?: return@forEach
+        if (shape.valueType.kind != TrivialTypeDO.Kind.STRING) return@forEach
         model.modelShape =
             shape.copy(
                 values =

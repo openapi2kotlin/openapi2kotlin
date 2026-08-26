@@ -54,6 +54,10 @@ sealed interface ModelShapeDO {
          * Enum values.
          */
         val values: List<EnumValueDO>,
+        /**
+         * Kotlin type stored by each enum constant and used on the JSON wire.
+         */
+        val valueType: TrivialTypeDO,
     ) : ModelShapeDO
 
     /**
