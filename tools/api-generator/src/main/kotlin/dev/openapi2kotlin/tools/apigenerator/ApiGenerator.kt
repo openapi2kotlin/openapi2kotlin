@@ -29,6 +29,7 @@ import dev.openapi2kotlin.tools.generatortools.toTypeName
 
 class ApiGenerator(
     private val policy: ApiPolicy = ApiPolicy.Default,
+    private val optionalHeaders: Boolean = false,
 ) : GenerateApiPort {
     override fun generateApi(command: GenerateApiPort.Command) {
         val outDir = command.outputDirPath.toFile()
@@ -104,7 +105,10 @@ class ApiGenerator(
         ctx: TypeNameContext,
         aliases: Map<String, String>,
     ): ParameterSpec {
-        val builder = ParameterSpec.builder(generatedName, type.toTypeName(ctx))
+        val isOptionalHeader = optionalHeaders && rawParam.location == RawPathDO.ParamLocationDO.HEADER
+        val parameterType = type.toTypeName(ctx).copy(nullable = isOptionalHeader || type.nullable)
+        val builder = ParameterSpec.builder(generatedName, parameterType)
+        if (isOptionalHeader) builder.defaultValue("null")
         annotations.shortenArgs(aliases).forEach { builder.addAnnotation(it.toPoet(aliases)) }
         return builder.build()
     }

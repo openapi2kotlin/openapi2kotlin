@@ -212,16 +212,19 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
                 .addModifiers(KModifier.OVERRIDE)
 
         ep.params.forEach { param ->
+            val parameterType =
+                param.type
+                    .toTypeName(
+                        requireNotNull(ctx) {
+                            "TypeNameContext required for ${ep.generatedName}$suffix"
+                        },
+                    ).copy(
+                        nullable = param.rawParam.location == RawPathDO.ParamLocationDO.HEADER || param.type.nullable,
+                    )
             builder.addParameter(
                 ParameterSpec
-                    .builder(
-                        param.generatedName,
-                        param.type.toTypeName(
-                            requireNotNull(ctx) {
-                                "TypeNameContext required for ${ep.generatedName}$suffix"
-                            },
-                        ),
-                    ).build(),
+                    .builder(param.generatedName, parameterType)
+                    .build(),
             )
         }
 
@@ -439,19 +442,11 @@ private fun addHeaderParams(
     builder.indent()
     headerParams.forEach { param ->
         val valueCode = optionalValueCode(param)
-        if (param.rawParam.required) {
-            builder.addStatement(
-                "headers.add(%S, %L.toString())",
-                param.rawParam.name,
-                param.generatedName,
-            )
-        } else {
-            builder.addStatement(
-                "%L?.let { headers.add(%S, $valueCode) }",
-                param.generatedName,
-                param.rawParam.name,
-            )
-        }
+        builder.addStatement(
+            "%L?.let { headers.add(%S, $valueCode) }",
+            param.generatedName,
+            param.rawParam.name,
+        )
     }
     builder.unindent()
     builder.add("}\n")

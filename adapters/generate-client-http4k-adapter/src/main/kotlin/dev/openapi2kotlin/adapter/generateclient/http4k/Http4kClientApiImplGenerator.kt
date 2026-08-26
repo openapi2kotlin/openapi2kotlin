@@ -179,8 +179,12 @@ internal class Http4kClientApiImplGenerator : GenerateApiPort {
                 .addModifiers(KModifier.OVERRIDE)
 
         ep.params.forEach { param ->
+            val parameterType =
+                param.type
+                    .toTypeName(ctx)
+                    .copy(nullable = param.rawParam.location == RawPathDO.ParamLocationDO.HEADER || param.type.nullable)
             builder.addParameter(
-                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build(),
+                ParameterSpec.builder(param.generatedName, parameterType).build(),
             )
         }
 
@@ -399,21 +403,7 @@ private fun CodeBlock.Builder.addScalarQueryParam(param: ApiParamDO) {
 private fun CodeBlock.Builder.addHeaderParam(param: ApiParamDO) {
     val isString = (param.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.STRING
 
-    if (param.rawParam.required) {
-        if (isString) {
-            addStatement(
-                "request = request.header(%S, %L)",
-                param.rawParam.name,
-                param.generatedName,
-            )
-        } else {
-            addStatement(
-                "request = request.header(%S, %L.toString())",
-                param.rawParam.name,
-                param.generatedName,
-            )
-        }
-    } else if (isString) {
+    if (isString) {
         addStatement(
             "%L?.let { request = request.header(%S, it) }",
             param.generatedName,

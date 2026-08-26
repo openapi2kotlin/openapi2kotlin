@@ -109,8 +109,12 @@ internal class ApiImplGenerator : GenerateApiPort {
                 .returns(returnType)
 
         ep.params.forEach { param ->
+            val parameterType =
+                param.type
+                    .toTypeName(ctx.typeNames)
+                    .copy(nullable = param.rawParam.location == RawPathDO.ParamLocationDO.HEADER || param.type.nullable)
             methodBuilder.addParameter(
-                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx.typeNames)).build(),
+                ParameterSpec.builder(param.generatedName, parameterType).build(),
             )
         }
 
@@ -228,15 +232,7 @@ internal class ApiImplGenerator : GenerateApiPort {
                     } else {
                         "it.toString()"
                     }
-                if (param.rawParam.required) {
-                    if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-                        addStatement("headers.append(%S, %L)", param.rawParam.name, param.generatedName)
-                    } else {
-                        addStatement("headers.append(%S, %L.toString())", param.rawParam.name, param.generatedName)
-                    }
-                } else {
-                    addStatement("%L?.let { headers.append(%S, $valueCode) }", param.generatedName, param.rawParam.name)
-                }
+                addStatement("%L?.let { headers.append(%S, $valueCode) }", param.generatedName, param.rawParam.name)
             }
         return this
     }

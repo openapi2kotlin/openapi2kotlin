@@ -8,6 +8,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
 import dev.openapi2kotlin.tools.generatortools.TypeNameContext
 import dev.openapi2kotlin.tools.generatortools.postProcess
@@ -75,8 +76,13 @@ internal class Http4kClientInterfaceGenerator : GenerateApiPort {
                 .addModifiers(KModifier.ABSTRACT)
 
         ep.params.forEach { param ->
+            val isHeader = param.rawParam.location == RawPathDO.ParamLocationDO.HEADER
+            val parameterType = param.type.toTypeName(ctx).copy(nullable = isHeader || param.type.nullable)
             builder.addParameter(
-                ParameterSpec.builder(param.generatedName, param.type.toTypeName(ctx)).build(),
+                ParameterSpec
+                    .builder(param.generatedName, parameterType)
+                    .apply { if (isHeader) defaultValue("null") }
+                    .build(),
             )
         }
 
