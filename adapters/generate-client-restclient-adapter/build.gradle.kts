@@ -8,4 +8,5 @@ dependencies {
     implementation(project(":tools:generator-tools"))
     implementation(libs.kotlin.logging)
     implementation(libs.kotlinpoet)
+    testImplementation(libs.kotlin.test.junit)
 }

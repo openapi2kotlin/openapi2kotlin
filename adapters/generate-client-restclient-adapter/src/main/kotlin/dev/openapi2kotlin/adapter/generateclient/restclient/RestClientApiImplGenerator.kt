@@ -11,8 +11,11 @@ import com.squareup.kotlinpoet.TypeSpec
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiEndpointDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.api.ApiParamDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.FieldTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ListTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.ModelShapeDO
+import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.RefTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.model.TrivialTypeDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.domain.raw.RawPathDO
 import dev.openapi2kotlin.application.core.openapi2kotlin.port.GenerateApiPort
@@ -268,11 +271,10 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
                 .filter { it.rawParam.location == RawPathDO.ParamLocationDO.PATH }
                 .forEach { param ->
                     val value =
-                        if ((param.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.STRING) {
-                            CodeBlock.of("%L", param.generatedName)
-                        } else {
-                            CodeBlock.of("%L.toString()", param.generatedName)
-                        }
+                        CodeBlock.of(
+                            "%L",
+                            param.type.toRestClientWireValueCode(param.generatedName, ctx.typeNames),
+                        )
                     builder.addStatement(
                         "resolvedPath = resolvedPath.replace(%S, %L)",
                         "{${param.rawParam.name}}",
@@ -289,12 +291,12 @@ internal class RestClientApiImplGenerator : GenerateApiPort {
         } else {
             builder.addStatement("builder.path(resolvedPath)")
         }
-        addQueryParams(builder, ep)
+        addQueryParams(builder, ep, ctx.typeNames)
         addPathBuild(builder, ep, ctx)
         builder.unindent()
         builder.add("}\n")
 
-        addHeaderParams(builder, ep)
+        addHeaderParams(builder, ep, ctx.typeNames)
 
         ep.requestBody?.let { body ->
             val bodyType = body.type.toTypeName(ctx.typeNames)
@@ -344,13 +346,14 @@ private fun httpMethodRef(ep: ApiEndpointDO): String =
 private fun addQueryParams(
     builder: CodeBlock.Builder,
     ep: ApiEndpointDO,
+    ctx: TypeNameContext,
 ) {
     ep.params
         .filter { it.rawParam.location == RawPathDO.ParamLocationDO.QUERY }
         .forEach { param ->
             when (param.type) {
-                is ListTypeDO -> addListQueryParam(builder, param)
-                else -> addScalarQueryParam(builder, param)
+                is ListTypeDO -> addListQueryParam(builder, param, ctx)
+                else -> addScalarQueryParam(builder, param, ctx)
             }
         }
 }
@@ -358,16 +361,10 @@ private fun addQueryParams(
 private fun addListQueryParam(
     builder: CodeBlock.Builder,
     param: ApiParamDO,
+    ctx: TypeNameContext,
 ) {
     val listType = param.type as ListTypeDO
-    val itemCode =
-        if (listType.elementType is TrivialTypeDO &&
-            (listType.elementType as TrivialTypeDO).kind == TrivialTypeDO.Kind.STRING
-        ) {
-            "it"
-        } else {
-            "it.toString()"
-        }
+    val itemCode = listType.elementType.toRestClientWireValueCode("it", ctx)
 
     if (param.rawParam.required) {
         builder.addStatement(
@@ -387,13 +384,14 @@ private fun addListQueryParam(
 private fun addScalarQueryParam(
     builder: CodeBlock.Builder,
     param: ApiParamDO,
+    ctx: TypeNameContext,
 ) {
-    val valueCode = optionalValueCode(param)
+    val valueCode = param.type.toRestClientWireValueCode("it", ctx)
     if (param.rawParam.required) {
         builder.addStatement(
-            "builder.queryParam(%S, %L.toString())",
+            "builder.queryParam(%S, %L)",
             param.rawParam.name,
-            param.generatedName,
+            param.type.toRestClientWireValueCode(param.generatedName, ctx),
         )
     } else {
         builder.addStatement(
@@ -420,11 +418,10 @@ private fun addPathBuild(
     pathParams.forEachIndexed { index, param ->
         val suffix = if (index == pathParams.lastIndex) "" else ","
         val value =
-            if ((param.type as? TrivialTypeDO)?.kind == TrivialTypeDO.Kind.STRING) {
-                CodeBlock.of("%L", param.generatedName)
-            } else {
-                CodeBlock.of("%L.toString()", param.generatedName)
-            }
+            CodeBlock.of(
+                "%L",
+                param.type.toRestClientWireValueCode(param.generatedName, ctx.typeNames),
+            )
         builder.add("%S to %L$suffix\n", param.rawParam.name, value)
     }
     builder.unindent()
@@ -434,6 +431,7 @@ private fun addPathBuild(
 private fun addHeaderParams(
     builder: CodeBlock.Builder,
     ep: ApiEndpointDO,
+    ctx: TypeNameContext,
 ) {
     val headerParams = ep.params.filter { it.rawParam.location == RawPathDO.ParamLocationDO.HEADER }
     if (headerParams.isEmpty()) return
@@ -441,7 +439,7 @@ private fun addHeaderParams(
     builder.add("request.headers { headers ->\n")
     builder.indent()
     headerParams.forEach { param ->
-        val valueCode = optionalValueCode(param)
+        val valueCode = param.type.toRestClientWireValueCode("it", ctx)
         builder.addStatement(
             "%L?.let { headers.add(%S, $valueCode) }",
             param.generatedName,
@@ -452,11 +450,13 @@ private fun addHeaderParams(
     builder.add("}\n")
 }
 
-private fun optionalValueCode(param: ApiParamDO): String {
-    val trivialType = param.type as? TrivialTypeDO
-    return if (trivialType?.kind == TrivialTypeDO.Kind.STRING) {
-        "it"
-    } else {
-        "it.toString()"
+internal fun FieldTypeDO.toRestClientWireValueCode(
+    variableName: String,
+    ctx: TypeNameContext,
+): String =
+    when {
+        this is TrivialTypeDO && kind == TrivialTypeDO.Kind.STRING -> variableName
+        this is RefTypeDO && ctx.bySchemaName[schemaName]?.modelShape is ModelShapeDO.EnumClass ->
+            "$variableName.value.toString()"
+        else -> "$variableName.toString()"
     }
-}
