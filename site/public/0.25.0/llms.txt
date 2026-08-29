@@ -1,0 +1,421 @@
+# Openapi2kotlin 0.25.0 Documentation
+
+> Version-pinned documentation for openapi2kotlin 0.25.0. Use this file when you need links and structured data for this exact release.
+
+Version: 0.25.0
+Latest stable version: 0.25.0
+
+## Start Here
+- Versioned docs: https://openapi2kotlin.dev/0.25.0
+- Installation: https://openapi2kotlin.dev/0.25.0#installation
+- AI / LLMs: https://openapi2kotlin.dev/0.25.0#llms
+- Under the Hood: https://openapi2kotlin.dev/0.25.0#under-the-hood
+- API Reference: https://openapi2kotlin.dev/0.25.0#api-reference
+
+## Framework Targets
+- Client libraries: Ktor, Http4k, RestClient
+- Server libraries: Ktor, Http4k, Spring
+
+## How It Works
+
+Generated sources land under the specified `outputDir` and selected `packageName`.
+
+## Configuration Options
+
+### `inputSpec`
+
+- Required: true
+- Default: -
+- Values: -
+- Description:
+```kotlin
+Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml".
+```
+
+### `outputDir`
+
+- Required: true
+- Default: -
+- Values: -
+- Description:
+```kotlin
+Root directory for generated Kotlin sources, e.g.
+layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path.
+```
+
+### `enabled`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Enables or disables code generation for the current Gradle run.
+
+### `model.packageName`
+
+- Required: false
+- Default: "dev.openapi2kotlin.model"
+- Values: -
+- Description: Package name for generated model classes.
+
+### `model.classNameSuffix`
+
+- Required: false
+- Default: -
+- Values: -
+- Description: Suffix appended to every generated model class/interface/enum name, e.g. `Dto`
+
+### `model.serialization`
+
+- Required: false
+- Default: Ktor -> KotlinX, Http4k -> KotlinX, Server Spring -> Jackson, Client RestClient -> Jackson
+- Values: KotlinX, Jackson
+- Description: Serialization annotation family for generated model classes.
+
+### `model.validation`
+
+- Required: false
+- Default: None
+- Values: None, Jakarta, JavaX
+- Description: Validation annotations namespace used in generated models.
+
+### `model.double2BigDecimal`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Maps OpenAPI number/double to BigDecimal instead of Double.
+
+### `model.float2BigDecimal`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Maps OpenAPI number/float to BigDecimal instead of Float.
+
+### `model.integer2Long`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Maps OpenAPI integer to Long instead of Int.
+
+### `client.packageName`
+
+- Required: false
+- Default: "dev.openapi2kotlin.client"
+- Values: -
+- Description: Base package for generated API classes.
+
+### `client.library`
+
+- Required: true
+- Default: -
+- Values: Ktor, Http4k, RestClient
+- Description: Target HTTP client library used by generated client API.
+
+### `client.basePathVar`
+
+- Required: false
+- Default: "basePath"
+- Values: -
+- Description:
+```kotlin
+Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
+
+servers:
+  - url: '/{basePath}'
+    variables:
+      basePath:
+        default: 'v5/'
+```
+
+### `client.methodNameSingularized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.
+
+### `client.methodNamePluralized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Pluralizes method names for collection endpoints, e.g. `listQuotes`.
+
+### `client.methodNameFromOperationId`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Derives method names from OpenAPI `operationId` instead of URL path.
+
+### `client.apiNameFromTags`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+
+### `client.encodePathParameterSlashes`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Percent-encodes slashes in path parameters rather than treating them as path separators.
+
+### `server.packageName`
+
+- Required: false
+- Default: "dev.openapi2kotlin.server"
+- Values: -
+- Description: Base package for generated API classes.
+
+### `server.library`
+
+- Required: true
+- Default: -
+- Values: Ktor, Http4k, Spring
+- Description: Target server framework used by generated server API.
+
+### `server.swagger`
+
+- Required: false
+- Default: Ktor -> false, Http4k -> false, Spring -> true
+- Values: true, false
+- Description: Enables generated Swagger/OpenAPI annotations.
+
+### `server.basePathVar`
+
+- Required: false
+- Default: "basePath"
+- Values: -
+- Description:
+```kotlin
+Uses the first OpenAPI server variable matching `basePathVar` when it has a default value, e.g.
+
+servers:
+  - url: '/{basePath}'
+    variables:
+      basePath:
+        default: 'v5/'
+```
+
+### `server.methodNameSingularized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Singularizes method names for single-resource endpoints, e.g. `retrieveQuote`.
+
+### `server.methodNamePluralized`
+
+- Required: false
+- Default: true
+- Values: true, false
+- Description: Pluralizes method names for collection endpoints, e.g. `listQuotes`.
+
+### `server.methodNameFromOperationId`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Derives method names from OpenAPI `operationId` instead of URL path.
+
+### `server.apiNameFromTags`
+
+- Required: false
+- Default: false
+- Values: true, false
+- Description: Groups generated API classes by the first OpenAPI tag instead of the first URL path segment.
+
+## Configuration Snippets
+
+### Client
+
+#### Ktor
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = Ktor
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
+        encodePathParameterSlashes = false
+    }
+}
+```
+
+#### Http4k
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = Http4k
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
+        encodePathParameterSlashes = false
+    }
+}
+```
+
+#### RestClient
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = Jackson
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    client {
+        packageName = "dev.openapi2kotlin.client"
+        library = RestClient
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
+        encodePathParameterSlashes = false
+    }
+}
+```
+
+### Server
+
+#### Ktor
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Ktor
+        swagger = false
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
+    }
+}
+```
+
+#### Http4k
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = KotlinX
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Http4k
+        swagger = false
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
+    }
+}
+```
+
+#### Spring
+
+```kotlin
+openapi2kotlin {
+    inputSpec = "$projectDir/src/main/resources/openapi.yaml"
+    outputDir = layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path
+    enabled = true
+
+    model {
+        packageName = "dev.openapi2kotlin.model"
+        serialization = Jackson
+        validation = None
+        double2BigDecimal = false
+        float2BigDecimal = false
+        integer2Long = true
+    }
+
+    server {
+        packageName = "dev.openapi2kotlin.server"
+        library = Spring
+        swagger = true
+        basePathVar = "basePath"
+        methodNameSingularized = true
+        methodNamePluralized = true
+        methodNameFromOperationId = false
+        apiNameFromTags = false
+    }
+}
+```
+
+## External Links
+- GitHub: https://github.com/openapi2kotlin/openapi2kotlin
+- Maven Central: https://central.sonatype.com/artifact/dev.openapi2kotlin/openapi2kotlin
+
