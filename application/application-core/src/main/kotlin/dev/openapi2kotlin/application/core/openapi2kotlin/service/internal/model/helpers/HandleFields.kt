@@ -139,6 +139,7 @@ private fun ModelDO.mergeOwnPropertyFields(
                 required = prop.required,
                 defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it, byName) },
                 kdoc = prop.description,
+                source = rawSchema.originalName,
             )
         val mergedField = createMergedField(propName, ownInfo, parentPropSchemas[propName])
         fields.upsertByOriginalName(mergedField)
@@ -152,10 +153,10 @@ private fun createMergedField(
 ): FieldDO {
     val effectiveRequired = (parentInfo?.required ?: false) || ownInfo.required
     val effectiveType =
-        if (parentInfo != null && !parentInfo.type.canBeOverriddenBy(ownInfo.type)) {
-            parentInfo.type
-        } else {
+        if (parentInfo == null) {
             ownInfo.type
+        } else {
+            intersectAllOfTypes(propName, ownInfo, parentInfo)
         }
 
     return FieldDO(
@@ -224,7 +225,44 @@ private data class PropInfo(
     val required: Boolean,
     val defaultValueCode: String?,
     val kdoc: String?,
+    val source: String,
 )
+
+/**
+ * allOf is an intersection: an untyped redeclaration adds no type constraint and takes the other side's type,
+ * a compatible redeclaration keeps the more specific (child) type, and incompatible types cannot be satisfied.
+ */
+private fun intersectAllOfTypes(
+    propName: String,
+    near: PropInfo,
+    far: PropInfo,
+): FieldTypeDO =
+    when {
+        near.type.isUntyped() -> far.type
+        far.type.canBeOverriddenBy(near.type) -> near.type
+        near.type.isPrimitiveConflictWith(far.type) -> {
+            error(
+                "Incompatible allOf types for property '$propName': schema '${near.source}' declares " +
+                    "${near.type.describe()} but schema '${far.source}' declares ${far.type.describe()}.",
+            )
+        }
+        // e.g. a narrower $ref or an untyped kotlinx parent: keep the inherited declaration
+        else -> far.type
+    }
+
+private fun FieldTypeDO.isPrimitiveConflictWith(other: FieldTypeDO): Boolean =
+    this is TrivialTypeDO && other is TrivialTypeDO && !isUntyped() && !other.isUntyped() && kind != other.kind
+
+private fun FieldTypeDO.isUntyped(): Boolean =
+    this is TrivialTypeDO && (kind == TrivialTypeDO.Kind.ANY || kind == TrivialTypeDO.Kind.JSON_ELEMENT)
+
+private fun FieldTypeDO.describe(): String =
+    when (this) {
+        is TrivialTypeDO -> kind.name.lowercase()
+        is RefTypeDO -> "\$ref '$schemaName'"
+        is ListTypeDO -> "array of ${elementType.describe()}"
+        is MapTypeDO -> "map of ${valueType.describe()}"
+    }
 
 private fun collectAllPropertiesFromSchema(
     schemaName: String,
@@ -243,10 +281,13 @@ private fun collectAllPropertiesFromSchema(
                 required = prop.required,
                 defaultValueCode = prop.defaultValue?.let { renderDefault(prop.type, cfg, it, schemas) },
                 kdoc = prop.description,
+                source = schemaName,
             )
         into.merge(prop.name, info) { a, b ->
+            // a = nearer schema, b = further ancestor
             PropInfo(
-                type = a.type,
+                type = intersectAllOfTypes(prop.name, a, b),
+                source = if (a.type.isUntyped() && !b.type.isUntyped()) b.source else a.source,
                 required = a.required || b.required,
                 defaultValueCode = a.defaultValueCode ?: b.defaultValueCode,
                 // retain any existing doc; if absent, take the incoming one

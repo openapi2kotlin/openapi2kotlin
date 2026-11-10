@@ -25,7 +25,47 @@ internal fun List<RawPathDO>.toApis(ctx: ApisContext): List<ApiDO> =
             generatedName = rawPath.generatedApiName(),
             endpoints = rawPath.operations.map { it.toBaseEndpoint(ctx) },
         )
+    }.disambiguateClashingEndpoints()
+
+/**
+ * Path-derived names can collide for nested resources, e.g. `GET /a/{id}/b/{bId}` and
+ * `GET /a/{id}/c/{cId}` both become `retrieveA(Long, Long)`. Kotlin overloads with different
+ * parameter types stay as they are; endpoints whose name and parameter types clash within one
+ * generated API fall back to their operationId-derived name.
+ */
+private fun List<ApiDO>.disambiguateClashingEndpoints(): List<ApiDO> {
+    val clashing =
+        flatMap { api -> api.endpoints.map { api.generatedName to it } }
+            .groupBy { (apiName, endpoint) -> Triple(apiName, endpoint.generatedName, endpoint.signatureKey()) }
+            .values
+            .filter { it.size > 1 }
+            .flatMap { group -> group.map { it.second.rawOperation } }
+            .toSet()
+    if (clashing.isEmpty()) return this
+
+    return map { api ->
+        api.copy(
+            endpoints =
+                api.endpoints.map { endpoint ->
+                    if (endpoint.rawOperation in clashing) {
+                        endpoint.copy(
+                            generatedName =
+                                generatedOperationNameFromOperationId(
+                                    method = endpoint.rawOperation.httpMethod,
+                                    operationId = endpoint.rawOperation.operationId,
+                                    path = endpoint.rawOperation.path,
+                                ),
+                        )
+                    } else {
+                        endpoint
+                    }
+                },
+        )
     }
+}
+
+private fun ApiEndpointDO.signatureKey(): List<Any?> =
+    rawOperation.parameters.map { it.type } + listOf(rawOperation.requestBody?.type)
 
 private fun RawPathDO.generatedApiName(): String {
     val tag = tags.firstOrNull().orEmpty().ifBlank { "Default" }
@@ -156,16 +196,24 @@ private fun generatedOperationNameFromOperationId(
         .ensureKotlinIdentifier(defaultName = fallbackVerb(method).kotlinName)
 }
 
-private fun String.toKotlinParamName(): String =
-    splitIdentifierWords()
-        .takeIf { it.isNotEmpty() }
-        ?.let { parts ->
+private fun String.toKotlinParamName(): String {
+    val parts = splitIdentifierWords()
+    val name =
+        if (parts.isEmpty()) {
+            "param"
+        } else {
             parts.first().lowercase() +
-                parts.drop(1).joinToString("") {
-                    it.lowercase().replaceFirstChar(Char::uppercase)
-                }
+                parts.drop(1).joinToString("") { it.lowercase().replaceFirstChar(Char::uppercase) }
         }
-        ?: "param"
+    return if (name in KOTLIN_HARD_KEYWORDS) "${name}_" else name
+}
+
+private val KOTLIN_HARD_KEYWORDS =
+    setOf(
+        "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
+        "interface", "is", "null", "object", "package", "return", "super", "this", "throw",
+        "true", "try", "typealias", "typeof", "val", "var", "when", "while",
+    )
 
 private fun List<String>.toLowerCamel(): String =
     firstOrNull()?.lowercase().orEmpty() +

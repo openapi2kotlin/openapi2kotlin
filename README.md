@@ -78,7 +78,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 
 | Property | Description | Values | Required | Default |
 |---|---|---|---|---|
-| `inputSpec` | Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml". | - | true | - |
+| `inputSpec` | Path to OpenAPI 3.x or Swagger 2.0 YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml". | - | true | - |
 | `outputDir` | Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path. | - | true | - |
 | `enabled` | Enables or disables code generation for the current Gradle run. | true, false | false | true |
 | `model.packageName` | Package name for generated model classes. | - | false | "dev.openapi2kotlin.model" |
@@ -109,7 +109,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 
 - Gradle 8+
 - Kotlin JVM project
-- OpenAPI 3.x specification (YAML or JSON)
+- OpenAPI 3.x or Swagger 2.0 specification (YAML or JSON; Swagger 2.0 is converted to OpenAPI 3 on load)
 - Java 25+
 
 ---
