@@ -42,7 +42,7 @@ The plugin is published to [Maven Central](https://central.sonatype.com/artifact
 
 ```toml
 [versions]
-openapi2kotlin = "0.25.0"
+openapi2kotlin = "0.26.0"
 
 [plugins]
 openapi2kotlin = { id = "dev.openapi2kotlin", version.ref = "openapi2kotlin" }
@@ -78,7 +78,7 @@ For the complete, versioned documentation, see [openapi2kotlin.dev API Reference
 
 | Property | Description | Values | Required | Default |
 |---|---|---|---|---|
-| `inputSpec` | Path to OpenAPI 3.x or Swagger 2.0 YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml". | - | true | - |
+| `inputSpec` | Path to OpenAPI YAML or JSON specification, e.g. "$projectDir/src/main/resources/openapi.yaml". | - | true | - |
 | `outputDir` | Root directory for generated Kotlin sources, e.g. layout.buildDirectory.dir("generated/src/main/kotlin").get().asFile.path. | - | true | - |
 | `enabled` | Enables or disables code generation for the current Gradle run. | true, false | false | true |
 | `model.packageName` | Package name for generated model classes. | - | false | "dev.openapi2kotlin.model" |
